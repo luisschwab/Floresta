@@ -906,7 +906,6 @@ mod test {
     use floresta_wire::UtreexoNodeConfig;
     use rcgen::generate_simple_self_signed;
     use rcgen::CertifiedKey;
-    use rustreexo::accumulator::pollard::Pollard;
     use serde_json::json;
     use serde_json::Number;
     use serde_json::Value;
@@ -926,6 +925,10 @@ mod test {
 
     use super::client_accept_loop;
     use super::ElectrumServer;
+
+    /// A size used for mempool tests, no specific meaning just a randomly
+    /// chosen size.
+    const MEMPOOL_SIZE: usize = 10_000;
 
     fn get_test_transaction() -> (Transaction, MerkleProof) {
         // Signet transaction with id 6bb0665122c7dcecc6e6c45b6384ee2bdce148aea097896e6f3e9e08070353ea
@@ -1041,7 +1044,7 @@ mod test {
             UtreexoNode::new(
                 u_config,
                 chain.clone(),
-                Arc::new(Mutex::new(Mempool::new(Pollard::default(), 0))),
+                Arc::new(Mutex::new(Mempool::new(MEMPOOL_SIZE))),
                 None,
                 Arc::new(RwLock::new(false)),
                 AddressMan::default(),
