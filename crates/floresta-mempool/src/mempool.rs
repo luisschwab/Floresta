@@ -365,7 +365,6 @@ mod tests {
     use std::collections::HashSet;
     use std::str::FromStr;
 
-    use bitcoin::Txid;
     use bitcoin::absolute;
     use bitcoin::block;
     use bitcoin::consensus::encode::deserialize_hex;
@@ -377,6 +376,7 @@ mod tests {
     use bitcoin::Sequence;
     use bitcoin::Target;
     use bitcoin::Transaction;
+    use bitcoin::Txid;
     use bitcoin::Witness;
     use floresta_common::bhash;
     use rand::Rng;
@@ -535,7 +535,7 @@ mod tests {
         // This output is used as a dummy input for the first transactions, since
         // we are not allowed to have coinbase transactions in our mempool-created blocks.
         let dummy_input = OutPoint {
-            txid:  Txid::all_zeros(),
+            txid: Txid::all_zeros(),
             vout: 0,
         };
         outputs.insert(dummy_input);
