@@ -499,6 +499,7 @@ impl Florestad {
             cfilters,
             chain_provider.get_handle(),
         )
+        .await
         .map_err(FlorestadError::CouldNotCreateElectrumServer)?;
 
         // Default Electrum Server port.
