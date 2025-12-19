@@ -4,3 +4,4 @@ black>=24.10.0
 pylint>=3.3.2
 pyOpenSSL>=25.0.0
 pytest>=9.0.0
+pytest-xdist>=3.8.0
