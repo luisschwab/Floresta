@@ -169,6 +169,19 @@ def utreexod_node(node_manager) -> Node:
 
 
 @pytest.fixture
+def florestad_utreexod(
+    florestad_node, utreexod_node, node_manager
+) -> tuple[Node, Node]:
+    """
+    Creates and starts a `florestad` node and a `utreexod` node.
+    The nodes are automatically connected to each other and are ready for testing.
+    """
+    node_manager.connect_nodes(florestad_node, utreexod_node)
+
+    return florestad_node, utreexod_node
+
+
+@pytest.fixture
 def add_node_with_tls(node_manager):
     """Creates and starts a node with TLS enabled, based on the specified variant."""
 
