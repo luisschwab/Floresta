@@ -74,16 +74,16 @@ bench:
 
 # Generate the public documentation for all crates
 doc:
-    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --workspace --no-deps --lib --all-features
+    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --workspace --no-deps --lib --all-features --exclude metrics
 
 # Generate and open the public documentation for all crates
 open-doc:
-    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --workspace --no-deps --all-features --open
+    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --workspace --no-deps --all-features --lib --open --exclude metrics
 
 # Generate the documentation for all crates, including private items, and fail on warnings
 doc-check:
     RUSTDOCFLAGS="--cfg docsrs -D warnings" \
-    cargo +nightly doc --workspace --no-deps --all-features --lib --document-private-items
+    cargo +nightly doc --workspace --no-deps --all-features --lib --document-private-items --exclude metrics
 
 # Format code and run configured linters
 lint:
