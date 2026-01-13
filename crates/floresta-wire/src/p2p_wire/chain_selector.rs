@@ -64,7 +64,9 @@ use rand::thread_rng;
 use rustreexo::accumulator::node_hash::BitcoinNodeHash;
 use rustreexo::accumulator::proof::Proof;
 use rustreexo::accumulator::stump::Stump;
+use tokio::time;
 use tokio::time::timeout;
+use tokio::time::MissedTickBehavior;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -82,6 +84,7 @@ use crate::node::InflightRequests;
 use crate::node::NodeNotification;
 use crate::node::NodeRequest;
 use crate::node::UtreexoNode;
+use crate::node_context::LoopControl;
 use crate::node_context::NodeContext;
 use crate::node_context::PeerId;
 use crate::node_interface::NodeResponse;
@@ -775,81 +778,89 @@ where
     pub async fn run(&mut self) -> Result<(), WireError> {
         info!("Starting IBD, selecting the best chain");
 
+        let mut ticker = time::interval(ChainSelector::MAINTENANCE_TICK);
+        // If we fall behind, don't "catch up" by running maintenance repeatedly
+        ticker.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
         loop {
-            while let Ok(notification) = timeout(Duration::from_secs(1), self.node_rx.recv()).await
-            {
-                match notification {
-                    Some(NodeNotification::FromUser(request, responder)) => {
-                        self.perform_user_request(request, responder);
-                    }
+            tokio::select! {
+                biased;
 
-                    Some(NodeNotification::FromPeer(peer, notification)) => {
-                        try_and_log!(self.handle_peer_notification(notification, peer).await);
-                    }
+                // Maintenance runs only on tick but has priority
+                _ = ticker.tick() => match self.maintenance_tick().await? {
+                    LoopControl::Continue => {},
+                    LoopControl::Break => break,
+                },
 
-                    Some(NodeNotification::DnsSeedAddresses(addresses)) => {
-                        self.address_man.push_addresses(&addresses);
-                    }
-
-                    None => {
+                // Handle messages as soon as we find any, otherwise sleep until maintenance
+                msg = self.node_rx.recv() => {
+                    let Some(notification) = msg else {
                         break;
+                    };
+                    try_and_log!(self.handle_notification(notification).await);
+
+                    // Drain all queued messages
+                    while let Ok(notification) = self.node_rx.try_recv() {
+                        try_and_log!(self.handle_notification(notification).await);
                     }
                 }
-
-                // Shutdown if needed while in the notifications loop
-                if *self.kill_signal.read().await {
-                    self.shutdown();
-                    return Ok(());
-                }
-            }
-
-            // Checks if we need to open a new connection
-            periodic_job!(
-                self.maybe_open_connection(ServiceFlags::NONE),
-                self.last_connection,
-                TRY_NEW_CONNECTION,
-                ChainSelector
-            );
-
-            // Open new feeler connection periodically
-            periodic_job!(
-                self.open_feeler_connection(),
-                self.last_feeler,
-                FEELER_INTERVAL,
-                ChainSelector
-            );
-
-            if let ChainSelectorState::LookingForForks(start) = self.context.state {
-                if start.elapsed().as_secs() > 30 {
-                    self.context.state = ChainSelectorState::LookingForForks(Instant::now());
-                    self.poke_peers()?;
-                }
-            }
-
-            if self.context.state == ChainSelectorState::CreatingConnections {
-                // If we have enough peers, try to download headers
-                if !self.peer_ids.is_empty() {
-                    try_and_log!(self.request_headers(self.chain.get_best_block()?.1));
-                    self.context.state = ChainSelectorState::DownloadingHeaders;
-                }
-            }
-
-            // We downloaded all headers in the most-pow chain, and all our peers agree
-            // this is the most-pow chain, we're done!
-            if self.context.state == ChainSelectorState::Done {
-                try_and_log!(self.chain.flush());
-                break;
-            }
-
-            try_and_log!(self.check_for_timeout());
-
-            if *self.kill_signal.read().await {
-                self.shutdown();
-                break;
             }
         }
 
         Ok(())
+    }
+
+    /// Performs the periodic maintenance tasks, including checking for the cancel signal, peer
+    /// connections, and inflight request timeouts.
+    ///
+    /// Returns `LoopControl::Break` if we need to break the main `ChainSelector` loop, either
+    /// because the kill signal was set or because the header chain is synced.
+    async fn maintenance_tick(&mut self) -> Result<LoopControl, WireError> {
+        if *self.kill_signal.read().await {
+            return Ok(LoopControl::Break);
+        }
+
+        // Checks if we need to open a new connection
+        periodic_job!(
+            self.maybe_open_connection(ServiceFlags::NONE),
+            self.last_connection,
+            TRY_NEW_CONNECTION,
+            ChainSelector
+        );
+
+        // Open new feeler connection periodically
+        periodic_job!(
+            self.open_feeler_connection(),
+            self.last_feeler,
+            FEELER_INTERVAL,
+            ChainSelector
+        );
+
+        if let ChainSelectorState::LookingForForks(start) = self.context.state {
+            if start.elapsed().as_secs() > 30 {
+                self.context.state = ChainSelectorState::LookingForForks(Instant::now());
+                self.poke_peers()?;
+            }
+        }
+
+        if self.context.state == ChainSelectorState::CreatingConnections {
+            // If we have enough peers, try to download headers
+            if !self.peer_ids.is_empty() {
+                try_and_log!(self.request_headers(self.chain.get_best_block()?.1));
+                self.context.state = ChainSelectorState::DownloadingHeaders;
+            }
+        }
+
+        // We downloaded all headers in the most-pow chain, and all our peers agree
+        // this is the most-pow chain, we're done!
+        if self.context.state == ChainSelectorState::Done {
+            try_and_log!(self.chain.flush());
+            return Ok(LoopControl::Break);
+        }
+
+        try_and_log!(self.check_for_timeout());
+
+        Ok(LoopControl::Continue)
     }
 
     async fn find_accumulator_for_block_step(
@@ -924,6 +935,26 @@ where
         // if we have different states, we need to keep looking until we find the
         // fork point
         Ok(FindAccResult::KeepLooking(peer_accs))
+    }
+
+    async fn handle_notification(
+        &mut self,
+        notification: NodeNotification,
+    ) -> Result<(), WireError> {
+        match notification {
+            NodeNotification::FromUser(request, responder) => {
+                self.perform_user_request(request, responder);
+            }
+
+            NodeNotification::FromPeer(peer, notification) => {
+                self.handle_peer_notification(notification, peer).await?;
+            }
+
+            NodeNotification::DnsSeedAddresses(addresses) => {
+                self.address_man.push_addresses(&addresses);
+            }
+        }
+        Ok(())
     }
 
     async fn handle_peer_notification(
