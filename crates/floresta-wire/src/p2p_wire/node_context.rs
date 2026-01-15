@@ -24,6 +24,8 @@
 //!    will handle new blocks (even if `SyncNode` haven't returned) and handle
 //!    requests by users.
 
+use std::time::Duration;
+
 use bitcoin::p2p::ServiceFlags;
 
 /// This trait mainly defines a bunch of constants that we need for the node, but we may tweak
@@ -80,9 +82,18 @@ pub trait NodeContext {
     /// How many concurrent GETDATA packages we can send at the same time
     const MAX_CONCURRENT_GETDATA: usize = 10;
 
+    /// How often we perform the main loop maintenance tasks (checking for timeouts, peers, etc.)
+    const MAINTENANCE_TICK: Duration = Duration::from_secs(1);
+
     fn get_required_services(&self) -> ServiceFlags {
         ServiceFlags::NETWORK
     }
 }
 
 pub(crate) type PeerId = u32;
+
+/// Simple return enum that tells the caller whether to continue looping or break out.
+pub(crate) enum LoopControl {
+    Continue,
+    Break,
+}

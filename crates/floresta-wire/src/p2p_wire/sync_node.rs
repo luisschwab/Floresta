@@ -11,7 +11,8 @@ use floresta_common::service_flags;
 use floresta_common::service_flags::UTREEXO;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use tokio::time::timeout;
+use tokio::time;
+use tokio::time::MissedTickBehavior;
 use tracing::debug;
 use tracing::info;
 use tracing::warn;
@@ -26,6 +27,7 @@ use crate::node::InflightRequests;
 use crate::node::NodeNotification;
 use crate::node::NodeRequest;
 use crate::node::UtreexoNode;
+use crate::node_context::LoopControl;
 use crate::node_context::NodeContext;
 use crate::node_interface::NodeResponse;
 
@@ -46,6 +48,9 @@ impl NodeContext for SyncNode {
     const TRY_NEW_CONNECTION: u64 = 30; // 30 seconds
     const REQUEST_TIMEOUT: u64 = 10 * 60; // 10 minutes
     const MAX_INFLIGHT_REQUESTS: usize = 100; // double the default
+
+    // A more conservative value than the default of 1 second, since we'll have many peer messages
+    const MAINTENANCE_TICK: Duration = Duration::from_secs(5);
 }
 
 /// Node methods for a [`UtreexoNode`] where its Context is a [`SyncNode`].
@@ -182,74 +187,108 @@ where
         info!("Starting sync node...");
         self.last_block_request = self.chain.get_validation_index().unwrap();
 
+        let mut ticker = time::interval(SyncNode::MAINTENANCE_TICK);
+        // If we fall behind, don't "catch up" by running maintenance repeatedly
+        ticker.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
         loop {
-            while let Ok(Some(msg)) = timeout(Duration::from_secs(1), self.node_rx.recv()).await {
-                try_and_log!(self.handle_message(msg));
+            tokio::select! {
+                biased;
+
+                // Maintenance runs only on tick but has priority
+                _ = ticker.tick() => match self.maintenance_tick().await {
+                    LoopControl::Continue => {},
+                    LoopControl::Break => break,
+                },
+
+                // Handle messages as soon as we find any, otherwise sleep until maintenance
+                msg = self.node_rx.recv() => {
+                    let Some(msg) = msg else {
+                        break;
+                    };
+                    try_and_log!(self.handle_message(msg));
+
+                    // Drain all queued messages
+                    while let Ok(msg) = self.node_rx.try_recv() {
+                        try_and_log!(self.handle_message(msg));
+                    }
+                    if *self.kill_signal.read().await {
+                        break;
+                    }
+                }
             }
-
-            if *self.kill_signal.read().await {
-                break;
-            }
-
-            let validation_index = self
-                .chain
-                .get_validation_index()
-                .expect("validation index block should present");
-
-            let best_block = self
-                .chain
-                .get_best_block()
-                .expect("best block should present")
-                .0;
-
-            if validation_index == best_block {
-                info!("IBD is finished, switching to normal operation mode");
-                self.chain.toggle_ibd(false);
-                break;
-            }
-
-            periodic_job!(
-                self.check_connections(),
-                self.last_connection,
-                TRY_NEW_CONNECTION,
-                SyncNode
-            );
-
-            // Open new feeler connection periodically
-            periodic_job!(
-                self.open_feeler_connection(),
-                self.last_feeler,
-                FEELER_INTERVAL,
-                SyncNode
-            );
-
-            try_and_log!(self.check_for_timeout());
-
-            let assume_stale = Instant::now()
-                .duration_since(self.common.last_tip_update)
-                .as_secs()
-                > SyncNode::ASSUME_STALE;
-
-            if assume_stale {
-                try_and_log!(self.create_connection(ConnectionKind::Extra));
-                self.last_tip_update = Instant::now();
-                continue;
-            }
-
-            try_and_log!(self.process_pending_blocks());
-            if !self.has_utreexo_peers() {
-                continue;
-            }
-
-            // Ask for missed blocks or proofs if they are no longer inflight or pending
-            try_and_log!(self.ask_for_missed_blocks());
-            try_and_log!(self.ask_for_missed_proofs());
-
-            self.get_blocks_to_download();
         }
 
         done_cb(&self.chain);
         self
+    }
+
+    /// Performs the periodic maintenance tasks, including checking for the cancel signal, peer
+    /// connections, and inflight request timeouts.
+    ///
+    /// Returns `LoopControl::Break` if we need to break the main `SyncNode` loop, either because
+    /// the kill signal was set or because the chain is synced.
+    async fn maintenance_tick(&mut self) -> LoopControl {
+        if *self.kill_signal.read().await {
+            return LoopControl::Break;
+        }
+
+        let validation_index = self
+            .chain
+            .get_validation_index()
+            .expect("validation index block should present");
+
+        let best_block = self
+            .chain
+            .get_best_block()
+            .expect("best block should present")
+            .0;
+
+        if validation_index == best_block {
+            info!("IBD is finished, switching to normal operation mode");
+            self.chain.toggle_ibd(false);
+            return LoopControl::Break;
+        }
+
+        periodic_job!(
+            self.check_connections(),
+            self.last_connection,
+            TRY_NEW_CONNECTION,
+            SyncNode
+        );
+
+        // Open new feeler connection periodically
+        periodic_job!(
+            self.open_feeler_connection(),
+            self.last_feeler,
+            FEELER_INTERVAL,
+            SyncNode
+        );
+
+        try_and_log!(self.check_for_timeout());
+
+        let assume_stale = Instant::now()
+            .duration_since(self.common.last_tip_update)
+            .as_secs()
+            > SyncNode::ASSUME_STALE;
+
+        if assume_stale {
+            try_and_log!(self.create_connection(ConnectionKind::Extra));
+            self.last_tip_update = Instant::now();
+            return LoopControl::Continue;
+        }
+
+        try_and_log!(self.process_pending_blocks());
+        if !self.has_utreexo_peers() {
+            return LoopControl::Continue;
+        }
+
+        // Ask for missed blocks or proofs if they are no longer inflight or pending
+        try_and_log!(self.ask_for_missed_blocks());
+        try_and_log!(self.ask_for_missed_proofs());
+
+        self.get_blocks_to_download();
+        LoopControl::Continue
     }
 
     /// Process a message from a peer and handle it accordingly between the variants of [`PeerMessages`].

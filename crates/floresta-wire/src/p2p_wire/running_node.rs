@@ -20,7 +20,8 @@ use floresta_common::service_flags;
 use floresta_common::service_flags::UTREEXO;
 use rand::random;
 use rustreexo::accumulator::stump::Stump;
-use tokio::time::timeout;
+use tokio::time;
+use tokio::time::MissedTickBehavior;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -36,6 +37,7 @@ use crate::node::InflightRequests;
 use crate::node::NodeNotification;
 use crate::node::NodeRequest;
 use crate::node::UtreexoNode;
+use crate::node_context::LoopControl;
 use crate::node_context::NodeContext;
 use crate::node_context::PeerId;
 use crate::node_interface::NodeResponse;
@@ -329,103 +331,33 @@ where
                 .unwrap();
         }
 
+        let mut ticker = time::interval(RunningNode::MAINTENANCE_TICK);
+        // If we fall behind, don't "catch up" by running maintenance repeatedly
+        ticker.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
         info!("starting running node...");
         loop {
-            if *self.kill_signal.read().await {
-                break;
-            }
+            tokio::select! {
+                biased;
 
-            while let Ok(Some(notification)) =
-                timeout(Duration::from_millis(100), self.node_rx.recv()).await
-            {
-                try_and_log!(self.handle_notification(notification));
-            }
+                // Maintenance runs only on tick but has priority
+                _ = ticker.tick() => match self.maintenance_tick().await {
+                    LoopControl::Continue => {},
+                    LoopControl::Break => break,
+                },
 
-            // Jobs that don't need a connected peer
-            try_and_log!(self.process_pending_blocks());
+                // Handle messages as soon as we find any, otherwise sleep until maintenance
+                msg = self.node_rx.recv() => {
+                    let Some(notification) = msg else {
+                        break;
+                    };
+                    try_and_log!(self.handle_notification(notification));
 
-            // Save our peers db
-            periodic_job!(
-                self.save_peers(),
-                self.last_peer_db_dump,
-                PEER_DB_DUMP_INTERVAL,
-                RunningNode
-            );
-
-            // Rework our address database
-            periodic_job!(
-                self.address_man.rearrange_buckets(),
-                self.context.last_address_rearrange,
-                ADDRESS_REARRANGE_INTERVAL,
-                RunningNode,
-                true
-            );
-
-            // Perhaps we need more connections
-            periodic_job!(
-                self.check_connections(),
-                self.last_connection,
-                TRY_NEW_CONNECTION,
-                RunningNode
-            );
-
-            // Check if some of our peers have timed out a request
-            try_and_log!(self.check_for_timeout());
-
-            // Open new feeler connection periodically
-            periodic_job!(
-                self.open_feeler_connection(),
-                self.last_feeler,
-                FEELER_INTERVAL,
-                RunningNode
-            );
-
-            // Those jobs bellow needs a connected peer to work
-            if self.peer_ids.is_empty() {
-                continue;
-            }
-
-            // Ask our peers for new addresses
-            periodic_job!(
-                self.ask_for_addresses(),
-                self.last_get_address_request,
-                ASK_FOR_PEERS_INTERVAL,
-                RunningNode
-            );
-            // Try broadcast transactions
-            periodic_job!(
-                self.handle_broadcast().await,
-                self.last_broadcast,
-                BROADCAST_DELAY,
-                RunningNode
-            );
-            // Send our addresses to our peers
-            periodic_job!(
-                self.send_addresses(),
-                self.last_send_addresses,
-                SEND_ADDRESSES_INTERVAL,
-                RunningNode
-            );
-
-            // Check whether we are in a stale tip
-            periodic_job!(
-                self.check_for_stale_tip(),
-                self.last_tip_update,
-                ASSUME_STALE,
-                RunningNode
-            );
-
-            // tries to download filters from the network
-            try_and_log!(self.download_filters());
-
-            // requests that need a utreexo peer
-            if !self.has_utreexo_peers() {
-                continue;
-            }
-
-            // Check if we haven't missed any block
-            if self.inflight.len() < RunningNode::MAX_INFLIGHT_REQUESTS {
-                try_and_log!(self.ask_missed_block());
+                    // Drain all queued messages
+                    while let Ok(notification) = self.node_rx.try_recv() {
+                        try_and_log!(self.handle_notification(notification));
+                    }
+                }
             }
         }
 
@@ -437,6 +369,104 @@ where
 
         self.shutdown();
         let _ = stop_signal.send(());
+    }
+
+    /// Performs the periodic maintenance tasks, including checking for the cancel signal, peer
+    /// connections, and inflight request timeouts.
+    ///
+    /// Returns `LoopControl::Break` if we need to stop the node due to the kill signal being set.
+    async fn maintenance_tick(&mut self) -> LoopControl {
+        if *self.kill_signal.read().await {
+            return LoopControl::Break;
+        }
+
+        // Jobs that don't need a connected peer
+        try_and_log!(self.process_pending_blocks());
+
+        // Save our peers db
+        periodic_job!(
+            self.save_peers(),
+            self.last_peer_db_dump,
+            PEER_DB_DUMP_INTERVAL,
+            RunningNode
+        );
+
+        // Rework our address database
+        periodic_job!(
+            self.address_man.rearrange_buckets(),
+            self.context.last_address_rearrange,
+            ADDRESS_REARRANGE_INTERVAL,
+            RunningNode,
+            true
+        );
+
+        // Perhaps we need more connections
+        periodic_job!(
+            self.check_connections(),
+            self.last_connection,
+            TRY_NEW_CONNECTION,
+            RunningNode
+        );
+
+        // Check if some of our peers have timed out a request
+        try_and_log!(self.check_for_timeout());
+
+        // Open new feeler connection periodically
+        periodic_job!(
+            self.open_feeler_connection(),
+            self.last_feeler,
+            FEELER_INTERVAL,
+            RunningNode
+        );
+
+        // The jobs below need a connected peer to work
+        if self.peer_ids.is_empty() {
+            return LoopControl::Continue;
+        }
+
+        // Ask our peers for new addresses
+        periodic_job!(
+            self.ask_for_addresses(),
+            self.last_get_address_request,
+            ASK_FOR_PEERS_INTERVAL,
+            RunningNode
+        );
+        // Try broadcast transactions
+        periodic_job!(
+            self.handle_broadcast().await,
+            self.last_broadcast,
+            BROADCAST_DELAY,
+            RunningNode
+        );
+        // Send our addresses to our peers
+        periodic_job!(
+            self.send_addresses(),
+            self.last_send_addresses,
+            SEND_ADDRESSES_INTERVAL,
+            RunningNode
+        );
+
+        // Check whether we are in a stale tip
+        periodic_job!(
+            self.check_for_stale_tip(),
+            self.last_tip_update,
+            ASSUME_STALE,
+            RunningNode
+        );
+
+        // tries to download filters from the network
+        try_and_log!(self.download_filters());
+
+        // requests that need a utreexo peer
+        if !self.has_utreexo_peers() {
+            return LoopControl::Continue;
+        }
+
+        // Check if we haven't missed any block
+        if self.inflight.len() < RunningNode::MAX_INFLIGHT_REQUESTS {
+            try_and_log!(self.ask_missed_block());
+        }
+        LoopControl::Continue
     }
 
     fn download_filters(&mut self) -> Result<(), WireError> {
