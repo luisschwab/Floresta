@@ -9,7 +9,6 @@ This module provides fixtures for creating and managing test nodes
 
 # pylint: disable=redefined-outer-name
 
-import builtins
 import os
 import logging
 import time
@@ -65,28 +64,6 @@ def pytest_runtest_makereport(item, call):
     setattr(item, f"rep_{rep.when}", rep)
 
 
-# pylint: disable=W0511
-# TODO: remove this function after all tests are migrated to the pytest standard
-# so that instead of other functions using print they should use logging directly
-def redirect_print_to_logger(logger):
-    """
-    Replace the built-in print function to redirect messages to the logger.
-    """
-    original_print = builtins.print
-
-    # pylint: disable=unused-argument
-    def custom_print(*args, **kwargs):
-        # Convert print arguments into a single string
-        message = " ".join(map(str, args))
-        # Redirect to the logger at DEBUG level
-        logger.debug(message)
-
-    # Replace the print function with custom_print
-    builtins.print = custom_print
-
-    return original_print  # Return the original print function in case it needs to be restored
-
-
 @pytest.fixture(scope="function")
 def setup_logging(request):
     """
@@ -97,7 +74,7 @@ def setup_logging(request):
 
     # Log format to include the file and line
     formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+        "%(asctime)s - %(levelname)s - %(pathname)s:%(lineno)d - %(message)s"
     )
 
     # Configure log file
@@ -111,9 +88,6 @@ def setup_logging(request):
     if not logger.handlers:
         logger.addHandler(file_handler)
 
-    # Redirect print to the logger
-    original_print = redirect_print_to_logger(logger)
-
     yield logger
 
     # Capture test result and log it
@@ -125,9 +99,6 @@ def setup_logging(request):
         logger.error("=" * 80)
 
         print(f"📋 Log file: {log_file}\n")
-
-    # Restore the original print after the test
-    builtins.print = original_print
 
     # Clear handlers after the test
     logger.handlers.clear()
