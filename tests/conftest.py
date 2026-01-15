@@ -12,12 +12,19 @@ This module provides fixtures for creating and managing test nodes
 import builtins
 import os
 import logging
+import time
+from typing import List
 import pytest
 
 from test_framework import FlorestaTestFramework
 from test_framework.node import Node, NodeType
 from test_framework.util import Utility
-from test_framework.constants import FLORESTA_TEMP_DIR
+from test_framework.constants import (
+    FLORESTA_TEMP_DIR,
+    WALLET_ADDRESS,
+    WALLET_DESCRIPTOR_EXTERNAL,
+    WALLET_DESCRIPTOR_INTERNAL,
+)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -159,7 +166,7 @@ def utreexod_node(node_manager) -> Node:
     node = node_manager.add_node_extra_args(
         variant=NodeType.UTREEXOD,
         extra_args=[
-            "--miningaddr=bcrt1q4gfcga7jfjmm02zpvrh4ttc5k7lmnq2re52z2y",
+            f"--miningaddr={WALLET_ADDRESS}",
             "--utreexoproofindex",
             "--prune=0",
         ],
@@ -192,6 +199,48 @@ def florestad_bitcoind(
     node_manager.connect_nodes(florestad_node, bitcoind_node)
 
     return florestad_node, bitcoind_node
+
+
+@pytest.fixture
+def florestad_bitcoind_utreexod_with_chain(
+    florestad_node, bitcoind_node, utreexod_node, node_manager
+) -> tuple[Node, Node, Node]:
+    """
+    Factory fixture that initializes a three-node network with a populated blockchain.
+
+    Instantiates florestad, bitcoind, and utreexod nodes with pre-generated blocks and
+    establishes mesh connectivity. Florestad loads wallet descriptors before chain sync,
+    allowing it to track transactions during synchronization.
+    """
+
+    def _create_nodes_with_chain(
+        blocks: int = 100,
+        floresta_descriptors: List[str] | None = None,
+        addr_coinbase: str = None,
+    ) -> tuple[Node, Node, Node]:
+        if floresta_descriptors is None:
+            floresta_descriptors = [
+                WALLET_DESCRIPTOR_EXTERNAL,
+                WALLET_DESCRIPTOR_INTERNAL,
+            ]
+
+        for descriptor in floresta_descriptors:
+            florestad_node.rpc.load_descriptor(descriptor)
+
+        if addr_coinbase:
+            bitcoind_node.rpc.generatetoaddress(blocks, addr_coinbase)
+        else:
+            utreexod_node.rpc.generate(blocks)
+
+        node_manager.connect_nodes(florestad_node, utreexod_node)
+        time.sleep(3)
+        node_manager.connect_nodes(bitcoind_node, utreexod_node)
+        time.sleep(1)
+        node_manager.connect_nodes(florestad_node, bitcoind_node)
+
+        return florestad_node, bitcoind_node, utreexod_node
+
+    return _create_nodes_with_chain
 
 
 @pytest.fixture

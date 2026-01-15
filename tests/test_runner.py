@@ -45,9 +45,7 @@ ALLDONE_EMOJI = "🎉"
 # so parallelization is used most effectively. This structure is copied from
 # Bitcoin Core's functional tests:
 # https://github.com/bitcoin/bitcoin/blob/master/test/functional/test_runner.py#L89
-BASE_TEST_SUITE = [
-    ("floresta-cli", "gettxout"),
-]
+BASE_TEST_SUITE = []
 
 
 def list_test_suites(test_dir: str):
