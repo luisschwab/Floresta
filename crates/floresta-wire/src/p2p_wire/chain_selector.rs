@@ -822,18 +822,14 @@ where
 
         // Checks if we need to open a new connection
         periodic_job!(
-            self.maybe_open_connection(ServiceFlags::NONE),
-            self.last_connection,
-            TRY_NEW_CONNECTION,
-            ChainSelector
+            self.last_connection => self.maybe_open_connection(ServiceFlags::NONE),
+            ChainSelector::TRY_NEW_CONNECTION,
         );
 
         // Open new feeler connection periodically
         periodic_job!(
-            self.open_feeler_connection(),
-            self.last_feeler,
-            FEELER_INTERVAL,
-            ChainSelector
+            self.last_feeler => self.open_feeler_connection(),
+            ChainSelector::FEELER_INTERVAL,
         );
 
         if let ChainSelectorState::LookingForForks(start) = self.context.state {

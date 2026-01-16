@@ -2151,19 +2151,21 @@ macro_rules! try_and_warn {
     };
 }
 
+/// If `$interval_secs` has passed since `$timer`, run `$what` and reset `$timer`.
 macro_rules! periodic_job {
-    ($what:expr, $timer:expr, $interval:ident, $context:ty) => {
-        if $timer.elapsed() > Duration::from_secs(<$context>::$interval) {
+    ($timer:expr => $what:expr, $interval_secs:path $(,)?) => {{
+        if $timer.elapsed() > Duration::from_secs($interval_secs) {
             try_and_log!($what);
             $timer = Instant::now();
         }
-    };
-    ($what:expr, $timer:expr, $interval:ident, $context:ty, $no_log:literal) => {
-        if $timer.elapsed() > Duration::from_secs(<$context>::$interval) {
+    }};
+
+    ($timer:expr => $what:expr, $interval_secs:path,no_log $(,)?) => {{
+        if $timer.elapsed() > Duration::from_secs($interval_secs) {
             $what;
             $timer = Instant::now();
         }
-    };
+    }};
 }
 
 pub(crate) use periodic_job;
