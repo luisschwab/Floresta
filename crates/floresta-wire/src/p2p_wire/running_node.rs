@@ -385,27 +385,21 @@ where
 
         // Save our peers db
         periodic_job!(
-            self.save_peers(),
-            self.last_peer_db_dump,
-            PEER_DB_DUMP_INTERVAL,
-            RunningNode
+            self.last_peer_db_dump => self.save_peers(),
+            RunningNode::PEER_DB_DUMP_INTERVAL,
         );
 
         // Rework our address database
         periodic_job!(
-            self.address_man.rearrange_buckets(),
-            self.context.last_address_rearrange,
-            ADDRESS_REARRANGE_INTERVAL,
-            RunningNode,
-            true
+            self.context.last_address_rearrange => self.address_man.rearrange_buckets(),
+            RunningNode::ADDRESS_REARRANGE_INTERVAL,
+            no_log,
         );
 
         // Perhaps we need more connections
         periodic_job!(
-            self.check_connections(),
-            self.last_connection,
-            TRY_NEW_CONNECTION,
-            RunningNode
+            self.last_connection => self.check_connections(),
+            RunningNode::TRY_NEW_CONNECTION,
         );
 
         // Check if some of our peers have timed out a request
@@ -413,10 +407,8 @@ where
 
         // Open new feeler connection periodically
         periodic_job!(
-            self.open_feeler_connection(),
-            self.last_feeler,
-            FEELER_INTERVAL,
-            RunningNode
+            self.last_feeler => self.open_feeler_connection(),
+            RunningNode::FEELER_INTERVAL,
         );
 
         // The jobs below need a connected peer to work
@@ -426,32 +418,24 @@ where
 
         // Ask our peers for new addresses
         periodic_job!(
-            self.ask_for_addresses(),
-            self.last_get_address_request,
-            ASK_FOR_PEERS_INTERVAL,
-            RunningNode
+            self.last_get_address_request => self.ask_for_addresses(),
+            RunningNode::ASK_FOR_PEERS_INTERVAL,
         );
         // Try broadcast transactions
         periodic_job!(
-            self.handle_broadcast().await,
-            self.last_broadcast,
-            BROADCAST_DELAY,
-            RunningNode
+            self.last_broadcast => self.handle_broadcast().await,
+            RunningNode::BROADCAST_DELAY,
         );
         // Send our addresses to our peers
         periodic_job!(
-            self.send_addresses(),
-            self.last_send_addresses,
-            SEND_ADDRESSES_INTERVAL,
-            RunningNode
+            self.last_send_addresses => self.send_addresses(),
+            RunningNode::SEND_ADDRESSES_INTERVAL,
         );
 
         // Check whether we are in a stale tip
         periodic_job!(
-            self.check_for_stale_tip(),
-            self.last_tip_update,
-            ASSUME_STALE,
-            RunningNode
+            self.last_tip_update => self.check_for_stale_tip(),
+            RunningNode::ASSUME_STALE,
         );
 
         // tries to download filters from the network
