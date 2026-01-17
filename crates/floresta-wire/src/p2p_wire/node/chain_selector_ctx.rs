@@ -72,9 +72,6 @@ use tracing::error;
 use tracing::info;
 use tracing::warn;
 
-use super::error::WireError;
-use super::node_interface::UserRequest;
-use super::peer::PeerMessages;
 use crate::address_man::AddressState;
 use crate::block_proof::Bitmap;
 use crate::node::periodic_job;
@@ -88,6 +85,9 @@ use crate::node_context::LoopControl;
 use crate::node_context::NodeContext;
 use crate::node_context::PeerId;
 use crate::node_interface::NodeResponse;
+use crate::node_interface::UserRequest;
+use crate::p2p_wire::error::WireError;
+use crate::p2p_wire::peer::PeerMessages;
 
 #[derive(Debug, Default, Clone)]
 /// A p2p driver that attempts to connect with multiple peers, ask which chain are them following

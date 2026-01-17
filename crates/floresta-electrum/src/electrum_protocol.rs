@@ -901,8 +901,8 @@ mod test {
     use floresta_watch_only::AddressCache;
     use floresta_wire::address_man::AddressMan;
     use floresta_wire::mempool::Mempool;
+    use floresta_wire::node::running_ctx::RunningNode;
     use floresta_wire::node::UtreexoNode;
-    use floresta_wire::running_node::RunningNode;
     use floresta_wire::UtreexoNodeConfig;
     use rcgen::generate_simple_self_signed;
     use rcgen::CertifiedKey;

@@ -38,6 +38,7 @@ use tokio::time::timeout;
 use zstd;
 
 use crate::address_man::AddressMan;
+use crate::node::sync_ctx::SyncNode;
 use crate::node::ConnectionKind;
 use crate::node::LocalPeerView;
 use crate::node::NodeNotification;
@@ -48,7 +49,6 @@ use crate::p2p_wire::block_proof::UtreexoProof;
 use crate::p2p_wire::mempool::Mempool;
 use crate::p2p_wire::peer::PeerMessages;
 use crate::p2p_wire::peer::Version;
-use crate::p2p_wire::sync_node::SyncNode;
 use crate::p2p_wire::transport::TransportProtocol;
 use crate::UtreexoNodeConfig;
 
