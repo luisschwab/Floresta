@@ -75,21 +75,21 @@ BASE_TEST_SUITE = [
 # Before running the tests, we check if the number of tests
 # in the base test suite matches the number of tests in the
 # `example`, `floresta-cli`, and `florestad` directories.
-COUNT = 0
+tests_count = 0
 for testdir in ("example", "floresta-cli", "florestad"):
     dirname = os.path.abspath(os.path.dirname(__file__))
     tests_path = os.path.join(dirname, testdir)
     for test_name in os.listdir(tests_path):
         if test_name.endswith(".py"):
-            COUNT += 1
+            tests_count += 1
 
 # If the number of tests in the base test suite is not equal
 # to these found in these directories, we raise an error because
 # we forgot to add a test to the base suite.
-if COUNT != len(BASE_TEST_SUITE):
+if tests_count != len(BASE_TEST_SUITE):
     raise RuntimeError(
         f"Number of tests in the base test suite ({len(BASE_TEST_SUITE)})"
-        f" does not match the number of tests found ({COUNT})."
+        f" does not match the number of tests found ({tests_count})."
         " Please update the BASE_TEST_SUITE variable in tests/test_runner.py."
     )
 
