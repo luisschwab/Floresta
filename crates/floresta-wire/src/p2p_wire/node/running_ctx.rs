@@ -27,9 +27,9 @@ use tracing::error;
 use tracing::info;
 use tracing::warn;
 
-use super::error::WireError;
-use super::peer::PeerMessages;
+use crate::node::chain_selector_ctx::ChainSelector;
 use crate::node::periodic_job;
+use crate::node::sync_ctx::SyncNode;
 use crate::node::try_and_log;
 use crate::node::try_and_warn;
 use crate::node::ConnectionKind;
@@ -42,8 +42,8 @@ use crate::node_context::NodeContext;
 use crate::node_context::PeerId;
 use crate::node_interface::NodeResponse;
 use crate::node_interface::UserRequest;
-use crate::p2p_wire::chain_selector::ChainSelector;
-use crate::p2p_wire::sync_node::SyncNode;
+use crate::p2p_wire::error::WireError;
+use crate::p2p_wire::peer::PeerMessages;
 
 #[derive(Debug, Clone)]
 pub struct RunningNode {
@@ -64,6 +64,16 @@ impl NodeContext for RunningNode {
             | service_flags::UTREEXO.into()
             | ServiceFlags::WITNESS
             | ServiceFlags::COMPACT_FILTERS
+    }
+}
+
+impl Default for RunningNode {
+    fn default() -> Self {
+        RunningNode {
+            last_address_rearrange: Instant::now(),
+            last_invs: HashMap::default(),
+            inflight_filters: BTreeMap::new(),
+        }
     }
 }
 

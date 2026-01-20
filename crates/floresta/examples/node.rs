@@ -18,7 +18,7 @@ use floresta_chain::AssumeValidArg;
 use floresta_chain::FlatChainStore;
 use floresta_chain::FlatChainStoreConfig;
 use floresta_wire::address_man::AddressMan;
-use floresta_wire::running_node::RunningNode;
+use floresta_wire::node::running_ctx::RunningNode;
 use floresta_wire::UtreexoNodeConfig;
 use rustreexo::accumulator::pollard::Pollard;
 use tokio::sync::Mutex;

@@ -17,9 +17,6 @@ use tracing::debug;
 use tracing::info;
 use tracing::warn;
 
-use super::error::WireError;
-use super::node_interface::UserRequest;
-use super::peer::PeerMessages;
 use crate::node::periodic_job;
 use crate::node::try_and_log;
 use crate::node::ConnectionKind;
@@ -30,6 +27,9 @@ use crate::node::UtreexoNode;
 use crate::node_context::LoopControl;
 use crate::node_context::NodeContext;
 use crate::node_interface::NodeResponse;
+use crate::node_interface::UserRequest;
+use crate::p2p_wire::error::WireError;
+use crate::p2p_wire::peer::PeerMessages;
 
 /// [`SyncNode`] is a node that downloads and validates the blockchain.
 /// This node implements:
