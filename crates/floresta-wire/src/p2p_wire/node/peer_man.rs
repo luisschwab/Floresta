@@ -5,8 +5,10 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 use bitcoin::p2p::address::AddrV2;
+use bitcoin::p2p::message_blockdata::Inventory;
 use bitcoin::p2p::ServiceFlags;
 use bitcoin::Network;
+use bitcoin::Transaction;
 use floresta_chain::ChainBackend;
 use floresta_common::service_flags;
 use rand::prelude::SliceRandom;
@@ -29,7 +31,9 @@ use crate::mempool::MempoolProof;
 use crate::node::running_ctx::RunningNode;
 use crate::node_context::NodeContext;
 use crate::node_context::PeerId;
+use crate::node_interface::NodeResponse;
 use crate::node_interface::PeerInfo;
+use crate::node_interface::UserRequest;
 use crate::p2p_wire::error::WireError;
 use crate::p2p_wire::peer::PeerMessages;
 use crate::p2p_wire::peer::Version;
@@ -338,6 +342,92 @@ where
         #[cfg(feature = "metrics")]
         self.update_peer_metrics();
         Ok(())
+    }
+
+    /// Handles a NOTFOUND inventory by completing any matching inflight user request with `None`.
+    pub(crate) fn handle_notfound_msg(&mut self, inv: Inventory) -> Result<(), WireError> {
+        match inv {
+            Inventory::Error => {}
+
+            Inventory::Block(block)
+            | Inventory::WitnessBlock(block)
+            | Inventory::CompactBlock(block) => {
+                if let Some(request) = self
+                    .inflight_user_requests
+                    .remove(&UserRequest::Block(block))
+                {
+                    request
+                        .2
+                        .send(NodeResponse::Block(None))
+                        .map_err(|_| WireError::ResponseSendError)?;
+                }
+            }
+
+            Inventory::WitnessTransaction(tx) | Inventory::Transaction(tx) => {
+                if let Some(request) = self
+                    .inflight_user_requests
+                    .remove(&UserRequest::MempoolTransaction(tx))
+                {
+                    request
+                        .2
+                        .send(NodeResponse::MempoolTransaction(None))
+                        .map_err(|_| WireError::ResponseSendError)?;
+                }
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    /// Handles an incoming mempool transaction by completing any matching inflight user request.
+    pub(crate) fn handle_tx_msg(&mut self, tx: Transaction) -> Result<(), WireError> {
+        let txid = tx.compute_txid();
+        debug!("saw a mempool transaction with txid={txid}");
+
+        if let Some(request) = self
+            .inflight_user_requests
+            .remove(&UserRequest::MempoolTransaction(txid))
+        {
+            request
+                .2
+                .send(NodeResponse::MempoolTransaction(Some(tx)))
+                .map_err(|_| WireError::ResponseSendError)?;
+        }
+
+        Ok(())
+    }
+
+    /// Handles peer messages where behavior is common to all node contexts, returning `Some` only
+    /// for peer messages that require context-specific handling.
+    pub(crate) fn handle_peer_msg_common(
+        &mut self,
+        msg: PeerMessages,
+        peer: PeerId,
+    ) -> Result<Option<PeerMessages>, WireError> {
+        match msg {
+            PeerMessages::Addr(addresses) => {
+                debug!("Got {} addresses from peer {peer}", addresses.len());
+                let addresses: Vec<_> = addresses.into_iter().map(|addr| addr.into()).collect();
+
+                self.address_man.push_addresses(&addresses);
+                Ok(None)
+            }
+            PeerMessages::NotFound(inv) => {
+                self.handle_notfound_msg(inv)?;
+                Ok(None)
+            }
+            PeerMessages::Transaction(tx) => {
+                self.handle_tx_msg(tx)?;
+                Ok(None)
+            }
+            PeerMessages::UtreexoState(_) => {
+                warn!("Utreexo state received from peer {peer}, but we didn't ask");
+                self.increase_banscore(peer, 5)?;
+                Ok(None)
+            }
+            _ => Ok(Some(msg)),
+        }
     }
 
     pub(crate) fn handle_disconnection(&mut self, peer: u32, idx: usize) -> Result<(), WireError> {
