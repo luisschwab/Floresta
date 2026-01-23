@@ -47,8 +47,8 @@ use crate::TransportProtocol;
 /// such as hard-coded peers
 const HARDCODED_ADDRESSES_GRACE_PERIOD: Duration = Duration::from_secs(60);
 
-/// How long before we try to get addresses from DNS seeds again (5 minutes)
-const DNS_SEED_RETRY_PERIOD: Duration = Duration::from_secs(5 * 60);
+/// The minimum amount of time between address fetching requests from DNS seeds (2 minutes).
+const DNS_SEED_REQUEST_INTERVAL: Duration = Duration::from_secs(2 * 60);
 
 impl<T, Chain> UtreexoNode<Chain, T>
 where
@@ -477,28 +477,28 @@ where
         Ok(())
     }
 
-    /// Checks whether is necessary to fetch peers from DNS seeds.
+    /// Check whether it's necessary to request more addresses from DNS seeds.
     ///
-    /// If the last DNS lookup was more than 5 minutes ago, and we still
-    /// don't have any connected peers, we retry another DNS lookup.
-    fn maybe_ask_for_dns_peers(&mut self) {
-        if self.config.disable_dns_seeds {
+    /// Perform another address request from DNS seeds if we still don't have enough addresses
+    /// on the [`AddressMan`] and the last address request from DNS seeds was over 2 minutes ago.
+    fn maybe_ask_dns_seed_for_addresses(&mut self) {
+        let enough_addresses = self.address_man.enough_addresses();
+
+        // Skip if address fetching from DNS seeds is disabled,
+        // or if the [`AddressMan`] has enough addresses in its database.
+        if self.config.disable_dns_seeds || enough_addresses {
             return;
         }
 
-        if !self.peers.is_empty() {
-            return;
-        }
-
+        // Don't ask for peers too often.
         let last_dns_request = self.last_dns_seed_call.elapsed();
-        // don't ask too often
-        if last_dns_request < DNS_SEED_RETRY_PERIOD {
+        if last_dns_request < DNS_SEED_REQUEST_INTERVAL {
             return;
         }
 
         self.last_dns_seed_call = Instant::now();
 
-        info!("We've been running for a while and we don't have any peers, asking for DNS peers");
+        info!("Floresta has been running for a while without enough addresses, requesting more from DNS seeds");
         try_and_log!(self.get_peers_from_dns());
     }
 
@@ -536,8 +536,9 @@ where
 
     pub(crate) fn init_peers(&mut self) -> Result<(), WireError> {
         let anchors = self.common.address_man.start_addr_man(self.datadir.clone());
+        let enough_addresses = self.common.address_man.enough_addresses();
 
-        if !self.config.disable_dns_seeds {
+        if !self.config.disable_dns_seeds && !enough_addresses {
             self.get_peers_from_dns()?;
             self.last_dns_seed_call = Instant::now();
         }
@@ -569,7 +570,7 @@ where
 
         // If we've tried getting some connections, but the addresses we have are not
         // working. Try getting some more addresses from DNS
-        self.maybe_ask_for_dns_peers();
+        self.maybe_ask_dns_seed_for_addresses();
         let needs_utreexo = required_service.has(service_flags::UTREEXO.into());
         self.maybe_use_hardcoded_addresses(needs_utreexo);
 
