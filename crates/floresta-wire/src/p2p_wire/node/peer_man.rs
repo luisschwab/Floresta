@@ -809,8 +809,6 @@ where
     /// If someone wants to remove a peer, it should be done using the
     /// `disconnectnode`.
     pub fn handle_addnode_remove_peer(&mut self, addr: IpAddr, port: u16) -> Result<(), WireError> {
-        //
-        // (TODO) Make `disconnectnode`` command.
         debug!("Trying to remove peer {addr}:{port}");
 
         let address = self.to_addr_v2(addr);
@@ -825,6 +823,24 @@ where
         };
 
         Ok(())
+    }
+
+    /// Handles the node request for immediate disconnection from a peer.
+    pub fn handle_disconnect_peer(&mut self, addr: IpAddr, port: u16) -> Result<(), WireError> {
+        // Get the peer's index in the [`AddressMan`]'s list, if it exists.
+        let index = self
+            .peers
+            .iter()
+            .find(|(_, peer)| addr == peer.address && port == peer.port)
+            .map(|(&peer_id, _)| peer_id);
+
+        match index {
+            Some(peer_id) => {
+                self.send_to_peer(peer_id, NodeRequest::Shutdown)?;
+                Ok(())
+            }
+            None => Err(WireError::PeerNotFoundAtAddress(addr, port)),
+        }
     }
 
     /// Handles addnode onetry requests, connecting to the node and this will try to connect to the given address and port.
