@@ -211,6 +211,12 @@ pub enum JsonRpcError {
     /// This error is returned when the addnode command is invalid, e.g., if the command is not recognized or when the parameters are incorrect
     InvalidAddnodeCommand,
 
+    /// Invalid `disconnect` node command (both address and ID parameters are present).
+    InvalidDisconnectNodeCommand,
+
+    /// Peer was not found in the peer list.
+    PeerNotFound,
+
     /// Raised if when the rescanblockchain command, with the timestamp flag activated, contains some timestamp thats less than the genesis one and not zero which is the default value for this arg.
     InvalidTimestamp,
 }
@@ -243,6 +249,8 @@ impl Display for JsonRpcError {
             JsonRpcError::Filters(e) => write!(f, "Error with filters: {e}"),
             JsonRpcError::ChainWorkOverflow => write!(f, "Overflow while calculating the chain work"),
             JsonRpcError::InvalidAddnodeCommand => write!(f, "Invalid addnode command"),
+            JsonRpcError::InvalidDisconnectNodeCommand => write!(f, "Invalid disconnectnode command"),
+            JsonRpcError::PeerNotFound => write!(f, "Peer not found in the peer list"),
         }
     }
 }

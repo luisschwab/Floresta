@@ -226,11 +226,11 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
         Ok(tx.compute_txid())
     }
 
-    async fn get_peer_info(&self) -> Result<Vec<PeerInfo>> {
+    pub(crate) async fn get_peer_info(&self) -> Result<Vec<PeerInfo>> {
         self.node
             .get_peer_info()
             .await
-            .map_err(|_| JsonRpcError::Node("Failed to get peer info".to_string()))
+            .map_err(|_| JsonRpcError::Node("Failed to get peer information".to_string()))
     }
 }
 
@@ -409,6 +409,16 @@ async fn handle_json_rpc_request(
                 .map(|v| serde_json::to_value(v).unwrap())
         }
 
+        "disconnectnode" => {
+            let node_address = get_string(&params, 0, "node_address")?;
+            let node_id = get_optional_field(&params, 1, "node_id", get_numeric)?;
+
+            state
+                .disconnect_node(node_address, node_id)
+                .await
+                .map(|v| serde_json::to_value(v).unwrap())
+        }
+
         "ping" => {
             state.ping().await?;
 
@@ -477,6 +487,8 @@ fn get_http_error_code(err: &JsonRpcError) -> u16 {
         | JsonRpcError::NoBlockFilters
         | JsonRpcError::InvalidMemInfoMode
         | JsonRpcError::InvalidAddnodeCommand
+        | JsonRpcError::InvalidDisconnectNodeCommand
+        | JsonRpcError::PeerNotFound
         | JsonRpcError::InvalidTimestamp
         | JsonRpcError::InvalidRescanVal
         | JsonRpcError::NoAddressesToRescan
@@ -518,6 +530,8 @@ fn get_json_rpc_error_code(err: &JsonRpcError) -> i32 {
         | JsonRpcError::InvalidTimestamp
         | JsonRpcError::InvalidMemInfoMode
         | JsonRpcError::InvalidAddnodeCommand
+        | JsonRpcError::InvalidDisconnectNodeCommand
+        | JsonRpcError::PeerNotFound
         | JsonRpcError::InvalidRescanVal
         | JsonRpcError::NoAddressesToRescan
         | JsonRpcError::ChainWorkOverflow
