@@ -738,9 +738,10 @@ where
             .unwrap_or(false)
     }
 
-    pub(crate) fn get_peer_info(&self, peer: &u32) -> Option<PeerInfo> {
-        let peer = self.peers.get(peer)?;
+    pub(crate) fn get_peer_info(&self, peer_id: &u32) -> Option<PeerInfo> {
+        let peer = self.peers.get(peer_id)?;
         Some(PeerInfo {
+            id: *peer_id,
             address: SocketAddr::new(peer.address, peer.port),
             services: peer.services,
             user_agent: peer.user_agent.clone(),
@@ -753,6 +754,7 @@ where
 
     // === ADDNODE ===
 
+    // TODO: remove this after bitcoin-0.33.0
     /// Helper function to resolve an IpAddr to AddrV2
     /// This is a little bit of a hack while rust-bitcoin
     /// do not have an `from` or `into` that do IpAddr <> AddrV2

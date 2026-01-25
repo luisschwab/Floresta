@@ -93,6 +93,7 @@ pub enum UserRequest {
 /// services it provides, the user agent it's using, the height of the blockchain it's currently
 /// at, its state and the kind of connection it has with the node.
 pub struct PeerInfo {
+    pub id: u32,
     pub address: SocketAddr,
     #[serde(serialize_with = "serialize_service_flags")]
     pub services: ServiceFlags,
