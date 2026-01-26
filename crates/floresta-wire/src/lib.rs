@@ -28,8 +28,6 @@ pub use p2p_wire::address_man;
 #[cfg(not(target_arch = "wasm32"))]
 pub use p2p_wire::block_proof;
 #[cfg(not(target_arch = "wasm32"))]
-pub use p2p_wire::mempool;
-#[cfg(not(target_arch = "wasm32"))]
 pub use p2p_wire::node;
 #[cfg(not(target_arch = "wasm32"))]
 pub use p2p_wire::node_context;
