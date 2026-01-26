@@ -307,9 +307,11 @@ pub enum Methods {
         v2transport: Option<bool>,
     },
 
+    #[doc = include_str!("../../../doc/rpc/disconnectnode.md")]
     #[command(
         name = "disconnectnode",
         about = "Immediately disconnect from a peer",
+        long_about = Some(include_str!("../../../doc/rpc/disconnectnode.md")),
         disable_help_subcommand = true
     )]
     DisconnectNode {
