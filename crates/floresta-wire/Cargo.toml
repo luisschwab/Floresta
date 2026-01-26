@@ -36,6 +36,7 @@ metrics = { workspace = true,  optional = true }
 
 [dev-dependencies]
 zstd = { workspace = true }
+derive_more = { version = "2.1", features = ["constructor"] }
 
 [features]
 default = []
