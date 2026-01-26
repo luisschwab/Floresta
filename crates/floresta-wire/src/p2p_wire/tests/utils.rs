@@ -237,21 +237,11 @@ pub fn get_node_config(
     pow_fraud_proofs: bool,
 ) -> UtreexoNodeConfig {
     UtreexoNodeConfig {
-        disable_dns_seeds: false,
         network,
         pow_fraud_proofs,
-        compact_filters: false,
-        fixed_peer: None,
-        max_banscore: 100,
-        max_outbound: 8,
-        max_inflight: 10,
         datadir,
-        proxy: None,
-        assume_utreexo: None,
-        backfill: false,
-        filter_start_height: None,
         user_agent: "node_test".to_string(),
-        allow_v1_fallback: true,
+        ..Default::default()
     }
 }
 
