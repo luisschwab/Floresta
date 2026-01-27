@@ -1032,18 +1032,9 @@ mod test {
             disable_dns_seeds: true,
             network: Network::Signet,
             pow_fraud_proofs: true,
-            proxy: None,
             datadir: "/tmp-db".to_string(),
-            fixed_peer: None,
-            max_banscore: 50,
-            compact_filters: false,
-            max_outbound: 10,
-            max_inflight: 20,
-            assume_utreexo: None,
-            backfill: false,
-            filter_start_height: None,
             user_agent: "floresta".to_string(),
-            allow_v1_fallback: true,
+            ..Default::default()
         };
 
         let chain_provider: UtreexoNode<Arc<ChainState<FlatChainStore>>, RunningNode> =
