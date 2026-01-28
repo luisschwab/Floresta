@@ -1,5 +1,6 @@
 //! This module holds all RPC server side methods for interacting with our node's network stack.
 
+use std::net::IpAddr;
 use std::net::SocketAddr;
 
 use bitcoin::Network;
@@ -23,34 +24,36 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
 
     pub(crate) async fn add_node(
         &self,
-        node: String,
+        node_address: String,
         command: String,
         v2transport: bool,
     ) -> Result<Value> {
-        let node = node.split(':').collect::<Vec<&str>>();
-        let (ip, port) = if node.len() == 2 {
-            (
-                node[0],
-                node[1].parse().map_err(|_| JsonRpcError::InvalidPort)?,
-            )
+        // Try to parse both IP address and port.
+        let (addr, port) = if let Ok(socket_addr) = node_address.parse::<SocketAddr>() {
+            (socket_addr.ip(), socket_addr.port())
+        // Try to parse the IP address only, and append the default P2P port for the network.
         } else {
-            // TODO: use `NetworkExt` to append the correct port
-            // once https://github.com/rust-bitcoin/rust-bitcoin/pull/4639 makes it into a release.
-            match self.network {
-                Network::Bitcoin => (node[0], 8333),
-                Network::Signet => (node[0], 38333),
-                Network::Testnet => (node[0], 18333),
-                Network::Testnet4 => (node[0], 48333),
-                Network::Regtest => (node[0], 18444),
-            }
+            let ip = node_address
+                .parse::<IpAddr>()
+                .map_err(|_| JsonRpcError::InvalidAddress)?;
+
+            // TODO: use `NetworkExt` to append the correct port once
+            // https://github.com/rust-bitcoin/rust-bitcoin/pull/4639 makes it into a release.
+            let default_port = match self.network {
+                Network::Bitcoin => 8333,
+                Network::Signet => 38333,
+                Network::Testnet => 18333,
+                Network::Testnet4 => 48333,
+                Network::Regtest => 18444,
+            };
+
+            (ip, default_port)
         };
 
-        let peer = ip.parse().map_err(|_| JsonRpcError::InvalidAddress)?;
-
         let _ = match command.as_str() {
-            "add" => self.node.add_peer(peer, port, v2transport).await,
-            "remove" => self.node.remove_peer(peer, port).await,
-            "onetry" => self.node.onetry_peer(peer, port, v2transport).await,
+            "add" => self.node.add_peer(addr, port, v2transport).await,
+            "remove" => self.node.remove_peer(addr, port).await,
+            "onetry" => self.node.onetry_peer(addr, port, v2transport).await,
             _ => return Err(JsonRpcError::InvalidAddnodeCommand),
         };
 

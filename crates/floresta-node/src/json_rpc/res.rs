@@ -179,9 +179,6 @@ pub enum JsonRpcError {
     /// This error is returned when there is an error decoding the request, e.g., if the request is not valid JSON
     Decode(String),
 
-    /// The provided port is invalid, e.g., when it is not a valid port number (0-65535)
-    InvalidPort,
-
     /// The provided address is invalid, e.g., when it is not a valid IP address or hostname
     InvalidAddress,
 
@@ -237,7 +234,6 @@ impl Display for JsonRpcError {
             JsonRpcError::InvalidDescriptor(e) =>  write!(f, "Invalid descriptor: {e}"),
             JsonRpcError::BlockNotFound =>  write!(f, "Block not found"),
             JsonRpcError::Chain => write!(f, "Chain error"),
-            JsonRpcError::InvalidPort => write!(f, "Invalid port"),
             JsonRpcError::InvalidAddress => write!(f, "Invalid address"),
             JsonRpcError::Node(e) => write!(f, "Node error: {e}"),
             JsonRpcError::NoBlockFilters => write!(f, "You don't have block filters enabled, please start florestad without --no-cfilters to run this RPC"),
