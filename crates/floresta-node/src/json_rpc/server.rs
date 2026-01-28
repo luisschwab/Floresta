@@ -29,7 +29,6 @@ use floresta_watch_only::kv_database::KvDatabase;
 use floresta_watch_only::AddressCache;
 use floresta_watch_only::CachedTransaction;
 use floresta_wire::node_interface::NodeInterface;
-use floresta_wire::node_interface::PeerInfo;
 use serde_json::json;
 use serde_json::Value;
 use tokio::sync::RwLock;
@@ -83,37 +82,6 @@ pub struct RpcImpl<Blockchain: RpcChain> {
 type Result<T> = std::result::Result<T, JsonRpcError>;
 
 impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
-    async fn add_node(&self, node: String, command: String, v2transport: bool) -> Result<Value> {
-        let node = node.split(':').collect::<Vec<&str>>();
-        let (ip, port) = if node.len() == 2 {
-            (
-                node[0],
-                node[1].parse().map_err(|_| JsonRpcError::InvalidPort)?,
-            )
-        } else {
-            // TODO(@luisschwab): use `NetworkExt` to append the correct port
-            // once https://github.com/rust-bitcoin/rust-bitcoin/pull/4639 makes it into a release.
-            match self.network {
-                Network::Bitcoin => (node[0], 8333),
-                Network::Signet => (node[0], 38333),
-                Network::Testnet => (node[0], 18333),
-                Network::Testnet4 => (node[0], 48333),
-                Network::Regtest => (node[0], 18444),
-            }
-        };
-
-        let peer = ip.parse().map_err(|_| JsonRpcError::InvalidAddress)?;
-
-        let _ = match command.as_str() {
-            "add" => self.node.add_peer(peer, port, v2transport).await,
-            "remove" => self.node.remove_peer(peer, port).await,
-            "onetry" => self.node.onetry_peer(peer, port, v2transport).await,
-            _ => return Err(JsonRpcError::InvalidAddnodeCommand),
-        };
-
-        Ok(json!(null))
-    }
-
     fn get_transaction(&self, tx_id: Txid, verbosity: Option<bool>) -> Result<Value> {
         if verbosity == Some(true) {
             let tx = self
@@ -224,13 +192,6 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
         self.chain.broadcast(&tx).map_err(|_| JsonRpcError::Chain)?;
 
         Ok(tx.compute_txid())
-    }
-
-    pub(crate) async fn get_peer_info(&self) -> Result<Vec<PeerInfo>> {
-        self.node
-            .get_peer_info()
-            .await
-            .map_err(|_| JsonRpcError::Node("Failed to get peer information".to_string()))
     }
 }
 

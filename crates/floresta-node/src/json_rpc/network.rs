@@ -2,6 +2,8 @@
 
 use std::net::SocketAddr;
 
+use bitcoin::Network;
+use floresta_wire::node_interface::PeerInfo;
 use serde_json::json;
 use serde_json::Value;
 
@@ -17,6 +19,42 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
             .ping()
             .await
             .map_err(|e| JsonRpcError::Node(e.to_string()))
+    }
+
+    pub(crate) async fn add_node(
+        &self,
+        node: String,
+        command: String,
+        v2transport: bool,
+    ) -> Result<Value> {
+        let node = node.split(':').collect::<Vec<&str>>();
+        let (ip, port) = if node.len() == 2 {
+            (
+                node[0],
+                node[1].parse().map_err(|_| JsonRpcError::InvalidPort)?,
+            )
+        } else {
+            // TODO: use `NetworkExt` to append the correct port
+            // once https://github.com/rust-bitcoin/rust-bitcoin/pull/4639 makes it into a release.
+            match self.network {
+                Network::Bitcoin => (node[0], 8333),
+                Network::Signet => (node[0], 38333),
+                Network::Testnet => (node[0], 18333),
+                Network::Testnet4 => (node[0], 48333),
+                Network::Regtest => (node[0], 18444),
+            }
+        };
+
+        let peer = ip.parse().map_err(|_| JsonRpcError::InvalidAddress)?;
+
+        let _ = match command.as_str() {
+            "add" => self.node.add_peer(peer, port, v2transport).await,
+            "remove" => self.node.remove_peer(peer, port).await,
+            "onetry" => self.node.onetry_peer(peer, port, v2transport).await,
+            _ => return Err(JsonRpcError::InvalidAddnodeCommand),
+        };
+
+        Ok(json!(null))
     }
 
     pub(crate) async fn disconnect_node(
@@ -67,5 +105,12 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
         }
 
         Ok(json!(null))
+    }
+
+    pub(crate) async fn get_peer_info(&self) -> Result<Vec<PeerInfo>> {
+        self.node
+            .get_peer_info()
+            .await
+            .map_err(|_| JsonRpcError::Node("Failed to get peer information".to_string()))
     }
 }
