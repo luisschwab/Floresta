@@ -441,7 +441,6 @@ fn get_http_error_code(err: &JsonRpcError) -> u16 {
         | JsonRpcError::InvalidAddress
         | JsonRpcError::InvalidScript
         | JsonRpcError::InvalidRequest
-        | JsonRpcError::InvalidPort
         | JsonRpcError::InvalidDescriptor(_)
         | JsonRpcError::InvalidVerbosityLevel
         | JsonRpcError::Decode(_)
@@ -483,7 +482,6 @@ fn get_json_rpc_error_code(err: &JsonRpcError) -> i32 {
         | JsonRpcError::InvalidScript
         | JsonRpcError::MethodNotFound
         | JsonRpcError::InvalidRequest
-        | JsonRpcError::InvalidPort
         | JsonRpcError::InvalidDescriptor(_)
         | JsonRpcError::InvalidVerbosityLevel
         | JsonRpcError::TxNotFound
