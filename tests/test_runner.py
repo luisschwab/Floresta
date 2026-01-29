@@ -46,6 +46,7 @@ ALLDONE_EMOJI = "🎉"
 BASE_TEST_SUITE = [
     ("floresta-cli", "addnode-v2"),
     ("floresta-cli", "addnode-v1"),
+    ("floresta-cli", "disconnectnode"),
     ("florestad", "reorg-chain"),
     ("floresta-cli", "getblockcount"),
     ("floresta-cli", "uptime"),
