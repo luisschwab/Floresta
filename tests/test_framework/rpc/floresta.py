@@ -4,6 +4,8 @@ floresta_rpc.py
 A test framework for testing JsonRPC calls to a floresta node.
 """
 
+from typing import Optional
+
 import re
 from test_framework.rpc.base import BaseRPC
 
@@ -126,6 +128,17 @@ class FlorestaRPC(BaseRPC):
             raise ValueError(f"Invalid command '{command}'")
 
         return self.perform_request("addnode", params=[node, command, v2transport])
+
+    def disconnectnode(self, node_address: str, node_id: Optional[int] = None):
+        """
+        Disconnect from a peer by `node_address` or `node_id`
+        """
+
+        if node_id is not None:
+            return self.perform_request(
+                "disconnectnode", params=[node_address, node_id]
+            )
+        return self.perform_request("disconnectnode", params=[node_address])
 
     def ping(self):
         """
