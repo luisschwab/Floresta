@@ -746,8 +746,7 @@ where
             .get_block_locator_for_tip(tip)
             .unwrap_or_default();
 
-        let peer =
-            self.send_to_fastest_peer(NodeRequest::GetHeaders(locator), ServiceFlags::NONE)?;
+        let peer = self.send_to_fast_peer(NodeRequest::GetHeaders(locator), ServiceFlags::NONE)?;
 
         self.inflight
             .insert(InflightRequests::Headers, (peer, Instant::now()));

@@ -71,8 +71,8 @@ where
             return Ok(());
         }
 
-        let peer = self
-            .send_to_fastest_peer(NodeRequest::GetBlock(blocks.clone()), ServiceFlags::NETWORK)?;
+        let peer =
+            self.send_to_fast_peer(NodeRequest::GetBlock(blocks.clone()), ServiceFlags::NETWORK)?;
 
         for block in blocks.iter() {
             self.inflight
@@ -120,7 +120,7 @@ where
             block_hash, inflight_block.peer
         );
 
-        self.send_to_fastest_peer(
+        self.send_to_fast_peer(
             NodeRequest::GetBlockProof((block_hash, Bitmap::new(), Bitmap::new())),
             UTREEXO.into(),
         )?;
@@ -194,7 +194,7 @@ where
             .collect::<Vec<_>>();
 
         for block_hash in pending_blocks {
-            let peer = self.send_to_fastest_peer(
+            let peer = self.send_to_fast_peer(
                 NodeRequest::GetBlockProof((block_hash, Bitmap::new(), Bitmap::new())),
                 service_flags::UTREEXO.into(),
             )?;
