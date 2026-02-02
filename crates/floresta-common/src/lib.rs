@@ -24,11 +24,15 @@ use miniscript::Descriptor;
 use miniscript::DescriptorPublicKey;
 use sha2::Digest;
 
+#[cfg(feature = "std")]
+mod ema;
 #[cfg(not(feature = "std"))]
 mod error;
 pub mod macros;
 pub mod spsc;
 
+#[cfg(feature = "std")]
+pub use ema::Ema;
 #[cfg(any(feature = "descriptors-std", feature = "descriptors-no-std"))]
 use prelude::*;
 pub use spsc::Channel;
@@ -80,43 +84,6 @@ pub mod service_flags {
 
     /// This peer supports UTREEXO filter messages
     pub const UTREEXO_FILTER: u64 = 1 << 25;
-}
-
-#[derive(Debug, Clone)]
-/// A simple fraction struct that allows adding numbers to the numerator and denominator
-///
-/// If we want compute a rolling-average, we would naively hold all elements in a list and
-/// compute the average from it. This is not efficient, as it requires O(n) memory and O(n)
-/// time to compute the average. Instead, we can use a fraction to compute the average in O(1)
-/// time and O(1) memory, by keeping track of the sum of all elements and the number of elements.
-pub struct FractionAvg {
-    numerator: u64,
-    denominator: u64,
-}
-
-impl FractionAvg {
-    /// Creates a new fraction with the given numerator and denominator
-    pub fn new(numerator: u64, denominator: u64) -> Self {
-        Self {
-            numerator,
-            denominator,
-        }
-    }
-
-    /// Adds a number to the numerator and increments the denominator
-    pub fn add(&mut self, other: u64) {
-        self.numerator += other;
-        self.denominator += 1;
-    }
-
-    /// Returns the average of the fraction
-    pub fn value(&self) -> f64 {
-        if self.denominator == 0 {
-            return 0.0;
-        }
-
-        self.numerator as f64 / self.denominator as f64
-    }
 }
 
 #[cfg(any(feature = "descriptors-std", feature = "descriptors-no-std"))]
@@ -236,27 +203,5 @@ mod tests {
             String::from("8b01df4e368ea28f8dc0423bcf7a4923e3a12d307c875e47a0cfbf90b5c39161");
 
         assert_eq!(hash.as_byte_array().to_lower_hex_string(), expected);
-    }
-
-    #[test]
-    fn test_fractional_avg() {
-        let mut avg = super::FractionAvg::new(0, 0);
-        assert_eq!(avg.value(), 0.0); // not initialized, should return 0
-        avg.add(10);
-        avg.add(20);
-        avg.add(30);
-        assert_eq!(avg.value(), 20.0);
-
-        avg.add(40);
-        assert_eq!(avg.value(), 25.0);
-
-        avg.add(50);
-        assert_eq!(avg.value(), 30.0);
-
-        avg.add(1);
-        assert_eq!(avg.value(), 25.166_666_666_666_668);
-
-        avg.add(99);
-        assert_eq!(avg.value(), 35.714_285_714_285_715);
     }
 }

@@ -64,7 +64,9 @@ where
         self.peers
             .iter()
             .filter(should_send)
-            .min_by_key(|(_, peer)| peer.message_times.value().round() as u64)
+            .filter_map(|(id, peer)| peer.message_times.value().map(|t| (id, peer, t)))
+            .min_by(|a, b| a.2.total_cmp(&b.2))
+            .map(|(id, peer, _)| (id, peer))
     }
 
     /// Sends a request to the fastest initialized peer that supports
@@ -633,9 +635,9 @@ where
             _ => return None,
         };
 
-        let elapsed = now.duration_since(when);
+        let elapsed = now.duration_since(when).as_secs_f64();
         if let Some(peer) = self.peers.get_mut(&peer) {
-            peer.message_times.add(elapsed.as_millis() as u64);
+            peer.message_times.add(elapsed * 1_000.0); // milliseconds
         }
 
         #[cfg(feature = "metrics")]
@@ -643,7 +645,7 @@ where
             use metrics::get_metrics;
             let metrics = get_metrics();
 
-            metrics.message_times.observe(elapsed.as_secs_f64());
+            metrics.message_times.observe(elapsed);
         }
 
         Some(())

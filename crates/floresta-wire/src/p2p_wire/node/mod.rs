@@ -25,7 +25,7 @@ use bitcoin::Network;
 use bitcoin::Txid;
 pub(crate) use blocks::InflightBlock;
 use floresta_chain::ChainBackend;
-use floresta_common::FractionAvg;
+use floresta_common::Ema;
 use floresta_compact_filters::flat_filters_store::FlatFiltersStore;
 use floresta_compact_filters::network_filters::NetworkFilters;
 use floresta_mempool::Mempool;
@@ -152,7 +152,7 @@ pub struct LocalPeerView {
     ///
     /// This is measured in milliseconds, and it's recorded every time we get
     /// a response from a peer
-    pub(crate) message_times: FractionAvg,
+    pub(crate) message_times: Ema,
 
     /// The state in which this peer is, e.g., awaiting handshake, ready, banned, etc.
     pub(crate) state: PeerStatus,
@@ -233,7 +233,7 @@ pub struct NodeCommon<Chain: ChainBackend> {
     pub(crate) last_block_request: u32,
     pub(crate) last_get_address_request: Instant,
     pub(crate) last_send_addresses: Instant,
-    pub(crate) block_sync_avg: FractionAvg,
+    pub(crate) block_sync_avg: Ema,
     pub(crate) last_feeler: Instant,
     pub(crate) startup_time: Instant,
     pub(crate) last_dns_seed_call: Instant,
@@ -308,7 +308,8 @@ where
             common: NodeCommon {
                 last_dns_seed_call: Instant::now(),
                 startup_time: Instant::now(),
-                block_sync_avg: FractionAvg::new(0, 0),
+                // The last 1k blocks account for 50% of the EMA weight, the last 2k for 75%, etc.
+                block_sync_avg: Ema::with_half_life_1000(),
                 last_filter: chain.get_block_hash(0).unwrap(),
                 block_filters,
                 inflight: HashMap::new(),

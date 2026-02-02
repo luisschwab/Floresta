@@ -11,7 +11,7 @@ use bitcoin::Network;
 use floresta_chain::ChainBackend;
 use floresta_common::service_flags;
 use floresta_common::service_flags::UTREEXO;
-use floresta_common::FractionAvg;
+use floresta_common::Ema;
 use floresta_mempool::Mempool;
 use tokio::net::tcp::WriteHalf;
 use tokio::spawn;
@@ -191,7 +191,7 @@ where
         self.peers.insert(
             peer_count,
             LocalPeerView {
-                message_times: FractionAvg::new(0, 0),
+                message_times: Ema::with_half_life_50(),
                 address: address.get_net_address(),
                 port: address.get_port(),
                 user_agent: "".to_string(),

@@ -237,14 +237,14 @@ where
             let start = Instant::now();
             self.process_block(next_block, next_block_hash)?;
 
-            let elapsed = start.elapsed().as_secs();
+            let elapsed = start.elapsed().as_secs_f64();
             self.block_sync_avg.add(elapsed);
 
             #[cfg(feature = "metrics")]
             {
                 use metrics::get_metrics;
 
-                let avg = self.block_sync_avg.value();
+                let avg = self.block_sync_avg.value().expect("at least one sample");
                 let metrics = get_metrics();
                 metrics.avg_block_processing_time.set(avg);
             }
