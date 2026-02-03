@@ -76,7 +76,18 @@ class GetTxoutTest(FlorestaTestFramework):
         self.connect_nodes(self.bitcoind, self.utreexod)
 
         self.log("=== Wait for the nodes to sync...")
-        time.sleep(5)
+        end = time.time() + 20
+        while time.time() < end:
+            if (
+                self.florestad.rpc.get_block_count()
+                == self.bitcoind.rpc.get_block_count()
+                == self.utreexod.rpc.get_block_count()
+            ) and not self.florestad.rpc.get_blockchain_info()["ibd"]:
+                break
+
+            time.sleep(1)
+
+        self.assertFalse(self.florestad.rpc.get_blockchain_info()["ibd"])
 
         self.log("=== Get a list of transactions")
         blocks = self.florestad.rpc.get_block_count()
