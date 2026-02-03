@@ -10,7 +10,8 @@ from time import sleep
 from requests.exceptions import HTTPError
 from typing import Optional
 
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 
 class DisconnectNodeTest(FlorestaTestFramework):

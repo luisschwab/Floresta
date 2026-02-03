@@ -4,7 +4,8 @@ floresta_cli_getblockchainfo.py
 This functional test cli utility to interact with a Floresta node with `getblockchaininfo`
 """
 
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 
 class GetBlockchaininfoTest(FlorestaTestFramework):

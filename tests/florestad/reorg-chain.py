@@ -10,7 +10,8 @@ accumulator to make sure they are the same.
 import re
 import time
 
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 
 class ChainReorgTest(FlorestaTestFramework):

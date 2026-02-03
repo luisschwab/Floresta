@@ -11,7 +11,8 @@ in context of the v1 transport protocol.
 import re
 import time
 
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 
 class AddnodeTestV1(FlorestaTestFramework):

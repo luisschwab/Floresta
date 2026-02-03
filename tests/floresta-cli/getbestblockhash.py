@@ -7,7 +7,8 @@ and utreexod, respectively.
 
 import re
 import time
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 
 class GetBestblockhashTest(FlorestaTestFramework):

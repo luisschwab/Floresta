@@ -6,7 +6,8 @@ the --connect option pointing to the utreexod node. Then check if
 the utreexod node is connected to the florestad node.
 """
 
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 
 class CliConnectTest(FlorestaTestFramework):

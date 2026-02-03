@@ -5,7 +5,8 @@ This functional test cli utility to interact with a Floresta node with `stop`
 """
 
 import re
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 
 class StopTest(FlorestaTestFramework):

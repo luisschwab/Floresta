@@ -5,7 +5,8 @@ This is an example of how a tests with integrated electrum should look like,
 see `tests/test_framework/test_framework.py` for more info.
 """
 
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 from test_framework.electrum.client import ElectrumClient
 
 

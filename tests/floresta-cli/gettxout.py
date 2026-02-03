@@ -7,7 +7,8 @@ This functional test cli utility to interact with a Floresta node with `getxtout
 import re
 import time
 import os
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 # TODO Use many addresses types as possible to test the gettxout command
 WALLET_CONFIG = "\n".join(

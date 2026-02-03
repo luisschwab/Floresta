@@ -8,7 +8,8 @@ The test verifies that the node can stop and restart without encountering
 issues, such as data corruption or failure to initialize.
 """
 
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 
 class TestRestart(FlorestaTestFramework):

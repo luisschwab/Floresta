@@ -5,7 +5,8 @@ send a ping to bitcoind and check if bitcoind receives it, by calling
 """
 
 import time
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 
 class PingTest(FlorestaTestFramework):

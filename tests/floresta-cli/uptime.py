@@ -5,7 +5,8 @@ This functional test cli utility to interact with a Floresta node with `uptime`
 """
 
 import time
-from test_framework import FlorestaTestFramework, Node, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import Node, NodeType
 
 
 class UptimeTest(FlorestaTestFramework):

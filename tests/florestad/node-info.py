@@ -5,7 +5,8 @@ Tests for node information exchanged between Floresta and other peers.
 import time
 import re
 
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 
 
 class NodeInfoTest(FlorestaTestFramework):

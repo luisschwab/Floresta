@@ -4,7 +4,8 @@ florestad/tls-test.py
 This functional test tests the proper creation of a TLS port on florestad.
 """
 
-from test_framework import FlorestaTestFramework, NodeType
+from test_framework import FlorestaTestFramework
+from test_framework.node import NodeType
 from test_framework.electrum.client import ElectrumClient
 
 
