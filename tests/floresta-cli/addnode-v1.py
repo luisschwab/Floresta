@@ -61,13 +61,7 @@ class AddnodeTestV1(FlorestaTestFramework):
         self.log(
             f"Floresta adding node {self.bitcoind.p2p_url} with command '{command}'"
         )
-        result = self.florestad.rpc.addnode(
-            node=self.bitcoind.p2p_url,
-            command=command,
-            v2transport=self.v2transport,
-        )
-
-        self.assertIsNone(result)
+        self.connect_nodes(self.florestad, self.bitcoind, command, self.v2transport)
 
     def stop_bitcoind(self):
         """

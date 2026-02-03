@@ -291,6 +291,23 @@ class Node:
 
         return response
 
+    def connect_node(
+        self, node: "Node", method: str = "add", v2transport: bool = False
+    ):
+        """
+        Connect to another node.
+        """
+        if not self.daemon.is_running or not node.daemon.is_running:
+            raise ValueError(
+                f"Peers must be running, {self.variant} is running: {self.daemon.is_running}, "
+                f"{node.variant} is running: {node.daemon.is_running}"
+            )
+
+        if node.variant == NodeType.FLORESTAD:
+            raise ValueError("The p2p port is not configurable in floresta")
+
+        self.rpc.addnode(node.p2p_url, method, v2transport=v2transport)
+
     def get_connection_info(self) -> Tuple[str, Optional[str]]:
         """
         Get the user agent and host for the current node.

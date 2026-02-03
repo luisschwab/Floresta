@@ -41,12 +41,7 @@ class ChainReorgTest(FlorestaTestFramework):
         self.utreexod.rpc.generate(10)
 
         self.log("=== Connect floresta to utreexod")
-        self.florestad.rpc.addnode(
-            self.utreexod.p2p_url, command="onetry", v2transport=False
-        )
-
-        self.log("=== Waiting for floresta to connect to utreexod.rpc...")
-        self.wait_for_peers_connections(self.florestad, self.utreexod)
+        self.connect_nodes(self.florestad, self.utreexod)
 
         self.log("=== Wait for the nodes to sync...")
         time.sleep(20)

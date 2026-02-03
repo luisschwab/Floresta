@@ -52,17 +52,10 @@ class GetBlockhashTest(FlorestaTestFramework):
         time.sleep(5)
 
         self.log("=== Connect floresta to utreexod")
-        utreexod_url = self.utreexod.p2p_url
-        self.florestad.rpc.addnode(utreexod_url, command="onetry", v2transport=False)
-
-        self.log("=== Waiting for floresta to connect to utreexod...")
-        self.wait_for_peers_connections(self.florestad, self.utreexod)
+        self.connect_nodes(self.florestad, self.utreexod)
 
         self.log("=== Connect bitcoind to utreexod")
-        self.bitcoind.rpc.addnode(utreexod_url, command="onetry", v2transport=False)
-
-        self.log("=== Waiting for bitcoind to connect to utreexod...")
-        self.wait_for_peers_connections(self.bitcoind, self.utreexod)
+        self.connect_nodes(self.bitcoind, self.utreexod)
 
         self.log("=== Wait for the nodes to sync...")
         time.sleep(5)

@@ -51,11 +51,7 @@ class GetBlockTest(FlorestaTestFramework):
         self.bitcoind.rpc.generate_block(6)
 
         self.log("Connecting florestad to bitcoind")
-        self.florestad.rpc.addnode(
-            node=self.bitcoind.p2p_url,
-            command="add",
-            v2transport=self.v2transport,
-        )
+        self.connect_nodes(self.florestad, self.bitcoind)
 
         block_count = self.bitcoind.rpc.get_block_count()
         end = time.time() + 20

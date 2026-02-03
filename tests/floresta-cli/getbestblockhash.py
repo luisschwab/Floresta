@@ -57,13 +57,7 @@ class GetBestblockhashTest(FlorestaTestFramework):
         self.utreexod.rpc.generate(10)
 
         self.log("=== Connect floresta to utreexod")
-        utreexod_url = self.utreexod.p2p_url
-        self.florestad.rpc.addnode(
-            node=utreexod_url, command="onetry", v2transport=False
-        )
-
-        self.log("=== Waiting for floresta to connect to utreexod...")
-        self.wait_for_peers_connections(self.florestad, self.utreexod)
+        self.connect_nodes(self.florestad, self.utreexod)
 
         self.log("=== Wait for the nodes to sync...")
         time.sleep(20)

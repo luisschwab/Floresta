@@ -48,11 +48,7 @@ class DisconnectNodeTest(FlorestaTestFramework):
         Call the `addnode` RPC from `florestad`.
         """
         self.log(f"florestad: addnode {self.bitcoind.p2p_url} add")
-        res = self.florestad.rpc.addnode(
-            node=self.bitcoind.p2p_url,
-            command="add",
-        )
-        self.assertIsNone(res)
+        self.connect_nodes(self.florestad, self.bitcoind)
 
     def floresta_cli_disconnectnode(
         self, node_address: str = "", node_id: int | None = None

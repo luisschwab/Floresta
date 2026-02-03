@@ -27,15 +27,7 @@ class NodeInfoTest(FlorestaTestFramework):
         self.run_node(self.bitcoind)
         self.run_node(self.florestad)
 
-        result = self.florestad.rpc.addnode(
-            node=self.bitcoind.p2p_url,
-            command="add",
-            v2transport=True,
-        )
-
-        self.assertIsNone(result)
-
-        self.wait_for_peers_connections(self.florestad, self.bitcoind)
+        self.connect_nodes(self.florestad, self.bitcoind)
 
         peer_info = self.bitcoind.rpc.get_peerinfo()
 

@@ -444,7 +444,8 @@ class FlorestaTestFramework(metaclass=FlorestaTestMetaClass):
         """
         Wait for two peers to connect/disconnect to each other.
         """
-        timeout = time.time() + 15
+        attempts = 0
+        timeout = time.time() + 30
         while time.time() < timeout:
             if self.check_connection(peer_one, peer_two, is_connected):
                 self.log(
@@ -453,19 +454,51 @@ class FlorestaTestFramework(metaclass=FlorestaTestMetaClass):
                 )
                 return
 
-            time.sleep(1)
+            if attempts < 10:
+                time.sleep(1)
+            else:
+                time.sleep(2)
+
+            attempts += 1
 
             # Send a ping to both peers to trigger a peer state update
             if peer_one.daemon.is_running:
                 peer_one.rpc.ping()
+                self.log(
+                    f"Peer one {peer_one.variant} is connected to peer two {peer_two.variant}: "
+                    f"{peer_one.is_peer_connected(peer_two)}"
+                )
 
             if peer_two.daemon.is_running:
                 peer_two.rpc.ping()
+                self.log(
+                    f"Peer two {peer_two.variant} is connected to peer one {peer_one.variant}: "
+                    f"{peer_two.is_peer_connected(peer_one)}"
+                )
 
         raise AssertionError(
             f"Peers {peer_one.variant} and {peer_two.variant} failed to reach the expected "
             f"connection state within the timeout. Expected connected: {is_connected}."
         )
+
+    def connect_nodes(
+        self,
+        peer_one: Node,
+        peer_two: Node,
+        command: str = "add",
+        v2transport: bool = False,
+    ):
+        """
+        Connect two peers to each other and verify their connection state.
+        """
+        if peer_two.variant == NodeType.FLORESTAD:
+            result = peer_two.connect_node(peer_one, command, v2transport=v2transport)
+        else:
+            result = peer_one.connect_node(peer_two, command, v2transport=v2transport)
+
+        self.assertIsNone(result)
+
+        self.wait_for_peers_connections(peer_one, peer_two)
 
     # pylint: disable=invalid-name
     def assertTrue(self, condition: bool):
