@@ -271,8 +271,16 @@ class Node:
         """
         if self.daemon.is_running:
             raise RuntimeError(f"Node '{self.variant}' is already running.")
+
         self.daemon.start()
         self.rpc.wait_on_socket(opened=True)
+
+        # Test if the node is already responding to RPC calls.
+        self.rpc.get_blockchain_info()
+        # When starting Floresta for the first time, it is ideal to check
+        # if the Electrum server is ready to receive requests.
+        if self.variant == NodeType.FLORESTAD and self.static_values is not True:
+            self.electrum.ping()
 
     def stop(self):
         """
