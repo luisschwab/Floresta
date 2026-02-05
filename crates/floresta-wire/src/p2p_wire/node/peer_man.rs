@@ -630,10 +630,9 @@ where
         &mut self,
         notification: &PeerMessages,
         peer: PeerId,
+        read_at: Instant,
     ) -> Option<()> {
-        let now = Instant::now();
-
-        let when = match notification {
+        let sent_at = match notification {
             PeerMessages::Block(block) => {
                 let inflight = self
                     .inflight
@@ -665,7 +664,7 @@ where
             _ => return None,
         };
 
-        let elapsed = now.duration_since(when).as_secs_f64();
+        let elapsed = read_at.duration_since(sent_at).as_secs_f64();
         if let Some(peer) = self.peers.get_mut(&peer) {
             peer.message_times.add(elapsed * 1_000.0); // milliseconds
         }

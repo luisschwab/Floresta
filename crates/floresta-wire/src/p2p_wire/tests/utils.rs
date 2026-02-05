@@ -87,11 +87,13 @@ impl SimulatedPeer {
             .send(NodeNotification::FromPeer(
                 self.peer_id,
                 PeerMessages::Ready(version),
+                Instant::now(),
             ))
             .unwrap();
 
         loop {
             let req = self.node_rx.recv().await.unwrap();
+            let now = Instant::now();
 
             match req {
                 NodeRequest::GetHeaders(hashes) => {
@@ -101,30 +103,26 @@ impl SimulatedPeer {
                         .copied()
                         .collect();
 
+                    let peer_msg = PeerMessages::Headers(headers);
                     self.node_tx
-                        .send(NodeNotification::FromPeer(
-                            self.peer_id,
-                            PeerMessages::Headers(headers),
-                        ))
+                        .send(NodeNotification::FromPeer(self.peer_id, peer_msg, now))
                         .unwrap();
                 }
                 NodeRequest::GetUtreexoState((hash, _)) => {
                     let accs = self.accs.get(&hash).unwrap().clone();
+
+                    let peer_msg = PeerMessages::UtreexoState(accs);
                     self.node_tx
-                        .send(NodeNotification::FromPeer(
-                            self.peer_id,
-                            PeerMessages::UtreexoState(accs),
-                        ))
+                        .send(NodeNotification::FromPeer(self.peer_id, peer_msg, now))
                         .unwrap();
                 }
                 NodeRequest::GetBlock(hashes) => {
                     for hash in hashes {
                         let block = self.blocks.get(&hash).unwrap().clone();
+
+                        let peer_msg = PeerMessages::Block(block);
                         self.node_tx
-                            .send(NodeNotification::FromPeer(
-                                self.peer_id,
-                                PeerMessages::Block(block),
-                            ))
+                            .send(NodeNotification::FromPeer(self.peer_id, peer_msg, now))
                             .unwrap();
                     }
                 }
@@ -138,11 +136,10 @@ impl SimulatedPeer {
                         targets: vec![],
                         proof_hashes: vec![],
                     };
+
+                    let peer_msg = PeerMessages::UtreexoProof(proof);
                     self.node_tx
-                        .send(NodeNotification::FromPeer(
-                            self.peer_id,
-                            PeerMessages::UtreexoProof(proof),
-                        ))
+                        .send(NodeNotification::FromPeer(self.peer_id, peer_msg, now))
                         .unwrap();
                 }
                 _ => {}
@@ -153,6 +150,7 @@ impl SimulatedPeer {
             .send(NodeNotification::FromPeer(
                 self.peer_id,
                 PeerMessages::Disconnected(self.peer_id as usize),
+                Instant::now(),
             ))
             .unwrap();
     }

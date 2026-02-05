@@ -56,7 +56,7 @@ use crate::node_context::PeerId;
 #[derive(Debug)]
 pub enum NodeNotification {
     DnsSeedAddresses(Vec<LocalAddress>),
-    FromPeer(u32, PeerMessages),
+    FromPeer(u32, PeerMessages, Instant),
     FromUser(UserRequest, oneshot::Sender<NodeResponse>),
 }
 

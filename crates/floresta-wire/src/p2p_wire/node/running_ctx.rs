@@ -612,8 +612,8 @@ where
                 self.address_man.push_addresses(&addresses);
             }
 
-            NodeNotification::FromPeer(peer, message) => {
-                self.register_message_time(&message, peer);
+            NodeNotification::FromPeer(peer, message, time) => {
+                self.register_message_time(&message, peer, time);
 
                 let Some(unhandled) = self.handle_peer_msg_common(message, peer)? else {
                     return Ok(());
