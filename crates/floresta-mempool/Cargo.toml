@@ -18,6 +18,7 @@ ahash = { version = "0.8", default-features = false }
 bitcoin = { workspace = true }
 rand = { workspace = true }
 rustreexo = { workspace = true }
+tracing = { workspace = true }
 
 # Local dependencies
 floresta-chain = { workspace = true }

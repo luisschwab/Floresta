@@ -35,7 +35,6 @@ use rcgen::BasicConstraints;
 use rcgen::CertificateParams;
 use rcgen::IsCa;
 use rcgen::KeyPair;
-use rustreexo::accumulator::pollard::Pollard;
 use tokio::net::TcpListener;
 use tokio::sync::RwLock;
 use tokio::task;
@@ -61,6 +60,11 @@ use crate::json_rpc;
 use crate::wallet_input::InitialWalletSetup;
 #[cfg(feature = "zmq-server")]
 use crate::zmq::ZMQServer;
+
+/// The default maximum size of the mempool in bytes.
+///
+/// This is the same default as Bitcoin Core.
+const DEFAULT_MEMPOOL_MAX_SIZE_BYTES: usize = 300_000_000; // 300 MiB
 
 #[derive(Clone)]
 /// General configuration for the floresta daemon.
@@ -428,14 +432,15 @@ impl Florestad {
             ..Default::default()
         };
 
-        let acc = Pollard::new();
         let kill_signal = self.stop_signal.clone();
 
         // Chain Provider (p2p)
         let chain_provider = UtreexoNode::<_, RunningNode>::new(
             config,
             blockchain_state.clone(),
-            Arc::new(tokio::sync::Mutex::new(Mempool::new(acc, 300_000_000))),
+            Arc::new(tokio::sync::Mutex::new(Mempool::new(
+                DEFAULT_MEMPOOL_MAX_SIZE_BYTES,
+            ))),
             cfilters.clone(),
             kill_signal.clone(),
             AddressMan::default(),
@@ -494,6 +499,7 @@ impl Florestad {
             cfilters,
             chain_provider.get_handle(),
         )
+        .await
         .map_err(FlorestadError::CouldNotCreateElectrumServer)?;
 
         // Default Electrum Server port.

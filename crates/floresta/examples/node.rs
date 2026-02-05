@@ -20,10 +20,17 @@ use floresta_mempool::Mempool;
 use floresta_wire::address_man::AddressMan;
 use floresta_wire::node::running_ctx::RunningNode;
 use floresta_wire::UtreexoNodeConfig;
-use rustreexo::accumulator::pollard::Pollard;
 use tokio::sync::Mutex;
 
+/// Where floresta will store all it's data, like the blockchain and wallet
+/// databases
 const DATA_DIR: &str = "./tmp-db";
+
+/// The size, in bytes of the mempool.
+///
+/// This is just an example value, you can change it to whatever you want.
+/// Bitcoin Core uses a default of 300 MB, but for testing purposes we can use a smaller value.
+const MEMPOOL_SIZE: usize = 10_000;
 
 #[tokio::main]
 async fn main() {
@@ -63,7 +70,7 @@ async fn main() {
     let p2p: UtreexoNode<Arc<ChainState<FlatChainStore>>, RunningNode> = UtreexoNode::new(
         config,
         chain.clone(),
-        Arc::new(Mutex::new(Mempool::new(Pollard::default(), 1000))),
+        Arc::new(Mutex::new(Mempool::new(MEMPOOL_SIZE))),
         None,
         Arc::new(tokio::sync::RwLock::new(false)),
         AddressMan::default(),
