@@ -278,5 +278,15 @@ The release will have pre-built binaries available on github's asset page. They 
 
 If we find bugs on a release, the fix may be backported and a new minor release may be released. This is done by merging fixes on top of the release branch. And then performing another release on that branch.
 
-
 If you have any questions, related to this process or the codebase in general. Don't hesitate to reach us out, we are happy to help newcomers in their amazing journey. Overall, have fun :)
+
+LLM and AI Agent Usage
+----------------------
+
+This project does not accept contributions from AI bots. All PRs that appear to come from such accounts will be closed.
+
+Patches created by LLMs and AI agents are also viewed with suspicion unless a human has reviewed them.
+All LLM generated patches MUST have text in the git log and in the PR description that indicates the
+patch was created using an LLM. First time contributions by way of LLM generated patches are not welcome.
+
+Thanks for your time, please be respectful of ours.
