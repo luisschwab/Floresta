@@ -20,7 +20,7 @@ categories = ["cryptography::cryptocurrencies", "command-line-utilities"]
 
 [dependencies]
 bitcoin = { workspace = true }
-clap = { workspace = true }
+clap = { workspace = true, features = ["help"] }
 console-subscriber = { workspace = true, optional = true }
 dirs = { version = "4.0", default-features = false }
 tokio = { workspace = true }
