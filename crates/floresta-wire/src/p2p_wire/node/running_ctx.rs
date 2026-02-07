@@ -499,7 +499,7 @@ where
         let stop_hash = self.chain.get_block_hash(stop)?;
         self.last_filter = stop_hash;
 
-        let peer = self.send_to_fastest_peer(
+        let peer = self.send_to_fast_peer(
             NodeRequest::GetFilter((stop_hash, height + 1)),
             ServiceFlags::COMPACT_FILTERS,
         )?;
@@ -612,8 +612,8 @@ where
                 self.address_man.push_addresses(&addresses);
             }
 
-            NodeNotification::FromPeer(peer, message) => {
-                self.register_message_time(&message, peer);
+            NodeNotification::FromPeer(peer, message, time) => {
+                self.register_message_time(&message, peer, time);
 
                 let Some(unhandled) = self.handle_peer_msg_common(message, peer)? else {
                     return Ok(());

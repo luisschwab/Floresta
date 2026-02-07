@@ -10,8 +10,11 @@ use bitcoin::p2p::ServiceFlags;
 use bitcoin::Transaction;
 use floresta_chain::ChainBackend;
 use floresta_common::service_flags;
+use rand::distributions::Distribution;
+use rand::distributions::WeightedIndex;
 use rand::prelude::SliceRandom;
 use tracing::debug;
+use tracing::error;
 use tracing::info;
 use tracing::warn;
 
@@ -55,27 +58,56 @@ where
 {
     // === SENDING TO PEERS ===
 
-    /// Returns the fastest peer that supports the given service flags and is initialized.
-    fn get_fastest_peer(&self, service: ServiceFlags) -> Option<(&u32, &LocalPeerView)> {
-        let should_send = |(_, peer): &(&PeerId, &LocalPeerView)| {
-            peer.services.has(service) && peer.state == PeerStatus::Ready
-        };
+    /// Picks a `Ready` peer supporting `service`, biased toward lower message latency.
+    ///
+    /// Each candidate weight is computed as `lowest_time / time_i`. For instance, if we have two
+    /// candidates with latencies of 50ms and 100ms, weights are 1.0 and 0.5 respectively, and the
+    /// probability of being chosen is 2/3 and 1/3.
+    fn choose_peer_by_latency(&self, service: ServiceFlags) -> Option<(&PeerId, &LocalPeerView)> {
+        // Epsilon is a small positive floor for `f64`. If by any chance a peer has extremely low
+        // message latency, we clamp it to `EPS` so `lowest_time / time_i` stays finite and stable.
+        const EPS: f64 = 1e-9;
 
-        self.peers
+        let candidates: Vec<(&PeerId, &LocalPeerView, f64)> = self
+            .peers
             .iter()
-            .filter(should_send)
-            .min_by_key(|(_, peer)| peer.message_times.value().round() as u64)
+            .filter(|(_, peer)| peer.services.has(service) && peer.state == PeerStatus::Ready)
+            .filter_map(|(id, peer)| {
+                // Get the average message latency from each peer
+                let Some(t) = peer.message_times.value() else {
+                    error!("Peer {peer:?} has no message times");
+                    return None;
+                };
+                Some((id, peer, t.max(EPS)))
+            })
+            .collect();
+
+        // Fastest observed time among candidates. Returns `None` if no candidate is found.
+        let lowest_time = candidates.iter().map(|(_, _, t)| *t).reduce(f64::min)?;
+
+        let weights: Vec<f64> = candidates
+            .iter()
+            .map(|(_, _, time)| lowest_time / time)
+            .collect();
+
+        let dist = WeightedIndex::new(&weights).ok()?;
+        let idx = dist.sample(&mut rand::thread_rng());
+
+        let (id, peer, _) = candidates[idx];
+        Some((id, peer))
     }
 
-    /// Sends a request to the fastest initialized peer that supports
-    /// required service flags.
-    pub(crate) fn send_to_fastest_peer(
+    /// Sends a request to an initialized peer that supports `required_service`, chosen via a
+    /// latency-weighted distribution (lower latency => more likely).
+    ///
+    /// Returns an error if no ready peer has `required_service` or if sending the request failed.
+    pub(crate) fn send_to_fast_peer(
         &self,
         request: NodeRequest,
         required_service: ServiceFlags,
     ) -> Result<PeerId, WireError> {
         let (peer_id, peer) = self
-            .get_fastest_peer(required_service)
+            .choose_peer_by_latency(required_service)
             .ok_or(WireError::NoPeersAvailable)?;
 
         peer.channel.send(request)?;
@@ -511,7 +543,7 @@ where
                     return Ok(());
                 }
 
-                let peer = self.send_to_fastest_peer(
+                let peer = self.send_to_fast_peer(
                     NodeRequest::GetBlockProof((block_hash, Bitmap::new(), Bitmap::new())),
                     service_flags::UTREEXO.into(),
                 )?;
@@ -526,7 +558,7 @@ where
                 self.request_blocks(vec![block])?;
             }
             InflightRequests::Headers => {
-                let peer = self.send_to_fastest_peer(
+                let peer = self.send_to_fast_peer(
                     NodeRequest::GetHeaders(vec![]),
                     service_flags::UTREEXO.into(),
                 )?;
@@ -535,7 +567,7 @@ where
                     .insert(InflightRequests::Headers, (peer, Instant::now()));
             }
             InflightRequests::UtreexoState(_) => {
-                let peer = self.send_to_fastest_peer(
+                let peer = self.send_to_fast_peer(
                     NodeRequest::GetUtreexoState((self.chain.get_block_hash(0).unwrap(), 0)),
                     service_flags::UTREEXO.into(),
                 )?;
@@ -546,7 +578,7 @@ where
                 if !self.has_compact_filters_peer() {
                     return Ok(());
                 }
-                let peer = self.send_to_fastest_peer(
+                let peer = self.send_to_fast_peer(
                     NodeRequest::GetFilter((self.chain.get_block_hash(0).unwrap(), 0)),
                     ServiceFlags::COMPACT_FILTERS,
                 )?;
@@ -598,10 +630,9 @@ where
         &mut self,
         notification: &PeerMessages,
         peer: PeerId,
+        read_at: Instant,
     ) -> Option<()> {
-        let now = Instant::now();
-
-        let when = match notification {
+        let sent_at = match notification {
             PeerMessages::Block(block) => {
                 let inflight = self
                     .inflight
@@ -633,9 +664,9 @@ where
             _ => return None,
         };
 
-        let elapsed = now.duration_since(when);
+        let elapsed = read_at.duration_since(sent_at).as_secs_f64();
         if let Some(peer) = self.peers.get_mut(&peer) {
-            peer.message_times.add(elapsed.as_millis() as u64);
+            peer.message_times.add(elapsed * 1_000.0); // milliseconds
         }
 
         #[cfg(feature = "metrics")]
@@ -643,7 +674,7 @@ where
             use metrics::get_metrics;
             let metrics = get_metrics();
 
-            metrics.message_times.observe(elapsed.as_secs_f64());
+            metrics.message_times.observe(elapsed);
         }
 
         Some(())

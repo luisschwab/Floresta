@@ -171,7 +171,7 @@ where
             }
         };
 
-        let peer = self.send_to_fastest_peer(req, ServiceFlags::NONE);
+        let peer = self.send_to_fast_peer(req, ServiceFlags::NONE);
         if let Ok(peer) = peer {
             self.inflight_user_requests
                 .insert(user_req, (peer, Instant::now(), responder));

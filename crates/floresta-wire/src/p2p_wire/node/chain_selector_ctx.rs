@@ -239,8 +239,11 @@ where
         let mut peer1_version = None;
         let mut peer2_version = None;
         for _ in 0..2 {
-            if let Ok(Some(NodeNotification::FromPeer(peer, PeerMessages::UtreexoState(state)))) =
-                timeout(Duration::from_secs(60), self.node_rx.recv()).await
+            if let Ok(Some(NodeNotification::FromPeer(
+                peer,
+                PeerMessages::UtreexoState(state),
+                _,
+            ))) = timeout(Duration::from_secs(60), self.node_rx.recv()).await
             {
                 if peer == peer1 {
                     peer1_version = Some(state);
@@ -438,7 +441,7 @@ where
                 return Err(WireError::PeerTimeout);
             }
 
-            let Some(NodeNotification::FromPeer(id, message)) = self.node_rx.recv().await else {
+            let Some(NodeNotification::FromPeer(id, message, _)) = self.node_rx.recv().await else {
                 // Keep waiting until peer message is read or timeout
                 continue;
             };
@@ -746,8 +749,7 @@ where
             .get_block_locator_for_tip(tip)
             .unwrap_or_default();
 
-        let peer =
-            self.send_to_fastest_peer(NodeRequest::GetHeaders(locator), ServiceFlags::NONE)?;
+        let peer = self.send_to_fast_peer(NodeRequest::GetHeaders(locator), ServiceFlags::NONE)?;
 
         self.inflight
             .insert(InflightRequests::Headers, (peer, Instant::now()));
@@ -888,7 +890,7 @@ where
                         self.address_man.push_addresses(&addresses);
                     }
 
-                    NodeNotification::FromPeer(peer, message) => {
+                    NodeNotification::FromPeer(peer, message, _) => {
                         if let PeerMessages::UtreexoState(state) = message {
                             self.inflight.remove(&InflightRequests::UtreexoState(peer));
                             info!("got state {state:?}");
@@ -938,8 +940,9 @@ where
                 self.perform_user_request(request, responder).await;
             }
 
-            NodeNotification::FromPeer(peer, notification) => {
-                self.handle_peer_notification(notification, peer).await?;
+            NodeNotification::FromPeer(peer, notification, time) => {
+                self.handle_peer_notification(notification, peer, time)
+                    .await?;
             }
 
             NodeNotification::DnsSeedAddresses(addresses) => {
@@ -953,8 +956,9 @@ where
         &mut self,
         notification: PeerMessages,
         peer: PeerId,
+        time: Instant,
     ) -> Result<(), WireError> {
-        self.register_message_time(&notification, peer);
+        self.register_message_time(&notification, peer, time);
 
         let Some(unhandled) = self.handle_peer_msg_common(notification, peer)? else {
             return Ok(());

@@ -20,7 +20,7 @@ use floresta_chain::FlatChainStore;
 use floresta_chain::FlatChainStoreConfig;
 use floresta_common::service_flags;
 use floresta_common::service_flags::UTREEXO;
-use floresta_common::FractionAvg;
+use floresta_common::Ema;
 use floresta_mempool::Mempool;
 use rand::rngs::OsRng;
 use rand::RngCore;
@@ -38,6 +38,7 @@ use zstd;
 use crate::address_man::AddressMan;
 use crate::node::sync_ctx::SyncNode;
 use crate::node::ConnectionKind;
+use crate::node::InflightRequests;
 use crate::node::LocalPeerView;
 use crate::node::NodeNotification;
 use crate::node::NodeRequest;
@@ -86,11 +87,13 @@ impl SimulatedPeer {
             .send(NodeNotification::FromPeer(
                 self.peer_id,
                 PeerMessages::Ready(version),
+                Instant::now(),
             ))
             .unwrap();
 
         loop {
             let req = self.node_rx.recv().await.unwrap();
+            let now = Instant::now();
 
             match req {
                 NodeRequest::GetHeaders(hashes) => {
@@ -100,30 +103,26 @@ impl SimulatedPeer {
                         .copied()
                         .collect();
 
+                    let peer_msg = PeerMessages::Headers(headers);
                     self.node_tx
-                        .send(NodeNotification::FromPeer(
-                            self.peer_id,
-                            PeerMessages::Headers(headers),
-                        ))
+                        .send(NodeNotification::FromPeer(self.peer_id, peer_msg, now))
                         .unwrap();
                 }
                 NodeRequest::GetUtreexoState((hash, _)) => {
                     let accs = self.accs.get(&hash).unwrap().clone();
+
+                    let peer_msg = PeerMessages::UtreexoState(accs);
                     self.node_tx
-                        .send(NodeNotification::FromPeer(
-                            self.peer_id,
-                            PeerMessages::UtreexoState(accs),
-                        ))
+                        .send(NodeNotification::FromPeer(self.peer_id, peer_msg, now))
                         .unwrap();
                 }
                 NodeRequest::GetBlock(hashes) => {
                     for hash in hashes {
                         let block = self.blocks.get(&hash).unwrap().clone();
+
+                        let peer_msg = PeerMessages::Block(block);
                         self.node_tx
-                            .send(NodeNotification::FromPeer(
-                                self.peer_id,
-                                PeerMessages::Block(block),
-                            ))
+                            .send(NodeNotification::FromPeer(self.peer_id, peer_msg, now))
                             .unwrap();
                     }
                 }
@@ -137,11 +136,10 @@ impl SimulatedPeer {
                         targets: vec![],
                         proof_hashes: vec![],
                     };
+
+                    let peer_msg = PeerMessages::UtreexoProof(proof);
                     self.node_tx
-                        .send(NodeNotification::FromPeer(
-                            self.peer_id,
-                            PeerMessages::UtreexoProof(proof),
-                        ))
+                        .send(NodeNotification::FromPeer(self.peer_id, peer_msg, now))
                         .unwrap();
                 }
                 _ => {}
@@ -152,6 +150,7 @@ impl SimulatedPeer {
             .send(NodeNotification::FromPeer(
                 self.peer_id,
                 PeerMessages::Disconnected(self.peer_id as usize),
+                Instant::now(),
             ))
             .unwrap();
     }
@@ -172,7 +171,7 @@ pub fn create_peer(
     });
 
     LocalPeerView {
-        message_times: FractionAvg::new(0, 0),
+        message_times: Ema::with_half_life_50(),
         address: "127.0.0.1".parse().unwrap(),
         services: service_flags::UTREEXO.into(),
         user_agent: "/utreexo:0.1.0/".to_string(),
@@ -326,6 +325,8 @@ pub async fn setup_node(
 
     for (i, peer) in peers.into_iter().enumerate() {
         let (sender, receiver) = unbounded_channel();
+        let peer_id = i as u32;
+
         let peer = create_peer(
             peer.headers,
             peer.blocks,
@@ -333,10 +334,15 @@ pub async fn setup_node(
             node.node_tx.clone(),
             sender.clone(),
             receiver,
-            i as u32,
+            peer_id,
         );
 
-        node.peers.insert(i as u32, peer);
+        node.peers.insert(peer_id, peer);
+        // This allows the node to properly assign a message time for the peer
+        node.inflight.insert(
+            InflightRequests::Connect(peer_id),
+            (peer_id, Instant::now()),
+        );
     }
 
     timeout(Duration::from_secs(100), node.run(|_| {}))
