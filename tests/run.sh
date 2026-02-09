@@ -1,16 +1,9 @@
 #!/bin/bash
 
-# Sets a temporary environment to run our tests
+# Run integration tests; before running tests, clean node data directories and logs.
+# If the --preserve-data-dir flag is passed, do not clean the logs.
 #
-# This script should be executed after prepare.sh for running our functional test.
-#
-## What this script do  ?
-#
-# 1. Sets $PATH to include the compiled florestad and utreexod at FLORESTA_TEMP_DIR/binaries.
-#
-# 2. Run all needed commands for batch executing all python tests suites:
-#
-#       uv run tests/run_tests.py
+# This script should be executed after prepare.sh.
 check_installed() {
     if ! command -v "$1" &>/dev/null; then
         echo "You must have $1 installed to run those tests!"
@@ -29,7 +22,7 @@ if [[ -z "$FLORESTA_TEMP_DIR" ]]; then
 
 fi
 
-# Clean existing data/logs directories before running the tests
+# Clean existing data directories before running the tests
 rm -rf "$FLORESTA_TEMP_DIR/data"
 
 # Detect if --preserve-data-dir is among args
@@ -45,12 +38,11 @@ for arg in "$@"; do
     fi
 done
 
-# Run the re-freshed tests
-uv run ./tests/test_runner.py "${UV_ARGS[@]}"
-
-# Clean up the data dir if we succeeded and --preserve-data-dir was not passed
-if [ $? -eq 0 ] && [ "$PRESERVE_DATA" = false ];
-then
-    echo "Tests passed, cleaning up the data dir at $FLORESTA_TEMP_DIR"
-    rm -rf $FLORESTA_TEMP_DIR/data $FLORESTA_TEMP_DIR/logs
+# Clean up the logs dir if --preserve-data-dir was not passed
+if [ "$PRESERVE_DATA" = false ]; then
+    echo "Cleaning up test directories before running tests..."
+    rm -rf "$FLORESTA_TEMP_DIR/logs"
 fi
+
+# Run the tests
+uv run ./tests/test_runner.py "${UV_ARGS[@]}"
