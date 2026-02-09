@@ -253,7 +253,13 @@ pub enum Methods {
     },
 
     /// Submits a raw transaction to the network
-    #[command(name = "sendrawtransaction")]
+    #[doc = include_str!("../../../doc/rpc/sendrawtransaction.md")]
+    #[command(
+        name = "sendrawtransaction",
+        about = "Broadcast a serialized transaction to the P2P network",
+        long_about = Some(include_str!("../../../doc/rpc/sendrawtransaction.md")),
+        disable_help_subcommand = true
+    )]
     SendRawTransaction { tx: String },
 
     /// Returns the block header for the given block hash
