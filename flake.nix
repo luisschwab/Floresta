@@ -78,33 +78,72 @@
 
             preCommitHooks = pre-commit-hooks.lib.${system}.run {
               src.root = src;
+              default_stages = [
+                "pre-commit"
+                "pre-push"
+              ];
               hooks = {
-                clippy = {
+                check-merge-conflicts = {
                   enable = true;
-                  settings = {
-                    denyWarnings = true;
-                    extraArgs = "--all-targets --no-deps";
-                  };
+                  stages = [ "pre-commit" ];
                 };
-                rustfmt = {
+                nixfmt = {
                   enable = true;
+                  stages = [ "pre-commit" ];
                 };
-                check-merge-conflicts.enable = true;
-                nixfmt-rfc-style.enable = true;
-                commitizen.enable = true; # The default commitizen rules are conventional commits.
-                statix.enable = true;
-                flake-checker.enable = true;
-                typos = {
+                commitizen.enable = true;
+                statix = {
                   enable = true;
-                  settings.configPath = "typos.toml";
+                  stages = [ "pre-commit" ];
+                };
+                flake-checker = {
+                  enable = true;
+                  stages = [ "pre-commit" ];
+                };
+                rustfmt-hook = {
+                  enable = true;
+                  name = "rustfmt-hook";
+                  entry = "${pkgs.just}/bin/just format";
+                  language = "system";
+                  stages = [ "pre-commit" ];
+                  types = [ "rust" ];
+                  pass_filenames = false;
+                  verbose = true;
+                };
+                rusttest-unit-hook = {
+                  enable = true;
+                  name = "rusttest-unit-hook";
+                  entry = "${pkgs.just}/bin/just test-unit";
+                  language = "system";
+                  stages = [ "pre-commit" ];
+                  types = [ "rust" ];
+                  pass_filenames = false;
+                  verbose = true;
+                };
+                typos-hook = {
+                  enable = true;
+                  name = "typos-hook";
+                  entry = "${pkgs.just}/bin/just spell-check";
+                  language = "system";
+                  stages = [ "pre-commit" ];
+                  types = [ "rust" ];
+                  pass_filenames = false;
+                  verbose = true;
+                };
+                rusttest-full-hook = {
+                  enable = true;
+                  name = "rusttest-full-hook";
+                  entry = "${pkgs.just}/bin/just test";
+                  language = "system";
+                  stages = [ "pre-push" ];
+                  types = [ "rust" ];
+                  pass_filenames = false;
+                  verbose = true;
                 };
               };
             };
 
             # Floresta flavored commitizen config file.
-            #
-            # Since floresta doesnt use any hooks and these are only
-            # inside this
             czFlorestaConfigFile = pkgs.writeText ".cz.toml" ''
               [tool.commitizen]
               name = "cz_customize"

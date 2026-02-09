@@ -23,6 +23,9 @@ utreexod/
 config.toml
 .pre-commit-config.yaml
 
+# direnv cache
+.direnv/
+
 # IDE configurations
 .idea/
 .vscode/
