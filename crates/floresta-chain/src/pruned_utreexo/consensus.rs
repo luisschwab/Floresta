@@ -20,6 +20,8 @@ use bitcoin::Target;
 use bitcoin::Transaction;
 use bitcoin::TxIn;
 use bitcoin::Txid;
+#[cfg(feature = "bitcoinkernel")]
+use bitcoinkernel::PrecomputedTransactionData;
 use floresta_common::prelude::*;
 use rustreexo::accumulator::proof::Proof;
 use rustreexo::accumulator::stump::Stump;
@@ -239,6 +241,9 @@ impl Consensus {
             spent_scripts.push((spk, value));
         }
 
+        let tx_data = PrecomputedTransactionData::new(&tx, &spent_utxos)
+            .map_err(|e| tx_err!(txid, ScriptValidationError, e.to_string()))?;
+
         for (input_index, (script, amount)) in spent_scripts.iter().enumerate() {
             bitcoinkernel::verify(
                 script,
@@ -246,7 +251,7 @@ impl Consensus {
                 &tx,
                 input_index,
                 Some(flags),
-                &spent_utxos,
+                &tx_data,
             )
             .map_err(|e| tx_err!(txid, ScriptValidationError, e.to_string()))?;
         }
