@@ -162,7 +162,7 @@ where
             self.send_to_peer(peer_to_disconnect, NodeRequest::Shutdown)?;
         }
 
-        if utreexo_peers < 2 {
+        if utreexo_peers < 1 {
             info!("Not enough utreexo peers (we have {utreexo_peers}), opening a new connection");
             self.maybe_open_connection(UTREEXO.into())?;
         }
