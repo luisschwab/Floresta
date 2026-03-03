@@ -99,7 +99,7 @@ where
             peer_addr.address == address.get_net_address() && peer_addr.port == address.get_port()
         };
 
-        if self.common.peers.iter().any(is_connected) {
+        if self.peers.iter().any(is_connected) {
             return Err(WireError::PeerAlreadyExists(
                 address.get_net_address(),
                 address.get_port(),

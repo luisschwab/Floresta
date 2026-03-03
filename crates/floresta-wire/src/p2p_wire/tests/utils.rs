@@ -345,6 +345,18 @@ pub async fn setup_node(
         }
 
         node.peers.insert(peer_id, peer);
+        // Populate the peer services too
+        for service in [
+            service_flags::UTREEXO.into(),
+            ServiceFlags::COMPACT_FILTERS,
+            ServiceFlags::NETWORK,
+        ] {
+            node.peer_by_service
+                .entry(service)
+                .or_default()
+                .push(peer_id);
+        }
+
         // This allows the node to properly assign a message time for the peer
         node.inflight.insert(
             InflightRequests::Connect(peer_id),
