@@ -58,7 +58,14 @@ where
 {
     // === CONNECTION CREATION ===
 
-    pub(crate) fn create_connection(&mut self, kind: ConnectionKind) -> Result<(), WireError> {
+    pub(crate) fn create_connection(&mut self, mut kind: ConnectionKind) -> Result<(), WireError> {
+        let is_fixed = self.fixed_peer.is_some();
+
+        // Connection with fixed peers should be marked as `manual`, rather than `regular`
+        if is_fixed && matches!(kind, ConnectionKind::Regular(_)) {
+            kind = ConnectionKind::Manual;
+        }
+
         let required_services = match kind {
             ConnectionKind::Regular(services) => services,
             _ => ServiceFlags::NONE,
@@ -131,7 +138,7 @@ where
     ///
     /// `kind` may or may not be a [`ConnectionKind::Feeler`], a special connection type
     /// that is used to learn about good peers, but are not kept after handshake
-    /// (others are [`ConnectionKind::Regular`] and [`ConnectionKind::Extra`]).
+    /// (others are [`ConnectionKind::Regular`], [`ConnectionKind::Manual`] and [`ConnectionKind::Extra`]).
     ///
     /// We will always try to open a V2 connection first. If the `allow_v1_fallback` is set,
     /// we may retry the connection with the old V1 protocol if the V2 connection fails.
@@ -211,6 +218,12 @@ where
         match kind {
             ConnectionKind::Feeler => self.last_feeler = Instant::now(),
             ConnectionKind::Regular(_) => self.last_connection = Instant::now(),
+            // Note: Crating a manual peer intentionally don't prevent us from checking our peers
+            // again, since we might need to disconnect someone to open up space for more
+            // utreexo or CBS connections.
+            //
+            // Extra connections are also not taken into account here because they will probably be
+            // short-lived.
             _ => {}
         }
 
@@ -587,7 +600,7 @@ where
         let needs_utreexo = required_service.has(service_flags::UTREEXO.into());
         self.maybe_use_hardcoded_addresses(needs_utreexo);
 
-        if self.peers.len() < T::MAX_OUTGOING_PEERS {
+        if self.connected_peers() < T::MAX_OUTGOING_PEERS {
             self.create_connection(connection_kind)?;
         }
 
@@ -621,7 +634,7 @@ where
 
                 // Finally, open the connection with the node
                 self.open_connection(
-                    ConnectionKind::Regular(ServiceFlags::NONE),
+                    ConnectionKind::Manual,
                     peers_count as usize,
                     address,
                     added_peer.v1_fallback,

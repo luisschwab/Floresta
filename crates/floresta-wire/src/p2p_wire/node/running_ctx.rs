@@ -17,7 +17,8 @@ use floresta_chain::pruned_utreexo::UpdatableChainstate;
 use floresta_chain::ThreadSafeChain;
 use floresta_common::service_flags;
 use floresta_common::service_flags::UTREEXO;
-use rand::random;
+use rand::seq::IteratorRandom;
+use rand::thread_rng;
 use rustreexo::accumulator::stump::Stump;
 use tokio::time;
 use tokio::time::MissedTickBehavior;
@@ -136,13 +137,12 @@ where
         // if we have 10 connections, but not a single utreexo or CBF one, disconnect one random
         // peer and create a utreexo and CBS connection
         if !self.has_utreexo_peers() {
-            if self.peer_ids.len() == 10 {
-                let peer = random::<usize>() % self.peer_ids.len();
-                let peer = self
-                    .peer_ids
-                    .get(peer)
-                    .expect("we've modulo before, we should have it");
-                self.send_to_peer(*peer, NodeRequest::Shutdown)?;
+            if self.connected_peers() >= RunningNode::MAX_OUTGOING_PEERS {
+                self.peers
+                    .values()
+                    .filter(|peer| matches!(peer.kind, ConnectionKind::Regular(_)))
+                    .choose(&mut thread_rng())
+                    .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
             }
 
             self.maybe_open_connection(UTREEXO.into())?;
@@ -152,13 +152,13 @@ where
             if self.block_filters.is_none() {
                 return Ok(());
             }
-            if self.peer_ids.len() == 10 {
-                let peer = random::<usize>() % self.peer_ids.len();
-                let peer = self
-                    .peer_ids
-                    .get(peer)
-                    .expect("we've modulo before, we should have it");
-                self.send_to_peer(*peer, NodeRequest::Shutdown)?;
+
+            if self.connected_peers() >= RunningNode::MAX_OUTGOING_PEERS {
+                self.peers
+                    .values()
+                    .filter(|peer| matches!(peer.kind, ConnectionKind::Regular(_)))
+                    .choose(&mut thread_rng())
+                    .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
             }
 
             self.maybe_open_connection(ServiceFlags::COMPACT_FILTERS)?;
@@ -692,6 +692,7 @@ where
                             let peer_to_disconnect = self
                                 .peers
                                 .iter()
+                                // Don't disconnect manual connections
                                 .filter(|(_, info)| matches!(info.kind, ConnectionKind::Regular(_)))
                                 .min_by_key(|(k, _)| self.get_peer_score(**k))
                                 .map(|(peer, _)| *peer);
@@ -720,12 +721,7 @@ where
                                 (peer, Instant::now()),
                             );
                         }
-
-                        // update the peer info
-                        self.peers.entry(peer).and_modify(|info| {
-                            info.kind = ConnectionKind::Regular(peer_info.services);
-                        });
-                    }
+                   }
 
                     PeerMessages::Ready(version) => {
                         debug!(

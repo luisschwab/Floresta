@@ -132,10 +132,30 @@ pub(crate) enum InflightRequests {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
+/// The kind of connection we see this peer as.
+///
+/// Core's counterpart: <https://github.com/bitcoin/bitcoin/blob/bf9ef4f0433551e850a11c2da8baae0ec6439a99/src/node/connection_types.h#L18>.
 pub enum ConnectionKind {
+    /// A feeler connection is a short-lived connection used to check whether this peer is alive.
+    ///
+    /// After handshake, we ask for addresses and when we receive an answer we just disconnect,
+    /// marking this peer as alive in our address manager.
     Feeler,
+
+    /// A regular peer, used to send requests to and learn about transactions and blocks.
     Regular(ServiceFlags),
+
+    /// An extra peer specially created if our tip hasn't moved for too long.
+    ///
+    /// If more than [`NodeContext::ASSUME_STALE`] seconds have passed since the
+    /// last processed block, we use this to make sure we are not in a partitioned subnet,
+    /// unable to learn about new blocks.
     Extra,
+
+    /// A connection that was manually requested by our user. This type of peer won't be banned on
+    /// misbehaving, and won't respect the [`ServiceFlags`] requirements when creating a
+    /// connection.
+    Manual,
 }
 
 impl Serialize for ConnectionKind {
@@ -147,6 +167,7 @@ impl Serialize for ConnectionKind {
             ConnectionKind::Feeler => serializer.serialize_str("feeler"),
             ConnectionKind::Regular(_) => serializer.serialize_str("regular"),
             ConnectionKind::Extra => serializer.serialize_str("extra"),
+            ConnectionKind::Manual => serializer.serialize_str("manual"),
         }
     }
 }
@@ -202,6 +223,23 @@ pub struct LocalPeerView {
 
     /// The transport protocol this peer is using (v1 or v2)
     pub(crate) transport_protocol: TransportProtocol,
+}
+
+impl LocalPeerView {
+    /// Whether this is a manually added peer
+    pub(crate) const fn is_manual_peer(&self) -> bool {
+        matches!(self.kind, ConnectionKind::Manual)
+    }
+
+    /// Whether this is a regular peer
+    pub(crate) const fn is_regular_peer(&self) -> bool {
+        matches!(self.kind, ConnectionKind::Regular(_))
+    }
+
+    // Connections expected to remain open if the peer doesn't die
+    pub(crate) const fn is_long_lived(&self) -> bool {
+        self.is_manual_peer() || self.is_regular_peer()
+    }
 }
 
 pub struct NodeCommon<Chain: ChainBackend> {

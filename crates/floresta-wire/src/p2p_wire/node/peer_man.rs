@@ -106,7 +106,11 @@ where
         self.peers
             .values()
             .filter(|p| {
-                p.state == PeerStatus::Ready && matches!(p.kind, ConnectionKind::Regular(_))
+                // Connections that will continue open for as long as we are running (and the other
+                // peer don't die)
+                let long_lived_connection = matches!(p.kind, ConnectionKind::Regular(_))
+                    || matches!(p.kind, ConnectionKind::Manual);
+                p.state == PeerStatus::Ready && long_lived_connection
             })
             .count()
     }
@@ -415,7 +419,10 @@ where
     pub(crate) fn handle_disconnection(&mut self, peer: u32, idx: usize) -> Result<(), WireError> {
         if let Some(p) = self.peers.remove(&peer) {
             std::mem::drop(p.channel);
-            if matches!(p.kind, ConnectionKind::Regular(_)) && p.state == PeerStatus::Ready {
+
+            let long_lived = matches!(p.kind, ConnectionKind::Regular(_))
+                || matches!(p.kind, ConnectionKind::Manual);
+            if long_lived && p.state == PeerStatus::Ready {
                 info!("Peer disconnected: {peer}");
             }
 
@@ -899,7 +906,7 @@ where
             return Err(WireError::PeerAlreadyExists(addr, port));
         }
 
-        let kind = ConnectionKind::Regular(ServiceFlags::NONE);
+        let kind = ConnectionKind::Manual;
 
         // Add this address to our address manager for later
         // assume it has the bare-minimum services, otherwise `push_addresses` will ignore it

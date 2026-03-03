@@ -135,7 +135,7 @@ where
     ///   - we have enough peers to download blocks from (at most `MAX_OUTGOING_PEERS`)
     ///   - if some of peers are too slow, and potentially stalling our block download (TODO)
     fn check_connections(&mut self) -> Result<(), WireError> {
-        let total_peers = self.peers.len();
+        let total_peers = self.connected_peers();
         let utreexo_peers = self
             .peer_by_service
             .get(&UTREEXO.into())
