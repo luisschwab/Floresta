@@ -140,7 +140,7 @@ where
             if self.connected_peers() >= RunningNode::MAX_OUTGOING_PEERS {
                 self.peers
                     .values()
-                    .filter(|peer| matches!(peer.kind, ConnectionKind::Regular(_)))
+                    .filter(|peer| peer.is_regular_peer())
                     .choose(&mut thread_rng())
                     .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
             }
@@ -156,7 +156,7 @@ where
             if self.connected_peers() >= RunningNode::MAX_OUTGOING_PEERS {
                 self.peers
                     .values()
-                    .filter(|peer| matches!(peer.kind, ConnectionKind::Regular(_)))
+                    .filter(|peer| peer.is_regular_peer())
                     .choose(&mut thread_rng())
                     .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
             }
@@ -693,7 +693,7 @@ where
                                 .peers
                                 .iter()
                                 // Don't disconnect manual connections
-                                .filter(|(_, info)| matches!(info.kind, ConnectionKind::Regular(_)))
+                                .filter(|(_, info)| info.is_regular_peer())
                                 .min_by_key(|(k, _)| self.get_peer_score(**k))
                                 .map(|(peer, _)| *peer);
 

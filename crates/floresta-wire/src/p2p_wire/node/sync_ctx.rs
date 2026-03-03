@@ -8,7 +8,7 @@ use floresta_chain::proof_util;
 use floresta_chain::ThreadSafeChain;
 use floresta_common::service_flags;
 use floresta_common::service_flags::UTREEXO;
-use rand::seq::SliceRandom;
+use rand::seq::IteratorRandom;
 use rand::thread_rng;
 use tokio::time;
 use tokio::time::MissedTickBehavior;
@@ -147,19 +147,11 @@ where
             //
             // FIXME: We should actually disconnect the slowest non-utreexo peer, to
             // make sure we can download blocks faster.
-            let mut non_utreexo_peers = Vec::new();
-            for (id, peer) in self.peers.iter() {
-                if !peer.services.has(UTREEXO.into()) {
-                    non_utreexo_peers.push(*id);
-                }
-            }
-
-            let peer_to_disconnect = *non_utreexo_peers
+            self.peers
+                .values()
+                .filter(|peer| peer.is_regular_peer() && !peer.services.has(UTREEXO.into()))
                 .choose(&mut thread_rng())
-                .expect("infallible: the `if` clause implies we have some non-utreexo peers");
-
-            info!("Disconnecting non-utreexo peer {peer_to_disconnect} to open up more space for utreexo peers");
-            self.send_to_peer(peer_to_disconnect, NodeRequest::Shutdown)?;
+                .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
         }
 
         if utreexo_peers < 2 {

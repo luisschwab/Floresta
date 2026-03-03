@@ -115,7 +115,6 @@ where
 
         // We allow V1 fallback only if the cli option was set, it's a --connect peer
         // or if we are connecting to a utreexo peer, since utreexod doesn't support V2 yet.
-        let is_fixed = self.fixed_peer.is_some();
         let allow_v1 = self.config.allow_v1_fallback
             || kind == ConnectionKind::Regular(UTREEXO.into())
             || is_fixed;
@@ -218,9 +217,9 @@ where
         match kind {
             ConnectionKind::Feeler => self.last_feeler = Instant::now(),
             ConnectionKind::Regular(_) => self.last_connection = Instant::now(),
-            // Note: Crating a manual peer intentionally don't prevent us from checking our peers
-            // again, since we might need to disconnect someone to open up space for more
-            // utreexo or CBS connections.
+            // Note: Creating a manual peer intentionally doesn't affect the `last_connection`
+            // timer, since they don't necessarily follow our connection logic, and we may still
+            // need more utreexo/CBS peers
             //
             // Extra connections are also not taken into account here because they will probably be
             // short-lived.
