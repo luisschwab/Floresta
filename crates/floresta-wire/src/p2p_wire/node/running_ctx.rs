@@ -445,16 +445,15 @@ where
 
         // tries to download filters from the network
         try_and_log!(self.download_filters());
+        try_and_log!(self.ask_missed_block());
 
         // requests that need a utreexo peer
         if !self.has_utreexo_peers() {
             return LoopControl::Continue;
         }
 
-        // Check if we haven't missed any block
-        if self.inflight.len() < RunningNode::MAX_INFLIGHT_REQUESTS {
-            try_and_log!(self.ask_missed_block());
-        }
+        try_and_log!(self.ask_for_missed_proofs());
+
         LoopControl::Continue
     }
 
