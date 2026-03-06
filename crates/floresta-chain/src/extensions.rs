@@ -300,7 +300,7 @@ mod tests {
         }
     }
 
-    impl std::error::Error for MockBlockchainError {}
+    impl core::error::Error for MockBlockchainError {}
 
     pub struct MockBlockchainInterface {
         pub headers: HashMap<BlockHash, Header>,

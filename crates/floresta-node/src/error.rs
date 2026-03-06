@@ -1,3 +1,4 @@
+use core::error;
 use std::net::AddrParseError;
 
 use bitcoin::consensus::encode;
@@ -90,7 +91,7 @@ pub enum FlorestadError {
     CouldNotCreateChainProvider(String),
 
     /// Failed to create an Electrum server.
-    CouldNotCreateElectrumServer(Box<dyn std::error::Error>),
+    CouldNotCreateElectrumServer(Box<dyn error::Error>),
 
     /// Failed to bind the Electrum server to a socket.
     FailedToBindElectrumServer(std::io::Error),
@@ -254,4 +255,5 @@ impl_from_error!(BlockValidation, BlockValidationErrors);
 impl_from_error!(AddressParsing, bitcoin::address::ParseError);
 impl_from_error!(Miniscript, miniscript::Error);
 impl_from_error!(CouldNotObtainWalletCache, WatchOnlyError<KvDatabaseError>);
-impl std::error::Error for FlorestadError {}
+
+impl error::Error for FlorestadError {}

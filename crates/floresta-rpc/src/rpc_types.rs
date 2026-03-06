@@ -1,3 +1,4 @@
+use core::error;
 use std::fmt::Display;
 
 use corepc_types::v30::GetBlockVerboseOne;
@@ -342,4 +343,4 @@ impl Display for AddNodeCommand {
     }
 }
 
-impl std::error::Error for Error {}
+impl error::Error for Error {}

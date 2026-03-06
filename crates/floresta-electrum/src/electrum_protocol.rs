@@ -1,3 +1,4 @@
+use core::error;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -219,7 +220,7 @@ impl<Blockchain: BlockchainInterface> ElectrumServer<Blockchain> {
         chain: Arc<Blockchain>,
         block_filters: Option<Arc<NetworkFilters<FlatFiltersStore>>>,
         node_interface: NodeInterface,
-    ) -> Result<ElectrumServer<Blockchain>, Box<dyn std::error::Error>> {
+    ) -> Result<ElectrumServer<Blockchain>, Box<dyn error::Error>> {
         let (tx, rx) = unbounded_channel();
 
         Ok(ElectrumServer {
