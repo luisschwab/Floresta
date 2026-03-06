@@ -177,7 +177,7 @@ where
             if let Err(e) = self.chain.accept_header(*header) {
                 error!("Error while downloading headers from peer={peer} err={e}");
 
-                self.send_to_peer(peer, NodeRequest::Shutdown)?;
+                self.increase_banscore(peer, self.max_banscore)?;
 
                 let peer = self.peers.get(&peer).unwrap();
                 self.common.address_man.update_set_state(
@@ -561,7 +561,7 @@ where
 
             match liar_state {
                 PeerCheck::OneLying(liar) => {
-                    self.send_to_peer(liar, NodeRequest::Shutdown)?;
+                    self.increase_banscore(liar, self.max_banscore)?;
                     if liar == peer1 {
                         invalid_accs.insert(peer[0].1.clone());
                         continue;
@@ -569,15 +569,16 @@ where
                     invalid_accs.insert(peer[1].1.clone());
                 }
                 PeerCheck::UnresponsivePeer(dead_peer) => {
-                    self.send_to_peer(dead_peer, NodeRequest::Shutdown)?;
+                    self.increase_banscore(dead_peer, self.max_banscore)?;
                 }
                 PeerCheck::BothUnresponsivePeers => {
-                    self.send_to_peer(peer1, NodeRequest::Shutdown)?;
-                    self.send_to_peer(peer2, NodeRequest::Shutdown)?;
+                    self.increase_banscore(peer1, self.max_banscore)?;
+                    self.increase_banscore(peer2, self.max_banscore)?;
                 }
                 PeerCheck::BothLying => {
-                    self.send_to_peer(peer1, NodeRequest::Shutdown)?;
-                    self.send_to_peer(peer2, NodeRequest::Shutdown)?;
+                    self.increase_banscore(peer1, self.max_banscore)?;
+                    self.increase_banscore(peer2, self.max_banscore)?;
+
                     invalid_accs.insert(peer[0].1.clone());
                     invalid_accs.insert(peer[1].1.clone());
                 }
@@ -699,7 +700,7 @@ where
                     peer.1.address_id as usize,
                     AddressState::Banned(ChainSelector::BAN_TIME),
                 );
-                self.send_to_peer(peer.0, NodeRequest::Shutdown)?;
+                self.increase_banscore(peer.0, self.max_banscore)?;
             }
         }
 

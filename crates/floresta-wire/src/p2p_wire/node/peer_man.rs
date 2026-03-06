@@ -105,9 +105,7 @@ where
     pub(crate) fn connected_peers(&self) -> usize {
         self.peers
             .values()
-            .filter(|p| {
-                p.state == PeerStatus::Ready && matches!(p.kind, ConnectionKind::Regular(_))
-            })
+            .filter(|p| p.state == PeerStatus::Ready && p.is_long_lived())
             .count()
     }
 
@@ -414,10 +412,11 @@ where
 
     pub(crate) fn handle_disconnection(&mut self, peer: u32, idx: usize) -> Result<(), WireError> {
         if let Some(p) = self.peers.remove(&peer) {
-            std::mem::drop(p.channel);
-            if matches!(p.kind, ConnectionKind::Regular(_)) && p.state == PeerStatus::Ready {
+            if p.is_long_lived() && p.state == PeerStatus::Ready {
                 info!("Peer disconnected: {peer}");
             }
+
+            std::mem::drop(p.channel);
 
             let now = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -474,6 +473,11 @@ where
             return Ok(());
         };
 
+        // Manual connections are exempt from being punished
+        if peer.is_manual_peer() {
+            return Ok(());
+        }
+
         peer.banscore += factor;
 
         // This peer is misbehaving too often, ban it
@@ -496,6 +500,11 @@ where
     /// Disconnects a peer and bans it for `T::BAN_TIME`.
     pub(crate) fn disconnect_and_ban(&mut self, peer: PeerId) -> Result<(), WireError> {
         if let Some(peer) = self.peers.get(&peer) {
+            // Manual connections are exempt from being punished
+            if peer.is_manual_peer() {
+                return Ok(());
+            }
+
             let ban_state = AddressState::Banned(T::BAN_TIME);
             let addr_id = peer.address_id as usize;
 
@@ -899,7 +908,7 @@ where
             return Err(WireError::PeerAlreadyExists(addr, port));
         }
 
-        let kind = ConnectionKind::Regular(ServiceFlags::NONE);
+        let kind = ConnectionKind::Manual;
 
         // Add this address to our address manager for later
         // assume it has the bare-minimum services, otherwise `push_addresses` will ignore it

@@ -43,7 +43,7 @@ class NodeInfoTest(FlorestaTestFramework):
 
         peer_info = self.florestad.rpc.get_peerinfo()
         self.assertEqual(peer_info[0]["address"], self.bitcoind.p2p_url)
-        self.assertEqual(peer_info[0]["kind"], "regular")
+        self.assertEqual(peer_info[0]["kind"], "manual")
         self.assertEqual(
             peer_info[0]["services"],
             "ServiceFlags(NETWORK|WITNESS|NETWORK_LIMITED|P2P_V2)",
