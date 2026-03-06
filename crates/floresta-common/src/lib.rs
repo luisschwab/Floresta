@@ -26,8 +26,6 @@ use sha2::Digest;
 
 #[cfg(feature = "std")]
 mod ema;
-#[cfg(not(feature = "std"))]
-mod error;
 pub mod macros;
 pub mod spsc;
 
@@ -118,6 +116,7 @@ pub mod prelude {
     pub use alloc::vec::Vec;
     pub use core::cmp;
     pub use core::convert;
+    pub use core::error::Error;
     pub use core::fmt;
     pub use core::fmt::Display;
     pub use core::iter;
@@ -136,8 +135,6 @@ pub mod prelude {
     pub use bitcoin::io::Write;
     pub use hashbrown::HashMap;
     pub use hashbrown::HashSet;
-
-    pub use crate::error::Error;
 }
 
 #[cfg(feature = "std")]
@@ -152,12 +149,12 @@ pub mod prelude {
     extern crate std;
     pub use alloc::format;
     pub use alloc::string::ToString;
+    pub use core::error::Error;
     pub use std::borrow::ToOwned;
     pub use std::boxed::Box;
     pub use std::collections::hash_map::Entry;
     pub use std::collections::HashMap;
     pub use std::collections::HashSet;
-    pub use std::error::Error;
     pub use std::fmt::Display;
     pub use std::fmt::Formatter;
     pub use std::fmt::{self};

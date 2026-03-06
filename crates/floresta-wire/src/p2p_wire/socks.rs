@@ -6,6 +6,7 @@
 //! async runtime. This allows the caller to use this module with any async runtime
 //! they want.
 
+use core::error;
 use std::net::Ipv4Addr;
 use std::net::Ipv6Addr;
 use std::net::SocketAddr;
@@ -144,4 +145,4 @@ impl std::fmt::Display for Socks5Error {
     }
 }
 
-impl std::error::Error for Socks5Error {}
+impl error::Error for Socks5Error {}

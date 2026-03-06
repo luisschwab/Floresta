@@ -2,9 +2,9 @@
 //! our transactions every 1 hour.
 //! Once our transaction is included in a block, we remove it from the mempool.
 
+use core::error::Error;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
-use std::error::Error;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::time::Duration;
