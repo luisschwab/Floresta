@@ -1,5 +1,7 @@
 use core::error;
-use std::fmt::Display;
+use core::fmt;
+use core::fmt::Display;
+use core::fmt::Formatter;
 
 use corepc_types::v30::GetBlockVerboseOne;
 use serde::Deserialize;
@@ -257,7 +259,7 @@ impl From<jsonrpc::Error> for Error {
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             #[cfg(feature = "with-jsonrpc")]
             Error::JsonRpc(e) => write!(f, "JsonRpc returned an error {e}"),
@@ -333,7 +335,7 @@ pub enum AddNodeCommand {
 /// Useful for get the subcommand name of addnode with
 /// command.to_string()
 impl Display for AddNodeCommand {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let cmd = match self {
             AddNodeCommand::Add => "add",
             AddNodeCommand::Remove => "remove",

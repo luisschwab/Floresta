@@ -9,7 +9,11 @@
 #![allow(clippy::manual_is_multiple_of)]
 
 use core::cmp::Ordering;
+use core::error::Error;
+use core::fmt;
 use core::fmt::Debug;
+use core::fmt::Display;
+use core::fmt::Formatter;
 
 use bitcoin::hashes::sha256;
 use bitcoin::ScriptBuf;
@@ -41,14 +45,14 @@ use sync::RwLock;
 use tracing::error;
 
 #[derive(Debug)]
-pub enum WatchOnlyError<DatabaseError: fmt::Debug> {
+pub enum WatchOnlyError<DatabaseError: Debug> {
     WalletNotInitialized,
     TransactionNotFound,
     DatabaseError(DatabaseError),
 }
 
-impl<DatabaseError: fmt::Debug> Display for WatchOnlyError<DatabaseError> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<DatabaseError: Debug> Display for WatchOnlyError<DatabaseError> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             WatchOnlyError::WalletNotInitialized => {
                 write!(f, "Wallet isn't initialized")
@@ -63,13 +67,13 @@ impl<DatabaseError: fmt::Debug> Display for WatchOnlyError<DatabaseError> {
     }
 }
 
-impl<DatabaseError: fmt::Debug> From<DatabaseError> for WatchOnlyError<DatabaseError> {
+impl<DatabaseError: Debug> From<DatabaseError> for WatchOnlyError<DatabaseError> {
     fn from(e: DatabaseError) -> Self {
         WatchOnlyError::DatabaseError(e)
     }
 }
 
-impl<T: Debug> floresta_common::prelude::Error for WatchOnlyError<T> {}
+impl<T: Debug> Error for WatchOnlyError<T> {}
 
 /// Every address contains zero or more associated transactions, this struct defines what
 /// data we store for those.
@@ -139,7 +143,7 @@ pub struct Stats {
 
 /// Public trait defining a common interface for databases to be used with our cache
 pub trait AddressCacheDatabase {
-    type Error: fmt::Debug + Send + Sync + 'static;
+    type Error: Debug + Send + Sync + 'static;
     /// Saves a new address to the database. If the address already exists, `update` should
     /// be used instead
     fn save(&self, address: &CachedAddress);
@@ -786,6 +790,8 @@ impl<D: AddressCacheDatabase> AddressCache<D> {
 
 #[cfg(test)]
 mod test {
+    use core::str::FromStr;
+
     use bitcoin::address::NetworkChecked;
     use bitcoin::consensus::deserialize;
     use bitcoin::consensus::Decodable;

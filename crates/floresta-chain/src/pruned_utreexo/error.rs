@@ -7,8 +7,13 @@
 //!
 //! Each error type implements `Display` and `Debug` for error reporting.
 
-use core::fmt::Debug;
 extern crate alloc;
+
+use core::error::Error;
+use core::fmt;
+use core::fmt::Debug;
+use core::fmt::Display;
+use core::fmt::Formatter;
 
 use bitcoin::Network;
 use bitcoin::OutPoint;
@@ -96,13 +101,13 @@ macro_rules! tx_err {
 }
 
 impl Display for TransactionError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "Transaction {} is invalid: {}", self.txid, self.error)
     }
 }
 
 impl Display for BlockValidationErrors {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             BlockValidationErrors::BlockDoesntExtendTip => {
                 write!(f, "This block doesn't build directly on the tip")

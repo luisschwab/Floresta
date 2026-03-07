@@ -7,7 +7,7 @@
 //! Bitcoin SLIP-132 standard implementation for parsing custom xpub/xpriv key
 //! formats
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use bitcoin::base58;
 use bitcoin::bip32;

@@ -1,4 +1,5 @@
 use core::cmp::min;
+use core::error::Error;
 use core::ops::Add;
 
 use bitcoin::block::Header;
@@ -6,7 +7,6 @@ use bitcoin::consensus::encode::serialize_hex;
 use bitcoin::BlockHash;
 use bitcoin::Work;
 use floresta_common::prelude::Box;
-use floresta_common::prelude::Error;
 use floresta_common::prelude::String;
 use floresta_common::prelude::Vec;
 
@@ -269,6 +269,9 @@ impl WorkExt for Work {
 
 #[cfg(test)]
 mod tests {
+    use core::fmt;
+    use core::fmt::Display;
+    use core::fmt::Formatter;
     use std::collections::HashMap;
     use std::sync::Arc;
 
@@ -294,8 +297,8 @@ mod tests {
         NotFound,
     }
 
-    impl std::fmt::Display for MockBlockchainError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    impl Display for MockBlockchainError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
             write!(f, "MockBlockchainError")
         }
     }

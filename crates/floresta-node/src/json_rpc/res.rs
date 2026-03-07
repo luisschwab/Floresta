@@ -1,4 +1,7 @@
-use std::fmt::Display;
+use core::fmt;
+use core::fmt::Debug;
+use core::fmt::Display;
+use core::fmt::Formatter;
 
 use axum::response::IntoResponse;
 use corepc_types::v30::GetBlockVerboseOne;
@@ -225,7 +228,7 @@ pub enum JsonRpcError {
 impl_error_from!(JsonRpcError, AcceptToMempoolError, MempoolAccept);
 
 impl Display for JsonRpcError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             JsonRpcError::InvalidTimestamp => write!(f, "Invalid timestamp, ensure that it is between the genesis and the tip."),
             JsonRpcError::InvalidRescanVal => write!(f, "Your rescan request contains invalid values"),
@@ -285,7 +288,7 @@ impl From<HeaderExtError> for JsonRpcError {
 
 impl_error_from!(JsonRpcError, miniscript::Error, InvalidDescriptor);
 
-impl<T: std::fmt::Debug> From<floresta_watch_only::WatchOnlyError<T>> for JsonRpcError {
+impl<T: Debug> From<floresta_watch_only::WatchOnlyError<T>> for JsonRpcError {
     fn from(e: floresta_watch_only::WatchOnlyError<T>) -> Self {
         JsonRpcError::Wallet(e.to_string())
     }

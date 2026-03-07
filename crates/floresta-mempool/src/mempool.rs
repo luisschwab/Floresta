@@ -3,10 +3,11 @@
 //! Once our transaction is included in a block, we remove it from the mempool.
 
 use core::error::Error;
+use core::fmt;
+use core::fmt::Display;
+use core::fmt::Formatter;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
-use std::fmt::Display;
-use std::fmt::Formatter;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -86,7 +87,7 @@ pub enum AcceptToMempoolError {
 }
 
 impl Display for AcceptToMempoolError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match self {
             AcceptToMempoolError::MemoryUsageTooHigh => write!(f, "we are running out of memory"),
             AcceptToMempoolError::ConflictingTransaction => {
@@ -366,7 +367,6 @@ impl Mempool {
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
-    use std::str::FromStr;
 
     use bitcoin::absolute;
     use bitcoin::block;

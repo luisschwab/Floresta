@@ -90,6 +90,8 @@ pub mod service_flags {
 pub fn parse_descriptors(
     descriptors: &[String],
 ) -> Result<Vec<Descriptor<DescriptorPublicKey>>, miniscript::Error> {
+    use core::str::FromStr;
+
     let descriptors = descriptors
         .iter()
         .map(|descriptor| {
@@ -116,9 +118,6 @@ pub mod prelude {
     pub use alloc::vec::Vec;
     pub use core::cmp;
     pub use core::convert;
-    pub use core::error::Error;
-    pub use core::fmt;
-    pub use core::fmt::Display;
     pub use core::iter;
     pub use core::mem;
     pub use core::ops;
@@ -127,8 +126,6 @@ pub mod prelude {
     pub use core::option;
     pub use core::result;
     pub use core::slice;
-    pub use core::str;
-    pub use core::str::FromStr;
 
     pub use bitcoin::io::Error as ioError;
     pub use bitcoin::io::Read;
@@ -149,22 +146,17 @@ pub mod prelude {
     extern crate std;
     pub use alloc::format;
     pub use alloc::string::ToString;
-    pub use core::error::Error;
     pub use std::borrow::ToOwned;
     pub use std::boxed::Box;
     pub use std::collections::hash_map::Entry;
     pub use std::collections::HashMap;
     pub use std::collections::HashSet;
-    pub use std::fmt::Display;
-    pub use std::fmt::Formatter;
-    pub use std::fmt::{self};
     pub use std::io::Error as ioError;
     pub use std::io::Read;
     pub use std::io::Write;
     pub use std::ops::Deref;
     pub use std::ops::DerefMut;
     pub use std::result::Result;
-    pub use std::str::FromStr;
     pub use std::string::String;
     pub use std::sync;
     pub use std::vec;

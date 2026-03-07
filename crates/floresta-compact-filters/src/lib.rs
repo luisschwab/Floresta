@@ -18,8 +18,10 @@
 )]
 #![allow(clippy::manual_is_multiple_of)]
 
+use core::fmt;
 use core::fmt::Debug;
-use std::fmt::Display;
+use core::fmt::Display;
+use core::fmt::Formatter;
 use std::sync::PoisonError;
 use std::sync::RwLockWriteGuard;
 
@@ -53,7 +55,7 @@ pub enum IterableFilterStoreError {
 }
 
 impl Debug for IterableFilterStoreError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             IterableFilterStoreError::Io(e) => write!(f, "I/O error: {e}"),
             IterableFilterStoreError::Eof => write!(f, "End of file"),
@@ -70,7 +72,7 @@ impl From<std::io::Error> for IterableFilterStoreError {
 }
 
 impl Display for IterableFilterStoreError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Debug::fmt(self, f)
     }
 }

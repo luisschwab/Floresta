@@ -1435,7 +1435,6 @@ macro_rules! write_lock {
 
 #[cfg(all(test, feature = "flat-chainstore"))]
 mod test {
-    use core::str::FromStr;
     use std::format;
     use std::fs::File;
     use std::io::Cursor;

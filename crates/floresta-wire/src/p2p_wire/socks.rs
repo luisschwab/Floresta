@@ -7,6 +7,9 @@
 //! they want.
 
 use core::error;
+use core::fmt;
+use core::fmt::Display;
+use core::fmt::Formatter;
 use std::net::Ipv4Addr;
 use std::net::Ipv6Addr;
 use std::net::SocketAddr;
@@ -133,8 +136,8 @@ impl From<tokio::io::Error> for Socks5Error {
     }
 }
 
-impl std::fmt::Display for Socks5Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for Socks5Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Socks5Error::InvalidVersion => write!(f, "Invalid SOCKS version"),
             Socks5Error::InvalidAuthMethod => write!(f, "Invalid authentication method"),
