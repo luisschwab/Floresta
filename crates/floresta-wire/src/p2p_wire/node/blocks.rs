@@ -10,7 +10,6 @@ use floresta_chain::BlockchainError;
 use floresta_chain::ChainBackend;
 use floresta_chain::CompactLeafData;
 use floresta_common::service_flags;
-use floresta_common::service_flags::UTREEXO;
 use rustreexo::accumulator::proof::Proof;
 use tracing::debug;
 use tracing::error;
@@ -131,7 +130,7 @@ where
         if txdata_len != 1 {
             let utreexo_peer = self.send_to_fast_peer(
                 NodeRequest::GetBlockProof((block_hash, Bitmap::new(), Bitmap::new())),
-                UTREEXO.into(),
+                service_flags::UTREEXO.into(),
             )?;
 
             self.inflight.insert(

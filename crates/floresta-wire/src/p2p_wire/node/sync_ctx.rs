@@ -7,7 +7,6 @@ use bitcoin::p2p::ServiceFlags;
 use floresta_chain::proof_util;
 use floresta_chain::ThreadSafeChain;
 use floresta_common::service_flags;
-use floresta_common::service_flags::UTREEXO;
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
 use tokio::time;
@@ -37,8 +36,14 @@ use crate::p2p_wire::peer::PeerMessages;
 pub struct SyncNode {}
 
 impl NodeContext for SyncNode {
-    fn get_required_services(&self) -> bitcoin::p2p::ServiceFlags {
-        ServiceFlags::WITNESS | service_flags::UTREEXO.into() | ServiceFlags::NETWORK
+    /// Get the required [services](ServiceFlags) for the [`SyncNode`].
+    ///
+    /// The [`SyncNode`] is active during IBD, and therefore requires that peers support:
+    ///   * `NETWORK`: the peer is capable of serving the entire blockchain.
+    ///   * `WITNESS`: the peer is capable of serving blocks and transactions with witness data.
+    ///   * `UTREEXO_ARCHIVE`: the peer is capable of serving inclusion proofs for the entire blockchain.
+    fn get_required_services(&self) -> ServiceFlags {
+        ServiceFlags::NETWORK | ServiceFlags::WITNESS | service_flags::UTREEXO_ARCHIVE.into()
     }
 
     const TRY_NEW_CONNECTION: u64 = 30; // 30 seconds
@@ -138,7 +143,7 @@ where
         let total_peers = self.connected_peers();
         let utreexo_peers = self
             .peer_by_service
-            .get(&UTREEXO.into())
+            .get(&service_flags::UTREEXO.into())
             .map_or(0, |peers| peers.len());
 
         if utreexo_peers < 2 && total_peers >= SyncNode::MAX_OUTGOING_PEERS {
@@ -149,14 +154,16 @@ where
             // make sure we can download blocks faster.
             self.peers
                 .values()
-                .filter(|peer| peer.is_regular_peer() && !peer.services.has(UTREEXO.into()))
+                .filter(|peer| {
+                    peer.is_regular_peer() && !peer.services.has(service_flags::UTREEXO.into())
+                })
                 .choose(&mut thread_rng())
                 .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
         }
 
         if utreexo_peers < 2 {
             info!("Not enough utreexo peers (we have {utreexo_peers}), opening a new connection");
-            self.maybe_open_connection(UTREEXO.into())?;
+            self.maybe_open_connection(service_flags::UTREEXO.into())?;
         }
 
         self.maybe_open_connection(ServiceFlags::NETWORK)
