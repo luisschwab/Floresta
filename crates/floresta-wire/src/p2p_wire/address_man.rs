@@ -863,7 +863,7 @@ impl AddressMan {
 
                 if let Some(address) = self.addresses.get(&idx).cloned() {
                     self.push_if_has_service(&address, service_flags::UTREEXO.into());
-                    self.push_if_has_service(&address, ServiceFlags::from(1 << 25)); // UTREEXO_FILTER
+                    self.push_if_has_service(&address, service_flags::UTREEXO_ARCHIVE.into());
                     self.push_if_has_service(&address, ServiceFlags::NONE); // this means any peer
                     self.push_if_has_service(&address, ServiceFlags::COMPACT_FILTERS);
                 }

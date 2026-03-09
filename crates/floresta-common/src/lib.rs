@@ -75,13 +75,17 @@ pub fn read_bounded_len<R: bitcoin::io::Read + ?Sized>(
     Ok(n64 as usize)
 }
 
-/// Non-standard service flags that aren't in rust-bitcoin yet.
+/// Utreexo-specific service flags.
+///
+/// TODO(@luisschwab): remove this once <https://github.com/rust-bitcoin/rust-bitcoin/pull/5009> is merged.
 pub mod service_flags {
-    /// This peer supports UTREEXO messages
-    pub const UTREEXO: u64 = 1 << 24;
+    /// `UTREEXO`: the node is capable of serving inclusion proofs for new
+    /// blocks and transactions, and for their other advertised services.
+    pub const UTREEXO: u64 = 1 << 12;
 
-    /// This peer supports UTREEXO filter messages
-    pub const UTREEXO_FILTER: u64 = 1 << 25;
+    /// `UTREEXO_ARCHIVE`: the node is capable of serving historical
+    /// inclusion proofs for all blocks, but not necessarily historical blocks.
+    pub const UTREEXO_ARCHIVE: u64 = 1 << 13;
 }
 
 #[cfg(any(feature = "descriptors-std", feature = "descriptors-no-std"))]

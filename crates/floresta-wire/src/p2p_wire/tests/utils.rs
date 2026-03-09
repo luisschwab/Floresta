@@ -21,7 +21,6 @@ use floresta_chain::ChainState;
 use floresta_chain::FlatChainStore;
 use floresta_chain::FlatChainStoreConfig;
 use floresta_common::service_flags;
-use floresta_common::service_flags::UTREEXO;
 use floresta_common::Ema;
 use floresta_mempool::Mempool;
 use rand::rngs::OsRng;
@@ -81,7 +80,7 @@ impl SimulatedPeer {
                 | ServiceFlags::WITNESS
                 | ServiceFlags::COMPACT_FILTERS
                 | ServiceFlags::from(1 << 25),
-            kind: ConnectionKind::Regular(UTREEXO.into()),
+            kind: ConnectionKind::Regular(service_flags::UTREEXO.into()),
             transport_protocol: TransportProtocol::V2,
         };
 
@@ -181,7 +180,7 @@ pub fn create_peer(
         state: PeerStatus::Ready,
         channel: sender,
         port: 8333,
-        kind: ConnectionKind::Regular(UTREEXO.into()),
+        kind: ConnectionKind::Regular(service_flags::UTREEXO.into()),
         banscore: 0,
         address_id: 0,
         _last_message: Instant::now(),
