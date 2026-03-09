@@ -47,8 +47,8 @@ use crate::TransportProtocol;
 /// such as hard-coded peers
 const HARDCODED_ADDRESSES_GRACE_PERIOD: Duration = Duration::from_secs(60);
 
-/// The minimum amount of time between address fetching requests from DNS seeds (2 minutes).
-const DNS_SEED_REQUEST_INTERVAL: Duration = Duration::from_secs(2 * 60);
+/// The minimum amount of time between address fetching requests from DNS seeds (one hour).
+const DNS_SEED_REQUEST_INTERVAL: Duration = Duration::from_secs(60 * 60);
 
 impl<T, Chain> UtreexoNode<Chain, T>
 where
@@ -464,15 +464,13 @@ where
         });
 
         tokio::task::spawn_blocking(move || {
-            let dns_seeds = floresta_chain::get_chain_dns_seeds(network);
-            let mut addresses = Vec::new();
-
             let default_port = Self::get_port(network);
-            for seed in dns_seeds {
-                let _addresses = AddressMan::get_seeds_from_dns(&seed, default_port, proxy_addr);
+            let dns_seeds = floresta_chain::get_chain_dns_seeds(network);
 
-                if let Ok(_addresses) = _addresses {
-                    addresses.extend(_addresses);
+            let mut addresses = Vec::new();
+            for seed in &dns_seeds {
+                if let Ok(got) = AddressMan::get_seeds_from_dns(seed, default_port, proxy_addr) {
+                    addresses.extend(got);
                 }
             }
 
@@ -480,6 +478,7 @@ where
                 "Fetched {} peer addresses from all DNS seeds",
                 addresses.len()
             );
+
             node_sender
                 .send(NodeNotification::DnsSeedAddresses(addresses))
                 .unwrap();
