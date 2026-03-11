@@ -7,7 +7,7 @@
         "state": {
             "Tried": 0
         },
-        "services": 16778317,
+        "services": 9225,
         "port": 38433
     },
     {
@@ -18,7 +18,7 @@
         "state": {
             "Tried": 0
         },
-        "services": 16778317,
+        "services": 9225,
         "port": 38333
     },
     {
@@ -29,18 +29,18 @@
         "state": {
             "Tried": 0
         },
-        "services": 50331657,
+        "services": 9225,
         "port": 38333
     },
     {
         "address": {
-            "V4": "45.33.47.11"
+            "V4": "1.228.21.110"
         },
         "last_connected": 1678986166,
         "state": {
             "Tried": 0
         },
-        "services": 1033,
+        "services": 9225,
         "port": 38333
     },
     {
@@ -51,7 +51,7 @@
         "state": {
             "Tried": 0
         },
-        "services": 0,
+        "services": 1033,
         "port": 38333
     },
     {
