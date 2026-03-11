@@ -358,24 +358,18 @@ pub fn get_chain_dns_seeds(network: Network) -> Vec<DnsSeed> {
     let x9: ServiceFlags = ServiceFlags::from(0x9);
     // this mean NETWORK + WITNESS + COMPACT_FILTERS
     let x49 = ServiceFlags::from(0x49);
-    // this mean NETWORK + WITNESS + COMPACT_FILTERS + UTREEXO
-    let x1000049 = ServiceFlags::from(0x1000049);
-    // this means NETWORK + WITNESS + UTREEXO
-    let x1000009 = ServiceFlags::from(0x1000009);
+    // this means NETWORK + WITNESS + COMPACT_FILTERS + UTREEXO
+    let x1049 = ServiceFlags::from(0x1009);
     // filters aren't supported (usually returns a static list of peers)
     let none = ServiceFlags::NONE;
 
     match network {
         Network::Bitcoin => {
-            seeds.push(DnsSeed::new(
-                Network::Bitcoin,
-                "seed.calvinkim.info",
-                x1000009,
-            ));
+            seeds.push(DnsSeed::new(Network::Bitcoin, "seed.calvinkim.info", x1049));
             seeds.push(DnsSeed::new(
                 Network::Bitcoin,
                 "seed.bitcoin.luisschwab.com",
-                x1000049,
+                x1049,
             ));
             seeds.push(DnsSeed::new(
                 Network::Bitcoin,
@@ -437,7 +431,7 @@ pub fn get_chain_dns_seeds(network: Network) -> Vec<DnsSeed> {
                 "seed.signet.bitcoin.sprovoost.nl",
                 x49,
             ));
-            seeds.push(DnsSeed::new(Network::Signet, "seed.dlsouza.lol", x1000049));
+            seeds.push(DnsSeed::new(Network::Signet, "seed.dlsouza.lol", x1049));
         }
         Network::Regtest => {
             // No seeds for regtest

@@ -571,7 +571,7 @@ impl AddressMan {
 
         // ask for utreexo peers (if filtering is available)
         if seed.filters.has(service_flags::UTREEXO.into()) {
-            let host = format!("x1000000.{}", seed.seed);
+            let host = format!("x1000.{}", seed.seed);
             let _addresses = Self::do_lookup(&host, default_port, socks5);
             let _addresses = _addresses.into_iter().map(|mut x| {
                 x.services = ServiceFlags::NETWORK_LIMITED
