@@ -8,17 +8,20 @@ use bitcoin::Txid;
 use floresta_common::prelude::*;
 use serde::Deserialize;
 use serde::Serialize;
+
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MerkleProof {
     pub target: Txid,
     pub pos: u64,
     pub hashes: Vec<sha256d::Hash>,
 }
+
 impl Default for MerkleProof {
     fn default() -> Self {
         Self::new()
     }
 }
+
 impl MerkleProof {
     /// Creates an empty proof
     fn new() -> Self {
@@ -195,6 +198,8 @@ impl Encodable for MerkleProof {
 
 #[cfg(test)]
 mod test {
+    use core::str::FromStr;
+
     use bitcoin::consensus::deserialize;
     use bitcoin::hashes::hex::FromHex;
     use bitcoin::hashes::sha256d;

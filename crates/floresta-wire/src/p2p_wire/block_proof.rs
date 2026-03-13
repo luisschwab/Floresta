@@ -278,8 +278,6 @@ impl Decodable for UtreexoProof {
 
 #[cfg(test)]
 mod utreexo_proof_tests {
-    use std::str::FromStr;
-
     use bitcoin::consensus::encode::deserialize_hex;
     use bitcoin::hashes::sha256;
     use bitcoin::Block;

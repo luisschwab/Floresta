@@ -100,32 +100,32 @@ macro_rules! assert_err {
 }
 
 #[macro_export]
-/// Validates a block hash at compile time. Requires `FromStr` and `BlockHash` in scope.
+/// Validates a block hash at compile time. Requires `BlockHash` to be in scope.
 macro_rules! bhash {
-    ($s:expr) => {{
-        // Catch invalid literals at compile time
+    ($s:literal) => {{
+        // Catch invalid literals at compile time.
         const _: () = match $crate::macros::validate_hash_compile_time($s) {
             Ok(()) => (),
             Err(e) => panic!("{}", e),
         };
-        BlockHash::from_str($s).expect("Literal should be valid")
+        $s.parse::<BlockHash>().expect("Literal should be valid")
     }};
 }
 
 #[macro_export]
-/// Validates utreexo node hashes at compile time. Requires `FromStr` and `BitcoinNodeHash` in scope.
+/// Validates Utreexo node hashes at compile time. Requires `BitcoinNodeHash` to be in scope.
 ///
-/// - Accepts one or more comma-separated hash literal expressions.
+/// - Accepts one or more comma-separated hash literals.
 /// - Allows an optional trailing comma.
 macro_rules! acchashes {
-    ( $( $s:expr ),+ $(,)? ) => {
+    ( $( $s:literal ),+ $(,)? ) => {
         [ $( {
-            // Catch invalid literals at compile time
+            // Catch invalid literals at compile time.
             const _: () = match $crate::macros::validate_hash_compile_time($s) {
                 Ok(()) => (),
                 Err(e) => panic!("{}", e),
             };
-            BitcoinNodeHash::from_str($s).expect("Literal should be valid")
+            $s.parse::<BitcoinNodeHash>().expect("Literal should be valid")
         } ),+ ]
     };
 }
@@ -202,12 +202,12 @@ mod test {
             }
         }
 
-        // Invalid hex character at the end: 'g'.
+        // Invalid hex character at the end: 'g'
         let invalid = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeg";
         assert_eq!(invalid.len(), 64);
         assert_err!(validate_hash(invalid));
 
-        // Invalid ascii character in the middle: 'é'
+        // Invalid ASCII character in the middle: 'é'
         let invalid_ascii = "0123456789abcdef0123456789abcdéf0123456789abcdef0123456789abcde";
         assert_eq!(invalid_ascii.len(), 64);
         assert_err!(validate_hash(invalid_ascii));

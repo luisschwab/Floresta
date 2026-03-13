@@ -5,6 +5,7 @@
 //!
 //! - [BlockchainInterface]: The main interface for interacting with the backend
 //! - [UpdatableChainstate]: Trait defining methods for updating the chain state
+
 extern crate alloc;
 
 pub mod chain_state;
@@ -20,6 +21,7 @@ pub mod partial_chain;
 pub mod udata;
 
 use alloc::sync::Arc;
+use core::error::Error;
 
 use bitcoin::block::Header as BlockHeader;
 use bitcoin::hashes::sha256;

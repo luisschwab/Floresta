@@ -1324,7 +1324,6 @@ pub mod migrate_v0_to_v1 {
 mod tests {
     use core::mem::size_of;
     use std::fs;
-    use std::str::FromStr;
 
     use bitcoin::block::Header;
     use bitcoin::consensus::deserialize;

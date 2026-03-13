@@ -1,4 +1,7 @@
-use std::fmt::Debug;
+use core::fmt;
+use core::fmt::Debug;
+use core::fmt::Display;
+use core::fmt::Formatter;
 use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
@@ -165,8 +168,8 @@ pub enum PeerError {
     Transport(TransportError),
 }
 
-impl std::fmt::Display for PeerError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for PeerError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             PeerError::Send => write!(f, "Error while sending to peer"),
             PeerError::Read(err) => write!(f, "Error while reading from peer: {err:?}"),
@@ -207,7 +210,7 @@ pub enum ReaderMessage {
 }
 
 impl<T: AsyncWrite + Unpin + Send + Sync> Debug for Peer<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.id)?;
         Ok(())
     }

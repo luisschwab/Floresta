@@ -1,6 +1,6 @@
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::fmt::{self};
+use core::fmt;
+use core::fmt::Display;
+use core::fmt::Formatter;
 use std::io;
 use std::net::IpAddr;
 
@@ -90,8 +90,8 @@ pub enum WireError {
     LeafDataNotFound,
 }
 
-impl std::fmt::Display for WireError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for WireError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             WireError::Blockchain(err) => write!(f, "Blockchain error: {err:?}"),
             WireError::ChannelSend(err) => write!(f, "Error while writing into channel: {err:?}"),

@@ -10,8 +10,8 @@ pub mod running_ctx;
 pub mod sync_ctx;
 mod user_req;
 
+use core::fmt::Debug;
 use std::collections::HashMap;
-use std::fmt::Debug;
 use std::net::IpAddr;
 use std::ops::Deref;
 use std::ops::DerefMut;

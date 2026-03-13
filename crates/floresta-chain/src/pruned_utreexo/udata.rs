@@ -179,6 +179,10 @@ impl Encodable for ScriptPubKeyKind {
 /// to consume a block (delete transactions included in it from the mempool);
 /// or to validate a block.
 pub mod proof_util {
+    use core::fmt;
+    use core::fmt::Display;
+    use core::fmt::Formatter;
+
     use bitcoin::blockdata::script;
     use bitcoin::blockdata::script::Instruction;
     use bitcoin::consensus::Encodable;
@@ -552,10 +556,6 @@ pub mod proof_util {
 
 #[cfg(test)]
 mod test {
-    extern crate std;
-
-    use std::str::FromStr;
-
     use bitcoin::blockdata::script;
     use bitcoin::consensus::encode::deserialize_hex;
     use bitcoin::opcodes::all::OP_NOP;

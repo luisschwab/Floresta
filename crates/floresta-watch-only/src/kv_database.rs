@@ -1,5 +1,10 @@
+use core::error::Error;
+use core::fmt;
+use core::fmt::Display;
+use core::fmt::Formatter;
+
 use bitcoin::consensus::deserialize;
-use bitcoin::consensus::encode::Error;
+use bitcoin::consensus::encode::Error as EncodingError;
 use bitcoin::consensus::serialize;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
@@ -29,12 +34,12 @@ pub enum KvDatabaseError {
     KvError(kv::Error),
     SerdeJsonError(serde_json::Error),
     WalletNotInitialized,
-    DeserializeError(Error),
+    DeserializeError(EncodingError),
     TransactionNotFound,
 }
 impl_error_from!(KvDatabaseError, serde_json::Error, SerdeJsonError);
 impl_error_from!(KvDatabaseError, kv::Error, KvError);
-impl_error_from!(KvDatabaseError, Error, DeserializeError);
+impl_error_from!(KvDatabaseError, EncodingError, DeserializeError);
 
 impl Display for KvDatabaseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -48,7 +53,7 @@ impl Display for KvDatabaseError {
     }
 }
 
-impl floresta_common::prelude::Error for KvDatabaseError {}
+impl Error for KvDatabaseError {}
 
 type Result<T> = floresta_common::prelude::Result<T, KvDatabaseError>;
 

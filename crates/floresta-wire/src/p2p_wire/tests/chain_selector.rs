@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use bitcoin::BlockHash;
     use bitcoin::Network;
     use floresta_chain::pruned_utreexo::BlockchainInterface;

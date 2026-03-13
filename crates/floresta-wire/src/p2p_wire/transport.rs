@@ -1,3 +1,6 @@
+use core::fmt;
+use core::fmt::Display;
+use core::fmt::Formatter;
 use std::io;
 
 use bip324::serde::deserialize as deserialize_v2;
@@ -66,8 +69,8 @@ pub enum TransportError {
     Proxy(Socks5Error),
 }
 
-impl std::fmt::Display for TransportError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for TransportError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             TransportError::Io(err) => write!(f, "IO error: {err:?}"),
             TransportError::Protocol(err) => write!(f, "V2 protocol error: {err:?}"),

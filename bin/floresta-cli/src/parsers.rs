@@ -1,7 +1,9 @@
 use core::error::Error;
+use core::fmt;
+use core::fmt::Display;
+use core::fmt::Formatter;
+use core::str::FromStr;
 use std::any::type_name;
-use std::fmt::Display;
-use std::str::FromStr;
 
 #[derive(Debug)]
 /// Collection of errors to deal with parsing.
@@ -15,7 +17,7 @@ pub enum ParseError {
 }
 
 impl Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             ParseError::InvalidArray => write!(
                 f,

@@ -20,6 +20,7 @@
 //!     leak through the API, as we are not enforcing lifetime or borrowing rules at compile time.
 //!   - Sending is fine: There's nothing in this module that makes it not sendable to between
 //!     threads, as long as the origin thread gives away the ownership.
+
 use core::cell::UnsafeCell;
 
 use bitcoin::block::Header as BlockHeader;
@@ -459,7 +460,6 @@ impl From<PartialChainStateInner> for PartialChainState {
 
 #[cfg(test)]
 mod tests {
-    use core::str::FromStr;
     use std::collections::HashMap;
 
     use bitcoin::block::Header;

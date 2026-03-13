@@ -10,13 +10,13 @@ pub enum Error {
     Parsing(#[from] serde_json::Error),
 
     #[error("Blockchain error")]
-    Blockchain(Box<dyn floresta_common::prelude::Error + Send + 'static>),
+    Blockchain(Box<dyn core::error::Error + Send + 'static>),
 
     #[error("IO error")]
     Io(#[from] std::io::Error),
 
     #[error("Mempool accept error")]
-    Mempool(Box<dyn floresta_common::prelude::Error + Send + 'static>),
+    Mempool(Box<dyn core::error::Error + Send + 'static>),
 
     #[error("Node isn't working")]
     NodeInterface(#[from] oneshot::error::RecvError),
