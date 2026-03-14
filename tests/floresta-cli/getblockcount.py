@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
 """
 Test the floresta's `getblockcount` before and after mining a few blocks with
 utreexod. Then, assert that the command returns the same number of

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! Adaptation of Bitcoin Core's `src/test/transaction_tests.cpp`, using the vendored JSON test
 //! vectors in `testdata/bitcoin-core`. We parse them and check the flags that are supported by
 //! Floresta's consensus.
