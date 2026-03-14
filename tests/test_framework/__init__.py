@@ -37,7 +37,7 @@ from test_framework.electrum import ConfigElectrum, ConfigTls
 from test_framework.node import Node, NodeType
 from test_framework.util import Utility, wait_until
 from test_framework.p2p import P2P_SERVICES, P2PInterface, NetworkThread
-from test_framework.messages import NODE_P2P_V2
+from test_framework.messages import NODE_P2P_V2, CAddress
 
 
 # pylint: disable=too-many-public-methods
@@ -543,3 +543,34 @@ class FlorestaTestFramework:
             method=method,
             **kwargs,
         )
+
+    def create_node_address(self, quantity: int):
+        """
+        Create a list of node addresses.
+        """
+
+        i2p_addr = "c4gfnttsuwqomiygupdqqqyy5y5emnk5c73hrfvatri67prd7vyq.b32.i2p"
+        onion_addr = "nix2iapg23s2g6tog6vmmr2xgywfly5522c27hnp7qwm5qyk73mufvyd.onion"
+
+        address_list = []
+        for i in range(quantity):
+            addr = CAddress()
+            addr.time = int(time.time()) + i
+            addr.port = 8333 + i
+            addr.nServices = P2P_SERVICES
+            # Add one I2P and one onion V3 address at an arbitrary position.
+            if i % 5 == 0:
+                addr.net = addr.NET_I2P
+                addr.ip = i2p_addr
+                addr.port = 0
+            elif i % 3 == 0:
+                addr.net = addr.NET_TORV3
+                addr.ip = onion_addr
+            elif i % 2 == 0:
+                addr.net = addr.NET_IPV6
+                addr.ip = f"2001:db8::{i % 65536}"
+            else:
+                addr.ip = f"192.42.116.{i % 256}"
+            address_list.append(addr)
+
+        return address_list
