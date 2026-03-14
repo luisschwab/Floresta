@@ -16,7 +16,6 @@ use floresta_chain::pruned_utreexo::BlockchainInterface;
 use floresta_chain::pruned_utreexo::UpdatableChainstate;
 use floresta_chain::ThreadSafeChain;
 use floresta_common::service_flags;
-use floresta_common::service_flags::UTREEXO;
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
 use rustreexo::accumulator::stump::Stump;
@@ -146,7 +145,7 @@ where
                     .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
             }
 
-            self.maybe_open_connection(UTREEXO.into())?;
+            self.maybe_open_connection(service_flags::UTREEXO.into())?;
         }
 
         if !self.has_compact_filters_peer() {
@@ -663,7 +662,7 @@ where
 
                         // if this is a utreexo peer, we should ask for the block if we don't
                         // have it
-                        if p.services.has(UTREEXO.into()) {
+                        if p.services.has(service_flags::UTREEXO.into()) {
                             self.handle_new_block(block, peer)?;
                         }
                     }

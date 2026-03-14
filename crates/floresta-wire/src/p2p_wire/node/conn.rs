@@ -10,7 +10,6 @@ use bitcoin::p2p::ServiceFlags;
 use bitcoin::Network;
 use floresta_chain::ChainBackend;
 use floresta_common::service_flags;
-use floresta_common::service_flags::UTREEXO;
 use floresta_common::Ema;
 use floresta_mempool::Mempool;
 use tokio::net::tcp::WriteHalf;
@@ -116,7 +115,7 @@ where
         // We allow V1 fallback only if the cli option was set, it's a --connect peer
         // or if we are connecting to a utreexo peer, since utreexod doesn't support V2 yet.
         let allow_v1 = self.config.allow_v1_fallback
-            || kind == ConnectionKind::Regular(UTREEXO.into())
+            || kind == ConnectionKind::Regular(service_flags::UTREEXO.into())
             || is_fixed;
 
         self.open_connection(kind, peer_id, address, allow_v1)?;
@@ -565,7 +564,7 @@ where
 
         for address in anchors {
             self.open_connection(
-                ConnectionKind::Regular(UTREEXO.into()),
+                ConnectionKind::Regular(service_flags::UTREEXO.into()),
                 address.id,
                 address,
                 // Using V1 transport fallback as utreexo nodes have limited support

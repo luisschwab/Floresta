@@ -145,7 +145,9 @@ impl NodeContext for ChainSelector {
     const NEW_CONNECTIONS_BATCH_SIZE: usize = 12;
 
     fn get_required_services(&self) -> ServiceFlags {
-        ServiceFlags::NETWORK | service_flags::UTREEXO.into() | service_flags::UTREEXO_FILTER.into()
+        ServiceFlags::NETWORK
+            | service_flags::UTREEXO.into()
+            | service_flags::UTREEXO_ARCHIVE.into()
     }
 }
 
@@ -640,7 +642,7 @@ where
 
                 let has_peers = self
                     .peer_by_service
-                    .contains_key(&ServiceFlags::from(1 << 25));
+                    .contains_key(&service_flags::UTREEXO_ARCHIVE.into());
 
                 if self.config.pow_fraud_proofs && has_peers {
                     self.check_tips().await?;
@@ -896,7 +898,7 @@ where
     ) -> Result<FindAccResult, WireError> {
         for peer_id in self.common.peer_ids.iter() {
             let peer = self.peers.get(peer_id).unwrap();
-            if peer.services.has(ServiceFlags::from(1 << 25)) {
+            if peer.services.has(service_flags::UTREEXO_ARCHIVE.into()) {
                 self.send_to_peer(*peer_id, NodeRequest::GetUtreexoState((block, height)))?;
                 self.common.inflight.insert(
                     InflightRequests::UtreexoState(*peer_id),

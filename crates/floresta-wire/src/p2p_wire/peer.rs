@@ -707,6 +707,7 @@ pub(super) mod peer_utils {
     use bitcoin::p2p::message::NetworkMessage;
     use bitcoin::p2p::message::{self};
     use bitcoin::p2p::message_network;
+    use floresta_common::service_flags;
 
     /// Protocol version we speak
     pub const PROTOCOL_VERSION: u32 = 70016;
@@ -722,7 +723,8 @@ pub(super) mod peer_utils {
         let my_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 38332);
 
         // "bitfield of features to be enabled for this connection"
-        let services = ServiceFlags::NETWORK | ServiceFlags::from(1 << 24) | ServiceFlags::WITNESS;
+        let services =
+            ServiceFlags::NETWORK | ServiceFlags::WITNESS | service_flags::UTREEXO.into();
 
         // "standard UNIX timestamp in seconds"
         let timestamp = SystemTime::now()

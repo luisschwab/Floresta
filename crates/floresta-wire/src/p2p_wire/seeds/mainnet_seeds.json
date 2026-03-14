@@ -7,7 +7,7 @@
         "state": {
             "Tried": 0
         },
-        "services": 50331657,
+        "services": 15369,
         "port": 8333
     },
     {
@@ -18,7 +18,7 @@
         "state": {
             "Tried": 0
         },
-        "services": 50331657,
+        "services": 15369,
         "port": 8333
     }
 ]

@@ -319,10 +319,13 @@ where
                     .push(peer);
             }
 
-            if peer_data.services.has(ServiceFlags::from(1 << 25)) {
+            if peer_data
+                .services
+                .has(service_flags::UTREEXO_ARCHIVE.into())
+            {
                 self.common
                     .peer_by_service
-                    .entry(ServiceFlags::from(1 << 25))
+                    .entry(service_flags::UTREEXO_ARCHIVE.into())
                     .or_default()
                     .push(peer);
             }
