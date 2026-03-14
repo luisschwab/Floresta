@@ -35,7 +35,7 @@ from test_framework.daemon import ConfigP2P
 from test_framework.rpc import ConfigRPC
 from test_framework.electrum import ConfigElectrum, ConfigTls
 from test_framework.node import Node, NodeType
-from test_framework.util import Utility
+from test_framework.util import Utility, wait_until
 
 
 # pylint: disable=too-many-public-methods
@@ -274,6 +274,9 @@ class FlorestaTestFramework:
                 f"Peer one running: {peer_one_running}, Peer two running: {peer_two_running}"
             )
 
+        # Send pings to both peers to trigger a peer state update
+        self._send_peer_pings(peer_one, peer_two)
+
         peer_two_in_peer_one = (
             peer_one.is_peer_connected(peer_two) if peer_one_running else False
         )
@@ -293,41 +296,39 @@ class FlorestaTestFramework:
         Wait for two peers to connect/disconnect to each other.
         """
         attempts = 0
-        timeout = time.time() + 30
-        while time.time() < timeout:
-            if self.check_connection(peer_one, peer_two, is_connected):
-                self.log.debug(
-                    f"Peers {peer_one.variant} and {peer_two.variant} are in the expected "
-                    f"connection state."
-                )
-                return
 
-            if attempts < 10:
+        def check_peers_connection():
+            nonlocal attempts
+
+            if attempts > 10:
                 time.sleep(1)
-            else:
-                time.sleep(2)
 
             attempts += 1
 
-            # Send a ping to both peers to trigger a peer state update
-            if peer_one.daemon.is_running:
-                peer_one.rpc.ping()
-                self.log.debug(
-                    f"Peer one {peer_one.variant} is connected to peer two {peer_two.variant}: "
-                    f"{peer_one.is_peer_connected(peer_two)}"
-                )
+            return self.check_connection(peer_one, peer_two, is_connected)
 
-            if peer_two.daemon.is_running:
-                peer_two.rpc.ping()
-                self.log.debug(
-                    f"Peer two {peer_two.variant} is connected to peer one {peer_one.variant}: "
-                    f"{peer_two.is_peer_connected(peer_one)}"
-                )
+        wait_until(predicate=check_peers_connection)
 
-        raise AssertionError(
-            f"Peers {peer_one.variant} and {peer_two.variant} failed to reach the expected "
-            f"connection state within the timeout. Expected connected: {is_connected}."
+        self.log.debug(
+            f"Peers {peer_one.variant} and {peer_two.variant} are "
+            f"{'connected' if is_connected else 'disconnected'}"
         )
+
+    def _send_peer_pings(self, peer_one: Node, peer_two: Node):
+        """Send pings to both peers and log connection status."""
+        if peer_one.daemon.is_running:
+            peer_one.rpc.ping()
+            self.log.debug(
+                f"Peer one {peer_one.variant} is connected to peer two {peer_two.variant}: "
+                f"{peer_one.is_peer_connected(peer_two)}"
+            )
+
+        if peer_two.daemon.is_running:
+            peer_two.rpc.ping()
+            self.log.debug(
+                f"Peer two {peer_two.variant} is connected to peer one {peer_one.variant}: "
+                f"{peer_two.is_peer_connected(peer_one)}"
+            )
 
     def connect_nodes(
         self,
@@ -347,3 +348,49 @@ class FlorestaTestFramework:
         assert result is None
 
         self.wait_for_peers_connections(peer_one, peer_two)
+
+    def check_sync_nodes(self, is_finished_ibd: bool = True) -> bool:
+        """
+        Check if all nodes are synced.
+
+        If is_finished_ibd is True, it will check if all florestad nodes have finished the
+        initial block download (IBD) process. Otherwise, it will check if all
+        nodes are fully synced with the network.
+        """
+        if not self._nodes:
+            raise AssertionError("No nodes to check for synchronization")
+
+        expected_block = self._nodes[0].rpc.get_block_count()
+        for node in self._nodes:
+            block_count = node.rpc.get_block_count()
+
+            if (
+                node.variant == NodeType.FLORESTAD
+                and is_finished_ibd
+                and node.rpc.get_blockchain_info()["initialblockdownload"]
+            ):
+                self.log.debug(
+                    f"Node '{node.variant}' has not finished IBD. Block count: {block_count}"
+                )
+                return False
+
+            if block_count != expected_block:
+                self.log.debug(
+                    f"Node '{node.variant}' is not synced. Block count: {block_count}, "
+                    f"expected: {expected_block}"
+                )
+                return False
+
+        return True
+
+    def wait_for_sync_nodes(self, is_finished_ibd: bool = True):
+        """
+        Wait for all nodes to be synced.
+
+        If is_finished_ibd is True, it will wait until all florestad nodes have finished the
+        initial block download (IBD) process. Otherwise, it will wait until all
+        nodes are fully synced with the network.
+        """
+        wait_until(lambda: self.check_sync_nodes(is_finished_ibd=is_finished_ibd))
+
+        self.log.debug("All nodes are synced")

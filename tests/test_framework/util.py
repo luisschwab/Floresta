@@ -3,46 +3,15 @@
 """Utility helpers used by the test framework (paths, ports, TLS helpers)."""
 
 import os
+import time
 import random
 import socket
 import subprocess
-import time
 
 from test_framework.crypto.pkcs8 import (
     create_pkcs8_private_key,
     create_pkcs8_self_signed_certificate,
 )
-
-
-# pylint: disable=too-many-arguments,too-many-positional-arguments
-def wait_for_chain_sync(
-    florestad,
-    bitcoind,
-    utreexod,
-    target_blocks: int,
-    timeout: float,
-    wait_for_ibd_exit: bool = False,
-):
-    """Poll the three nodes until they all report `target_blocks`.
-
-    When `wait_for_ibd_exit` is set, also wait until florestad reports
-    `initialblockdownload == False`. Polls every 0.5 s; returns silently on
-    success and silently on timeout (caller asserts the post-condition).
-    """
-    end = time.time() + timeout
-    while time.time() < end:
-        blocks_synced = (
-            florestad.rpc.get_block_count()
-            == bitcoind.rpc.get_block_count()
-            == utreexod.rpc.get_block_count()
-            == target_blocks
-        )
-        if blocks_synced and (
-            not wait_for_ibd_exit
-            or not florestad.rpc.get_blockchain_info()["initialblockdownload"]
-        ):
-            return
-        time.sleep(0.5)
 
 
 class Utility:
@@ -119,3 +88,16 @@ class Utility:
         )
 
         return (pk_path, cert_path)
+
+
+def wait_until(predicate, timeout=30, interval=0.5, error_msg="Condition not met"):
+    """
+    Wait until a predicate returns True or timeout is reached.
+    """
+    start = time.time()
+    while time.time() - start < timeout:
+        if predicate():
+            return True
+        time.sleep(interval)
+
+    raise TimeoutError(f"{error_msg} after {timeout} seconds")
