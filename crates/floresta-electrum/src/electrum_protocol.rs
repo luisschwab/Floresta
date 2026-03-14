@@ -1145,10 +1145,10 @@ mod test {
     /// Create a tls config thats valid for localhost with a random
     /// created key
     fn create_tls_config() -> Result<Arc<ServerConfig>, crate::error::Error> {
-        let CertifiedKey { cert, key_pair } =
+        let CertifiedKey { cert, signing_key } =
             generate_simple_self_signed(vec!["localhost".into()]).expect("Failed to generate cert");
 
-        let private_key = key_pair.serialize_pem();
+        let private_key = signing_key.serialize_pem();
 
         let config = ServerConfig::builder()
             .with_no_client_auth()

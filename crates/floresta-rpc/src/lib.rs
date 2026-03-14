@@ -88,10 +88,10 @@ mod tests {
             .unwrap();
 
         // Generate TLS private key and certificate using rcgen
-        let CertifiedKey { cert, key_pair } =
+        let CertifiedKey { cert, signing_key } =
             generate_simple_self_signed(vec!["localhost".into()]).unwrap();
         let cert_pem = cert.pem();
-        let key_pem = key_pair.serialize_pem();
+        let key_pem = signing_key.serialize_pem();
         fs::create_dir_all(format!("{dirname}/regtest/tls")).unwrap();
         fs::write(format!("{dirname}/regtest/tls/cert.pem"), cert_pem).unwrap();
         fs::write(format!("{dirname}/regtest/tls/key.pem"), key_pem).unwrap();
