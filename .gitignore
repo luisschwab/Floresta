@@ -22,6 +22,8 @@ utreexod/
 
 # Configuration files
 config.toml
+.pre-commit-config.yaml
+.env
 
 # direnv cache
 .direnv/
