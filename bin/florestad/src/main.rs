@@ -48,6 +48,7 @@ use tracing_subscriber::Layer;
 
 fn main() {
     let params = Cli::parse();
+    params.validate();
 
     // If not provided defaults to `$HOME/.floresta`. Uses a subdirectory for non-mainnet networks.
     let data_dir = data_dir_path(params.data_dir, params.network);
