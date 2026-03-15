@@ -4,7 +4,7 @@ use core::error;
 use core::fmt;
 use core::fmt::Display;
 use core::fmt::Formatter;
-use std::net::AddrParseError;
+use core::net::AddrParseError;
 
 use bitcoin::consensus::encode;
 use floresta_chain::BlockValidationErrors;
