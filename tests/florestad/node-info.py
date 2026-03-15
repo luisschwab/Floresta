@@ -34,7 +34,9 @@ class NodeInfoTest(FlorestaTestFramework):
         peer_info = self.bitcoind.rpc.get_peerinfo()
 
         self.assertEqual(len(peer_info), 1)
-        self.assertEqual(peer_info[0]["services"], "0000000000001009")
+        self.assertEqual(
+            peer_info[0]["services"], "0000000000001808"
+        )  # WITNESS | P2P_V2 | UTREEXO
         self.assertEqual(peer_info[0]["version"], 70016)
         self.assertMatch(
             peer_info[0]["subver"],
