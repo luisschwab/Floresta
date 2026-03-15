@@ -1,4 +1,5 @@
-use std::net::SocketAddr;
+use core::net::IpAddr;
+use core::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
@@ -426,8 +427,8 @@ where
                     .map_err(|_e| AddrParseError::InvalidHostname)?;
                 let id = rand::random();
                 let ip = match ip[0] {
-                    std::net::IpAddr::V4(ip) => AddrV2::Ipv4(ip),
-                    std::net::IpAddr::V6(ip) => AddrV2::Ipv6(ip),
+                    IpAddr::V4(ip) => AddrV2::Ipv4(ip),
+                    IpAddr::V6(ip) => AddrV2::Ipv6(ip),
                 };
 
                 Ok(LocalAddress::new(

@@ -697,9 +697,8 @@ impl<T: AsyncWrite + Unpin + Send + Sync> Peer<T> {
 }
 
 pub(super) mod peer_utils {
-    use std::net::IpAddr;
-    use std::net::Ipv4Addr;
-    use std::net::SocketAddr;
+    use core::net::SocketAddr;
+    use core::str::FromStr;
     use std::time::SystemTime;
     use std::time::UNIX_EPOCH;
 

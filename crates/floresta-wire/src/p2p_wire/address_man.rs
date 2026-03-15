@@ -2,14 +2,14 @@
 //! metadata. This module is very important in keeping our node protected against targeted
 //! attacks, like eclipse attacks.
 
+use core::net::IpAddr;
+use core::net::Ipv4Addr;
+use core::net::Ipv6Addr;
+use core::net::SocketAddr;
 use core::str::FromStr;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs::read_to_string;
-use std::net::IpAddr;
-use std::net::Ipv4Addr;
-use std::net::Ipv6Addr;
-use std::net::SocketAddr;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
@@ -131,7 +131,7 @@ impl FromStr for LocalAddress {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         LocalAddress::try_from(s)
     }
-    type Err = std::net::AddrParseError;
+    type Err = core::net::AddrParseError;
 }
 
 // Note that, since we can't know the network we are operating in, this code
@@ -158,7 +158,7 @@ impl TryFrom<&str> for LocalAddress {
         ))
     }
 
-    type Error = std::net::AddrParseError;
+    type Error = core::net::AddrParseError;
 }
 
 impl LocalAddress {
@@ -1089,8 +1089,8 @@ pub enum Address {
 
 /// Simple implementation of a DNS-over-HTTPS (DoH) lookup routed through the SOCKS5 proxy
 pub mod dns_proxy {
-    use std::net::IpAddr;
-    use std::net::SocketAddr;
+    use core::net::IpAddr;
+    use core::net::SocketAddr;
     use std::sync::Arc;
     use std::time::Duration;
 
@@ -1178,10 +1178,10 @@ pub mod dns_proxy {
 
 #[cfg(test)]
 mod test {
+    use core::net::Ipv4Addr;
     use std::fs::File;
     use std::io::Read;
     use std::io::{self};
-    use std::net::Ipv4Addr;
 
     use bitcoin::p2p::address::AddrV2;
     use bitcoin::p2p::ServiceFlags;
