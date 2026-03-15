@@ -1,5 +1,6 @@
 use bitcoin::BlockHash;
 use bitcoin::Network;
+#[cfg(unix)]
 use clap::CommandFactory;
 use clap::Parser;
 use floresta_node::AssumeValidArg;
