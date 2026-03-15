@@ -182,22 +182,40 @@ impl LocalAddress {
         }
     }
 
-    /// Sets the port used by this node
-    pub fn set_port(&mut self, port: u16) {
-        self.port = port;
+    /// Get the [`AddrV2`] for this [`LocalAddress`].
+    pub fn get_addrv2(&self) -> AddrV2 {
+        self.address.clone()
     }
 
-    /// Sets the services advertised by this node
-    pub fn set_services(&mut self, services: ServiceFlags) {
-        self.services = services;
+    /// Get the [`SocketAddr`] for this [`LocalAddress`].
+    pub fn get_socket_address(&self) -> SocketAddr {
+        let ip = self.get_net_address();
+        let port = self.get_port();
+
+        SocketAddr::new(ip, port)
     }
 
-    /// Returns this address's port
+    /// Get the `port` for this [`LocalAddress`].
     pub fn get_port(&self) -> u16 {
         self.port
     }
 
-    /// Return an IP address associated with this peer address
+    /// Set the `port` for this [`LocalAddress`].
+    pub fn set_port(&mut self, port: u16) {
+        self.port = port;
+    }
+
+    /// Get the [`ServiceFlags`] for this [`LocalAddress`].
+    pub fn get_services(&self) -> ServiceFlags {
+        self.services
+    }
+
+    /// Set the [`ServiceFlags`] for this [`LocalAddress`].
+    pub fn set_services(&mut self, services: ServiceFlags) {
+        self.services = services;
+    }
+
+    /// Get the [`IpAddr`] for with this [`LocalAddress`].
     pub fn get_net_address(&self) -> IpAddr {
         match self.address {
             // IPV4
@@ -206,12 +224,6 @@ impl LocalAddress {
             AddrV2::Ipv6(ipv6) => IpAddr::V6(ipv6),
             _ => IpAddr::V4(Ipv4Addr::LOCALHOST),
         }
-    }
-
-    /// Returns the actual address, as defined in AddrV2. This is useful
-    /// if we are trying a peer that needs a proxy like Tor.
-    pub fn get_address(&self) -> AddrV2 {
-        self.address.clone()
     }
 
     /// Return whether the address can be reached from our node
