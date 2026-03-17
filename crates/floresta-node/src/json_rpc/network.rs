@@ -2,8 +2,8 @@
 
 //! This module holds all RPC server side methods for interacting with our node's network stack.
 
-use std::net::IpAddr;
-use std::net::SocketAddr;
+use core::net::IpAddr;
+use core::net::SocketAddr;
 
 use bitcoin::Network;
 use floresta_wire::node_interface::PeerInfo;

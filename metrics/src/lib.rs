@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use std::net::SocketAddr;
+use core::net::SocketAddr;
 use std::sync::atomic::AtomicU64;
 use std::sync::OnceLock;
 
