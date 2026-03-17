@@ -74,11 +74,14 @@ fn main() {
         wallet_xpub: params.wallet_xpub,
         config_file: params.config_file,
         #[cfg(unix)]
+        log_to_stdout: !params.daemon,
+        #[cfg(not(unix))]
+        log_to_stdout: true,
+        #[cfg(unix)]
         log_to_file: params.log_to_file || params.daemon,
         #[cfg(not(unix))]
         log_to_file: params.log_to_file,
         assume_valid: params.assume_valid,
-        log_to_stdout: true,
         #[cfg(feature = "zmq-server")]
         zmq_address: params.zmq_address,
         #[cfg(feature = "json-rpc")]
