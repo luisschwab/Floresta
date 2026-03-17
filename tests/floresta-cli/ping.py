@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
 """
 A test that creates a florestad and a bitcoind node, and connects them. We then
 send a ping to bitcoind and check if bitcoind receives it, by calling

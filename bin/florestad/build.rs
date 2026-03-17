@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 fn main() {
     let version = get_version_from_git().unwrap_or_else(|| get_version_from_manifest().unwrap());
     let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();

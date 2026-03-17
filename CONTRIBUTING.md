@@ -269,6 +269,19 @@ We expect to have 100% test coverage for critical parts, and a decent level of c
   - Functional: Tests the behavior of the running program, intended to check whether the codebase as a whole works as expected. They are either written in Rust or Python
   - Integration: Checks if `Floresta` works well with other projects, like `Bitcoin Core`, `utreexod` and `Electrum` (for the electrum server). Mainly written in Python.
 
+License Notice
+--------------
+
+All files MUST include the [SPDX License Identifier](https://spdx.dev/learn/handling-license-info/) at the top.
+
+```rust
+// SPDX-License-Identifier: MIT OR Apache-2.0
+```
+
+```python
+# SPDX-License-Identifier: MIT OR Apache-2.0
+```
+
 Release
 -----------
 

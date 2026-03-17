@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
 """Utility helpers used by the test framework (paths, ports, TLS helpers)."""
 
 import os

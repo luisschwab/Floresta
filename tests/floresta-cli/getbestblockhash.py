@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
 """
 Test the floresta's `getbestblockhash` after mining a few block with
 utreexod. Then, assert that the command returns the same hash of

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 #![cfg(all(feature = "bitcoinkernel", feature = "test-utils"))]
 #![allow(clippy::manual_is_multiple_of)]
 

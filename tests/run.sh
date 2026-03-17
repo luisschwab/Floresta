@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
 # Run integration tests; before running tests, clean node data directories and logs.
 # If the --preserve-data-dir flag is passed, do not clean the logs.
 #
