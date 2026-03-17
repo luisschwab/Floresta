@@ -286,8 +286,8 @@ mod tests {
     use bitcoin::OutPoint;
     use bitcoin::Transaction;
     use bitcoin::Txid;
-    use rustreexo::accumulator::proof::Proof;
-    use rustreexo::accumulator::stump::Stump;
+    use rustreexo::proof::Proof;
+    use rustreexo::stump::Stump;
 
     use super::*;
     use crate::BlockConsumer;
