@@ -507,14 +507,13 @@ where
         peer.banscore += factor;
 
         // This peer is misbehaving too often, ban it
-        let is_missbehaving = peer.banscore >= self.common.max_banscore;
+        let is_misbehaving = peer.banscore >= self.common.max_banscore;
         // extra peers should be banned immediately
         let is_extra = peer.kind == ConnectionKind::Extra;
 
-        if is_missbehaving || is_extra {
+        if is_misbehaving || is_extra {
             warn!("banning peer {peer_id} for misbehaving");
-            peer.channel.send(NodeRequest::Shutdown)?;
-            peer.state = PeerStatus::Banned;
+            self.disconnect_and_ban(peer_id)?;
             return Ok(());
         }
 
@@ -525,16 +524,14 @@ where
 
     /// Disconnects a peer and bans it for `T::BAN_TIME`.
     pub(crate) fn disconnect_and_ban(&mut self, peer: PeerId) -> Result<(), WireError> {
-        if let Some(peer) = self.peers.get(&peer) {
+        if let Some(peer) = self.peers.get_mut(&peer) {
             // Manual connections are exempt from being punished
             if peer.is_manual_peer() {
                 return Ok(());
             }
 
-            let ban_state = AddressState::Banned(T::BAN_TIME);
-            let addr_id = peer.address_id as usize;
-
-            self.address_man.update_set_state(addr_id, ban_state);
+            // `handle_disconnection` will mark the address as banned when `Peer` object return
+            peer.state = PeerStatus::Banned;
         }
 
         self.send_to_peer(peer, NodeRequest::Shutdown)?;

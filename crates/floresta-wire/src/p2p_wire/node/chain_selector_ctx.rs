@@ -182,7 +182,7 @@ where
             if let Err(e) = self.chain.accept_header(*header) {
                 error!("Error while downloading headers from peer={peer} err={e}");
 
-                self.increase_banscore(peer, self.max_banscore)?;
+                self.disconnect_and_ban(peer)?;
 
                 let peer = self.peers.get(&peer).unwrap();
                 self.common.address_man.update_set_state(
@@ -461,7 +461,7 @@ where
                 PeerMessages::Block(recv_block) => {
                     if recv_block.block_hash() != block_hash {
                         error!("peer {peer} sent us a block we didn't request");
-                        self.increase_banscore(peer, self.max_banscore)?;
+                        self.disconnect_and_ban(peer)?;
                         return Err(WireError::PeerMisbehaving);
                     }
 
@@ -474,7 +474,7 @@ where
                             "Peer {peer} sent us a mutated block {}",
                             recv_block.block_hash()
                         );
-                        self.increase_banscore(peer, self.config.max_banscore)?;
+                        self.disconnect_and_ban(peer)?;
                         return Err(WireError::PeerMisbehaving);
                     }
 
@@ -491,7 +491,7 @@ where
                 PeerMessages::UtreexoProof(uproof) => {
                     let Some(block) = block else {
                         error!("peer {peer} sent us a proof without sending the block first");
-                        self.increase_banscore(peer, self.config.max_banscore)?;
+                        self.disconnect_and_ban(peer)?;
                         return Err(WireError::PeerMisbehaving);
                     };
 
@@ -566,7 +566,7 @@ where
 
             match liar_state {
                 PeerCheck::OneLying(liar) => {
-                    self.increase_banscore(liar, self.max_banscore)?;
+                    self.disconnect_and_ban(liar)?;
                     if liar == peer1 {
                         invalid_accs.insert(peer[0].1.clone());
                         continue;
@@ -574,15 +574,15 @@ where
                     invalid_accs.insert(peer[1].1.clone());
                 }
                 PeerCheck::UnresponsivePeer(dead_peer) => {
-                    self.increase_banscore(dead_peer, self.max_banscore)?;
+                    self.disconnect_and_ban(dead_peer)?;
                 }
                 PeerCheck::BothUnresponsivePeers => {
-                    self.increase_banscore(peer1, self.max_banscore)?;
-                    self.increase_banscore(peer2, self.max_banscore)?;
+                    self.disconnect_and_ban(peer1)?;
+                    self.disconnect_and_ban(peer2)?;
                 }
                 PeerCheck::BothLying => {
-                    self.increase_banscore(peer1, self.max_banscore)?;
-                    self.increase_banscore(peer2, self.max_banscore)?;
+                    self.disconnect_and_ban(peer1)?;
+                    self.disconnect_and_ban(peer2)?;
 
                     invalid_accs.insert(peer[0].1.clone());
                     invalid_accs.insert(peer[1].1.clone());
@@ -705,7 +705,7 @@ where
                     peer.1.address_id as usize,
                     AddressState::Banned(ChainSelector::BAN_TIME),
                 );
-                self.increase_banscore(peer.0, self.max_banscore)?;
+                self.disconnect_and_ban(peer.0)?;
             }
         }
 
