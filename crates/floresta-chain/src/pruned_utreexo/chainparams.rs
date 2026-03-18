@@ -191,26 +191,41 @@ impl ChainParams {
         }
     }
 
-    /// This method is used to assume all the scripts up to a specific block in the chain as valid. It can be None (we will verify all the scripts), user input or hardcoded.
+    /// Returns the [`BlockHash`] to use as the assume-valid checkpoint,
+    /// or [`None`] if script validation should run on all blocks.
+    ///
+    /// Blocks at and before this checkpoint skip script execution during IBD.
+    /// This argument does not influence chain selection; if the best chain doesn't
+    /// include this block, we will verify all the historical scripts.
+    ///
+    /// # Variants
+    /// - [`AssumeValidArg::Disabled`] — no checkpoint; all scripts are validated.
+    /// - [`AssumeValidArg::UserInput`] — use the provided hash.
+    /// - [`AssumeValidArg::Hardcoded`] — use a release-time checkpoint per [`Network`]:
+    ///   - **Bitcoin**: block [939,969](https://mempool.space/block/939969)
+    ///   - **Signet**: block [296,870](https://mempool.space/signet/block/296870)
+    ///   - **Testnet**: block [4,887,983](https://mempool.space/testnet/block/4887983)
+    ///   - **Testnet4**: block [126,514](https://mempool.space/testnet4/block/126514)
+    ///   - **Regtest**: genesis block
     pub fn get_assume_valid(network: Network, arg: AssumeValidArg) -> Option<BlockHash> {
         match arg {
             AssumeValidArg::Disabled => None,
             AssumeValidArg::UserInput(hash) => Some(hash),
             AssumeValidArg::Hardcoded => match network {
                 Network::Bitcoin => Some(bhash!(
-                    "00000000000000000001ff36aef3a0454cf48887edefa3aab1f91c6e67fee294"
-                )),
-                Network::Testnet => Some(bhash!(
-                    "000000007df22db38949c61ceb3d893b26db65e8341611150e7d0a9cd46be927"
-                )),
-                Network::Testnet4 => Some(bhash!(
-                    "0000000000335c2895f02ebc75773d2ca86095325becb51773ce5151e9bcf4e0"
+                    "000000000000000000009d36aae180d04aeac872adb14e22f65c8b6647a8bf79" // 939_969
                 )),
                 Network::Signet => Some(bhash!(
-                    "000000084ece77f20a0b6a7dda9163f4527fd96d59f7941fb8452b3cec855c2e"
+                    "000000068d38e9cfa53268a08b32dab55118a58e5212729b016ee3c9c66387a6" // 296_870
+                )),
+                Network::Testnet => Some(bhash!(
+                    "000000005cf458fb1f79c8fee78822eead52aee40530a6bbe018cd61f22d6bb1" // 4_887_983
+                )),
+                Network::Testnet4 => Some(bhash!(
+                    "000000000066d17b237cd1ac323526731084c3eed82caeacd1ec028c6fea7276" // 126_514
                 )),
                 Network::Regtest => Some(bhash!(
-                    "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"
+                    "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206" // 0
                 )),
             },
         }
