@@ -48,7 +48,6 @@ impl NodeContext for SyncNode {
         ServiceFlags::NETWORK | ServiceFlags::WITNESS | service_flags::UTREEXO_ARCHIVE.into()
     }
 
-    const TRY_NEW_CONNECTION: u64 = 30; // 30 seconds
     const REQUEST_TIMEOUT: u64 = 60; // 1 minute
     const MAX_INFLIGHT_REQUESTS: usize = 100; // double the default
 
