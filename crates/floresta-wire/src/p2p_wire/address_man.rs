@@ -967,7 +967,7 @@ impl AddressMan {
     /// Updates the service flags after we receive a version message
     pub fn update_set_service_flag(&mut self, idx: usize, flags: ServiceFlags) -> &mut Self {
         // if this peer turns out to not have the minimum required services, we remove it
-        if !flags.has(ServiceFlags::NETWORK) || !flags.has(ServiceFlags::WITNESS) {
+        if !flags.has(ServiceFlags::NETWORK_LIMITED) || !flags.has(ServiceFlags::WITNESS) {
             self.addresses.remove(&idx);
             for peers in self.peers_by_service.values_mut() {
                 peers.retain(|&x| x != idx);
