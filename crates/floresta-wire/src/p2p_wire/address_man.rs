@@ -1319,6 +1319,41 @@ mod test {
     }
 
     #[test]
+    fn test_adding_fixed_peer() {
+        let signet_addresses =
+            load_addresses_from_json("./src/p2p_wire/seeds/signet_seeds.json").unwrap();
+
+        let mut addr_man =
+            AddressMan::new(None, &[ReachableNetworks::IPv4, ReachableNetworks::IPv6]);
+        addr_man.add_fixed_addresses(Network::Signet);
+
+        assert_eq!(addr_man.good_addresses.len(), signet_addresses.len());
+
+        let utreexo_addresses = signet_addresses
+            .iter()
+            .filter(|address| address.services.has(service_flags::UTREEXO.into()))
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            addr_man
+                .good_peers_by_service
+                .get(&service_flags::UTREEXO.into())
+                .unwrap()
+                .len(),
+            utreexo_addresses.len()
+        );
+
+        assert_eq!(
+            addr_man
+                .peers_by_service
+                .get(&service_flags::UTREEXO.into())
+                .unwrap()
+                .len(),
+            utreexo_addresses.len()
+        );
+    }
+
+    #[test]
     fn test_parse() {
         let signet_address =
             load_addresses_from_json("./src/p2p_wire/seeds/signet_seeds.json").unwrap();
