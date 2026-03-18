@@ -21,6 +21,7 @@ use bitcoin::p2p::ServiceFlags;
 use bitcoin::Network;
 use floresta_chain::DnsSeed;
 use floresta_common::service_flags;
+use rand::seq::IteratorRandom;
 use serde::Deserialize;
 use serde::Serialize;
 use tracing::debug;
@@ -738,15 +739,16 @@ impl AddressMan {
     }
 
     fn get_address_by_service(&self, service: ServiceFlags) -> Option<(usize, LocalAddress)> {
-        let peers = self.good_peers_by_service.get(&service)?;
-        if peers.is_empty() {
-            return None;
-        }
+        let candidates = self.good_peers_by_service.get(&service)?;
 
-        let idx = rand::random::<usize>() % peers.len();
-        let utreexo_peer = peers.get(idx)?;
-
-        Some((*utreexo_peer, self.addresses.get(utreexo_peer)?.to_owned()))
+        candidates
+            .iter()
+            .filter_map(|id| {
+                let addr = self.addresses.get(id)?;
+                (addr.state != AddressState::Connected).then_some((id, addr))
+            })
+            .choose(&mut rand::thread_rng())
+            .map(|(id, addr)| (*id, addr.to_owned()))
     }
 
     pub fn start_addr_man(&mut self, datadir: String) -> Vec<LocalAddress> {
