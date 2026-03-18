@@ -151,6 +151,27 @@ impl ChainParams {
                 .to_vec(),
                 leaves: 2860457445,
             },
+            Network::Signet => AssumeUtreexoValue {
+                height: 296870,
+                block_hash: bhash!(
+                    "000000068d38e9cfa53268a08b32dab55118a58e5212729b016ee3c9c66387a6"
+                ),
+                roots: acchashes![
+                    "2f50b3b1ed71ab671b8f9e90dcd1a73aba00ee9e8441f34c388efe224956257c",
+                    "cfbc9f1139665175ffdf6f949ec8e82956172e128ca4c1fca228ef5b6816c196",
+                    "31bcb14a70b18a8c22a4144e270dcdae8795cda26e938ed9c676dbba4443b8ad",
+                    "cb90b5ad4df6ff872f315575a8dda593f6d1382349f6f2e41e315f7ceb8a084f",
+                    "ca0db15d9e59ae69691e82b3e9b2fb65b7b932275cd86795337a066fb1f371a7",
+                    "d802536c657b0b52e34929ebf26033f0354d1ac65f2186f34e967fafa5b0c3fd",
+                    "fe157607ceec8e0f46d401f0f1a0d3421bfe40abaef708d9694246e512be27da",
+                    "87a75c823e13bb8d0111c238a0a9b5d8d89ba79395f7970418d9981ad5b0ffc3",
+                    "4670816e7c71a989e2d4da8dd491a045681536276e386913dca98c7f6fbe5156",
+                    "ed1e927d905d01616e066492d1f4a014151b74801299a596918d103c438e2551",
+                    "5c8e0755507f65c79972aaadf49a86f3c5f02a75d855a6a3380707830cc20ae2"
+                ]
+                .to_vec(),
+                leaves: 126113034,
+            },
             Network::Testnet => AssumeUtreexoValue {
                 block_hash: genesis.block_hash(),
                 height: 0,
@@ -158,12 +179,6 @@ impl ChainParams {
                 roots: Vec::new(),
             },
             Network::Testnet4 => AssumeUtreexoValue {
-                block_hash: genesis.block_hash(),
-                height: 0,
-                leaves: 0,
-                roots: Vec::new(),
-            },
-            Network::Signet => AssumeUtreexoValue {
                 block_hash: genesis.block_hash(),
                 height: 0,
                 leaves: 0,
