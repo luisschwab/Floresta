@@ -320,7 +320,7 @@ where
                     }
 
                     PeerMessages::Ready(version) => {
-                        try_and_log!(self.handle_peer_ready(peer, &version));
+                        try_and_log!(self.handle_peer_ready(peer, version));
                     }
 
                     PeerMessages::Disconnected(idx) => {

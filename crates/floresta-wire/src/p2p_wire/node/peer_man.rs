@@ -212,7 +212,7 @@ where
     pub(crate) fn handle_peer_ready(
         &mut self,
         peer: u32,
-        version: &Version,
+        mut version: Version,
     ) -> Result<(), WireError> {
         self.inflight.remove(&InflightRequests::Connect(peer));
 
@@ -225,6 +225,30 @@ where
         self.send_to_peer(peer, NodeRequest::GetAddresses)?;
         self.inflight
             .insert(InflightRequests::GetAddresses, (peer, Instant::now()));
+
+        let good_peers_count = self.connected_peers();
+        if good_peers_count > T::MAX_OUTGOING_PEERS {
+            // We allow utreexo, extra and manual peers to bypass our connection limits
+            let is_utreexo_peer = matches!(version.kind, ConnectionKind::Regular(services) if services.has(service_flags::UTREEXO.into()));
+            let is_manual_peer = version.kind == ConnectionKind::Manual;
+            let is_extra = version.kind == ConnectionKind::Extra;
+
+            if !(is_utreexo_peer || is_manual_peer || is_extra) {
+                debug!(
+                    "Already have {} peers, disconnecting peer to avoid blowing up our max of {}",
+                    good_peers_count,
+                    T::MAX_OUTGOING_PEERS
+                );
+
+                // If a peer exceeds our max, just turn them into a feeler so we can receive their
+                // AddrV2 message and then disconnect.
+                self.peers.entry(peer).and_modify(|p| {
+                    p.kind = ConnectionKind::Feeler;
+                });
+
+                version.kind = ConnectionKind::Feeler;
+            }
+        }
 
         if version.kind == ConnectionKind::Feeler {
             let now = SystemTime::now()
@@ -247,27 +271,6 @@ where
                 .insert(InflightRequests::Headers, (peer, Instant::now()));
 
             return Ok(());
-        }
-
-        let good_peers_count = self.connected_peers();
-        if good_peers_count > T::MAX_OUTGOING_PEERS {
-            // Don't allow our node to have more than T::MAX_OUTGOING_PEERS, unless this is a
-            // manual peer, those can exceed our quota.
-            if version.kind != ConnectionKind::Manual {
-                debug!(
-                    "Already have {} peers, disconnecting peer to avoid blowing up our max of {}",
-                    good_peers_count,
-                    T::MAX_OUTGOING_PEERS
-                );
-
-                // If a peer exceeds our max, just turn them into a feeler so we can receive their
-                // AddrV2 message and then disconnect.
-                self.peers.entry(peer).and_modify(|p| {
-                    p.kind = ConnectionKind::Feeler;
-                });
-
-                return Ok(());
-            }
         }
 
         info!(
