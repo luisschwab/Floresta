@@ -47,6 +47,10 @@ const ASSUME_STALE: u64 = 24 * 60 * 60; // 24 hours
 /// How many addresses we keep in our address manager
 const MAX_ADDRESSES: usize = 50_000;
 
+/// The [`ReachableNetworks`] this implementation currently supports.
+pub const SUPPORTED_NETWORKS: &[ReachableNetworks] =
+    &[ReachableNetworks::IPv4, ReachableNetworks::IPv6];
+
 /// A type alias for a list of addresses to send to our peers
 type AddressToSend = Vec<(AddrV2, u64, ServiceFlags, u16)>;
 
