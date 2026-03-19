@@ -19,6 +19,7 @@ use floresta_chain::pruned_utreexo::BlockchainInterface;
 pub use floresta_chain::AssumeUtreexoValue;
 pub use floresta_chain::AssumeValidArg;
 use floresta_chain::BlockchainError;
+use floresta_chain::ChainParams;
 use floresta_chain::ChainState;
 use floresta_chain::FlatChainStore as ChainStore;
 use floresta_chain::FlatChainStoreConfig;
@@ -397,20 +398,10 @@ impl Florestad {
         #[cfg(not(feature = "compact-filters"))]
         let cfilters = None;
 
-        // For now, we only have compatible bridges on signet
-        let pow_fraud_proofs = match self.config.network {
-            Network::Bitcoin => false,
-            Network::Signet => true,
-            Network::Testnet => false,
-            Network::Testnet4 => false,
-            Network::Regtest => false,
-        };
-
         // If this network already allows pow fraud proofs, we should use it instead of assumeutreexo
-        let assume_utreexo = match (pow_fraud_proofs, self.config.assume_utreexo) {
-            (false, true) => Some(floresta_chain::ChainParams::get_assume_utreexo(
-                self.config.network,
-            )),
+        let assume_utreexo = match self.config.assume_utreexo {
+            true => Some(ChainParams::get_assume_utreexo(self.config.network)),
+
             _ => None,
         };
 
@@ -424,7 +415,7 @@ impl Florestad {
         let config = UtreexoNodeConfig {
             disable_dns_seeds: self.config.disable_dns_seeds,
             network: self.config.network,
-            pow_fraud_proofs,
+            pow_fraud_proofs: false,
             proxy,
             datadir: data_dir.clone(),
             fixed_peer: self.config.connect.clone(),
