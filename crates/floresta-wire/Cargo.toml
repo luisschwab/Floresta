@@ -15,7 +15,7 @@ keywords = ["bitcoin", "utreexo", "p2p", "networking"]
 categories = ["cryptography::cryptocurrencies", "network-programming"]
 
 [dependencies]
-bip324 = { version = "=0.7.0", features = [ "tokio" ] }
+bip324 = { version = "0.10", features = [ "tokio" ] }
 bitcoin = { workspace = true }
 dns-lookup = { workspace = true }
 rand = { workspace = true }
