@@ -1215,6 +1215,7 @@ mod test {
     use super::LocalAddress;
     use crate::address_man::AddressMan;
     use crate::address_man::ReachableNetworks;
+    use crate::address_man::SUPPORTED_NETWORKS;
 
     /// Seed Data for paesing in tests.
     #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -1666,8 +1667,7 @@ mod test {
 
     #[test]
     fn test_add_fixed_addresses() {
-        let mut address_man =
-            AddressMan::new(None, &[ReachableNetworks::IPv4, ReachableNetworks::IPv6]);
+        let mut address_man = AddressMan::new(None, SUPPORTED_NETWORKS);
         address_man.add_fixed_addresses(Network::Signet);
         assert!(!address_man.addresses.is_empty());
     }

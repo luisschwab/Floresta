@@ -7,12 +7,11 @@ use bitcoin::p2p::address::AddrV2Message;
 use bitcoin::p2p::ServiceFlags;
 use floresta_wire::address_man::AddressMan;
 use floresta_wire::address_man::LocalAddress;
-use floresta_wire::address_man::ReachableNetworks;
+use floresta_wire::address_man::SUPPORTED_NETWORKS;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let mut address_man =
-        AddressMan::new(None, &[ReachableNetworks::IPv4, ReachableNetworks::IPv6]);
+    let mut address_man = AddressMan::new(None, SUPPORTED_NETWORKS);
     let addrv2_msg_vec = encode::deserialize::<Vec<AddrV2Message>>(data);
     match addrv2_msg_vec {
         Err(_) => {}
