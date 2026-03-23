@@ -47,6 +47,10 @@ const ASSUME_STALE: u64 = 24 * 60 * 60; // 24 hours
 /// How many addresses we keep in our address manager
 const MAX_ADDRESSES: usize = 50_000;
 
+/// The [`ReachableNetworks`] this implementation currently supports.
+pub const SUPPORTED_NETWORKS: &[ReachableNetworks] =
+    &[ReachableNetworks::IPv4, ReachableNetworks::IPv6];
+
 /// A type alias for a list of addresses to send to our peers
 type AddressToSend = Vec<(AddrV2, u64, ServiceFlags, u16)>;
 
@@ -1211,6 +1215,7 @@ mod test {
     use super::LocalAddress;
     use crate::address_man::AddressMan;
     use crate::address_man::ReachableNetworks;
+    use crate::address_man::SUPPORTED_NETWORKS;
 
     /// Seed Data for paesing in tests.
     #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -1662,8 +1667,7 @@ mod test {
 
     #[test]
     fn test_add_fixed_addresses() {
-        let mut address_man =
-            AddressMan::new(None, &[ReachableNetworks::IPv4, ReachableNetworks::IPv6]);
+        let mut address_man = AddressMan::new(None, SUPPORTED_NETWORKS);
         address_man.add_fixed_addresses(Network::Signet);
         assert!(!address_man.addresses.is_empty());
     }
