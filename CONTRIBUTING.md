@@ -291,6 +291,22 @@ The release will have pre-built binaries available on github's asset page. They 
 
 If we find bugs on a release, the fix may be backported and a new minor release may be released. This is done by merging fixes on top of the release branch. And then performing another release on that branch.
 
+### Generating the fixed peers json
+
+Before any release, we should generate a fresh json with known peers for each network. We usually get the data of alive peers from DNS seeds ran by different people in the ecosystem. We have a tool that helps generating the json, to generate it, just use:
+
+```bash
+curl https://bitcoin.sipa.be/seeds.txt.gz | gzip -dc > seeds_main.txt
+curl https://signet.achownodes.xyz/seeds.txt.gz | gzip -dc > seeds_signet.txt
+curl https://testnet.achownodes.xyz/seeds.txt.gz | gzip -dc > seeds_test.txt
+curl https://testnet4.achownodes.xyz/seeds.txt.gz | gzip -dc > seeds_testnet4.txt
+
+./contrib/make_seeds.py seeds_main.txt crates/floresta-wire/src/p2p_wire/seeds/mainnet_seeds.json
+./contrib/make_seeds.py seeds_signet.txt crates/floresta-wire/src/p2p_wire/seeds/signet_seeds.json
+./contrib/make_seeds.py seeds_test.txt crates/floresta-wire/src/p2p_wire/seeds/testnet_seeds.json
+./contrib/make_seeds.py seeds_testnet4.txt crates/floresta-wire/src/p2p_wire/seeds/testnet4_seeds.json
+```
+
 If you have any questions, related to this process or the codebase in general. Don't hesitate to reach us out, we are happy to help newcomers in their amazing journey. Overall, have fun :)
 
 LLM and AI Agent Usage
