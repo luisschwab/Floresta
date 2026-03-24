@@ -549,7 +549,7 @@ where
     /// This is only done if we don't have any peers for a long time, or we
     /// can't find a Utreexo peer in a context we need them. This function
     /// won't do anything if `--connect` was used
-    fn maybe_use_hardcoded_addresses(&mut self, needs_utreexo: bool) {
+    fn maybe_use_hardcoded_addresses(&mut self) {
         if self.fixed_peer.is_some() {
             return;
         }
@@ -558,18 +558,11 @@ where
             return;
         }
 
-        let has_peers = !self.peers.is_empty();
-        // Return if we have peers and utreexo isn't needed OR we have utreexo peers
-        if has_peers && (!needs_utreexo || self.has_utreexo_peers()) {
+        if self.address_man.enough_addresses() {
             return;
         }
 
-        let mut wait = HARDCODED_ADDRESSES_GRACE_PERIOD;
-        if needs_utreexo {
-            // This gives some extra time for the node to try connections after chain selection
-            wait += Duration::from_secs(60);
-        }
-
+        let wait = HARDCODED_ADDRESSES_GRACE_PERIOD;
         if self.startup_time.elapsed() < wait {
             return;
         }
@@ -629,8 +622,7 @@ where
         // If we've tried getting some connections, but the addresses we have are not
         // working. Try getting some more addresses from DNS
         self.maybe_ask_dns_seed_for_addresses();
-        let needs_utreexo = required_service.has(service_flags::UTREEXO.into());
-        self.maybe_use_hardcoded_addresses(needs_utreexo);
+        self.maybe_use_hardcoded_addresses();
 
         for _ in 0..T::NEW_CONNECTIONS_BATCH_SIZE {
             // Ignore the error so we don't break out of the loop
