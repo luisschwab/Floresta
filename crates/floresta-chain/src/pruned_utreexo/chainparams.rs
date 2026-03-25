@@ -122,34 +122,53 @@ impl ChainParams {
         let genesis = genesis_block(Params::new(network));
         match network {
             Network::Bitcoin => AssumeUtreexoValue {
+                height: 939969,
                 block_hash: bhash!(
-                    "0000000000000000000239f2b7f982df299193bdd693f499e6b893d8276ab7ce"
+                    "000000000000000000009d36aae180d04aeac872adb14e22f65c8b6647a8bf79"
                 ),
-                height: 902967,
                 roots: acchashes![
-                    "bd53eef66849c9d3ca13b62ce694030ac4d4b484c6f490f473b9868a7c5df2e8",
-                    "993ffb1782db628c18c75a5edb58d4d506167d85ca52273e108f35b73bb5b640",
-                    "36d8c4ba5176c816bdae7c4119d9f2ea26a1f743f5e6e626102f66a835eaac6d",
-                    "4c93092c1ecd843d2b439365609e7f616fe681de921a46642951cb90873ba6ce",
-                    "9b4435987e18e1fe4efcb6874bba5cdc66c3e3c68229f54624cb6343787488a4",
-                    "ab1e87c4066bf195fa7b8357874b82de4fa09ddba921499d6fc73aa133200505",
-                    "8f8215e284dbce604988755ba3c764dbfa024ae0d9659cd67b24742f46360849",
-                    "09b5057a8d6e1f61e93baf474220f581bd1a38d8a378dacb5f7fdec532f21e00",
-                    "a331072d7015c8d33a5c17391264a72a7ca1c07e1f5510797064fced7fbe591d",
-                    "c1c647289156980996d9ea46377e8c1b7e5c05940730ef8c25c0d081341221b5",
-                    "330115a495ed14140cd785d44418d84b872480d293972abd66e3325fdc78ac93",
-                    "b1d7a488e1197908efb2091a3b750508cb2fc495d2011bf2c34c5ae2d40bd2a5",
-                    "3b3b2e51ad96e1ae8ce468c7947b8aa2b41ecb400a32edec3dbcfe5ddb9aca50",
-                    "9d852775775f4c1e4a150404776a6b22569a0fe31f2e669fd3b31a0f70072800",
-                    "8e5f6a92169ad67b3f2682f230e2a62fc849b0a47bc36af8ce6cae24a5343126",
-                    "6dbd2925f8aa0745ac34fc9240ce2a7ef86953fc305c6570ef580a0763072bbe",
-                    "8121c38dcb37684c6d50175f5fd2695af3b12ce0263d20eb7cc503b96f7dba0d",
-                    "f5d8b30dd2038e1b3a5ced7a30c961e230270020c336fb649d0a9e169f11b876",
-                    "0466bd4eb9e7be5b8870e97d2a66377525391c16f15dbcc3833853c8d3bae51e",
-                    "976184c55f74cbb780938a20e2a5df2791cf51e712f68a400a6b024c77ad78e4",
+                    "08daaf0c6bc41531885cfcfdeb89c34bd4d06ab4b105cf0e81bd74ab082693f5",
+                    "8d4166d0303d41f7023cd35b95b24455b99b2f4a2728083bba3d172727900bed",
+                    "08d95bc9b7bc0bc07c9f626322c0092bd16c198fcb96d290fe1a191e9719b4c9",
+                    "e663da82fd6523124b4ae5b52d1790460cfdd16ae7733fb5ef7d9d0e8911f516",
+                    "87a9dd5e49e99b29c394622207a27f0c2ba51a8325eedccc8f604b07b3dafe23",
+                    "174bed42eb80a6e5adec1e97f7fc8e736e96d99d0f4d6cdcfed0343281934aa3",
+                    "16a4b567f72e39d928b8fc84afc50e035bba5639c5bdaa01b53ddb806190f96a",
+                    "d1a2df40385aa7c5ac3b9fc9f1ebd4fa9c2d007842fa70e3f60a434762ae8855",
+                    "cf985706bc58a2fb89edc2f28b7c4bf04af440c0534da01b27a2a7eea5f98391",
+                    "6d3c3406b7b99e476a754f3d04a1bec2442b2699c8b7d317ee0aca877b59a74f",
+                    "f166e22db463c0c1ec2c374d6ddff56699ae27d52443622154a4f6f29b2d6bac",
+                    "11270cc9d63da0cf47b2a75e8948576fecc9f6405981f7306c2b58b0fcb37ef6",
+                    "fc9bcdcf61bf2ee5480326d24a460ef520f4b02d1cec8a309784795ddcc4bcd9",
+                    "c97717ab33820c8efe9d464ff48a1d593e06e4c99135686ae96cc7328a290a79",
+                    "5b3c899b033b43989ed57db0854e2deb084de27fcf8596e9c60738ccd08d16c1",
+                    "745b78a30e984590b7ceb3a433adb363862cf84b747cb55e500eb25164b5f71f",
+                    "d338cb3e81a902b4e0301f69ac9443f7a9bb423446bbac41306c7e839bae4866",
+                    "d3078b9c3bb20af622559fc2837d339210cd4e1e13ebdb66d19ca70e83e91a00",
                 ]
                 .to_vec(),
-                leaves: 2860457445,
+                leaves: 3066490760,
+            },
+            Network::Signet => AssumeUtreexoValue {
+                height: 296870,
+                block_hash: bhash!(
+                    "000000068d38e9cfa53268a08b32dab55118a58e5212729b016ee3c9c66387a6"
+                ),
+                roots: acchashes![
+                    "2f50b3b1ed71ab671b8f9e90dcd1a73aba00ee9e8441f34c388efe224956257c",
+                    "cfbc9f1139665175ffdf6f949ec8e82956172e128ca4c1fca228ef5b6816c196",
+                    "31bcb14a70b18a8c22a4144e270dcdae8795cda26e938ed9c676dbba4443b8ad",
+                    "cb90b5ad4df6ff872f315575a8dda593f6d1382349f6f2e41e315f7ceb8a084f",
+                    "ca0db15d9e59ae69691e82b3e9b2fb65b7b932275cd86795337a066fb1f371a7",
+                    "d802536c657b0b52e34929ebf26033f0354d1ac65f2186f34e967fafa5b0c3fd",
+                    "fe157607ceec8e0f46d401f0f1a0d3421bfe40abaef708d9694246e512be27da",
+                    "87a75c823e13bb8d0111c238a0a9b5d8d89ba79395f7970418d9981ad5b0ffc3",
+                    "4670816e7c71a989e2d4da8dd491a045681536276e386913dca98c7f6fbe5156",
+                    "ed1e927d905d01616e066492d1f4a014151b74801299a596918d103c438e2551",
+                    "5c8e0755507f65c79972aaadf49a86f3c5f02a75d855a6a3380707830cc20ae2"
+                ]
+                .to_vec(),
+                leaves: 126113034,
             },
             Network::Testnet => AssumeUtreexoValue {
                 block_hash: genesis.block_hash(),
@@ -158,12 +177,6 @@ impl ChainParams {
                 roots: Vec::new(),
             },
             Network::Testnet4 => AssumeUtreexoValue {
-                block_hash: genesis.block_hash(),
-                height: 0,
-                leaves: 0,
-                roots: Vec::new(),
-            },
-            Network::Signet => AssumeUtreexoValue {
                 block_hash: genesis.block_hash(),
                 height: 0,
                 leaves: 0,
@@ -178,26 +191,41 @@ impl ChainParams {
         }
     }
 
-    /// This method is used to assume all the scripts up to a specific block in the chain as valid. It can be None (we will verify all the scripts), user input or hardcoded.
+    /// Returns the [`BlockHash`] to use as the assume-valid checkpoint,
+    /// or [`None`] if script validation should run on all blocks.
+    ///
+    /// Blocks at and before this checkpoint skip script execution during IBD.
+    /// This argument does not influence chain selection; if the best chain doesn't
+    /// include this block, we will verify all the historical scripts.
+    ///
+    /// # Variants
+    /// - [`AssumeValidArg::Disabled`] — no checkpoint; all scripts are validated.
+    /// - [`AssumeValidArg::UserInput`] — use the provided hash.
+    /// - [`AssumeValidArg::Hardcoded`] — use a release-time checkpoint per [`Network`]:
+    ///   - **Bitcoin**: block [939,969](https://mempool.space/block/939969)
+    ///   - **Signet**: block [296,870](https://mempool.space/signet/block/296870)
+    ///   - **Testnet**: block [4,887,983](https://mempool.space/testnet/block/4887983)
+    ///   - **Testnet4**: block [126,514](https://mempool.space/testnet4/block/126514)
+    ///   - **Regtest**: genesis block
     pub fn get_assume_valid(network: Network, arg: AssumeValidArg) -> Option<BlockHash> {
         match arg {
             AssumeValidArg::Disabled => None,
             AssumeValidArg::UserInput(hash) => Some(hash),
             AssumeValidArg::Hardcoded => match network {
                 Network::Bitcoin => Some(bhash!(
-                    "00000000000000000001ff36aef3a0454cf48887edefa3aab1f91c6e67fee294"
-                )),
-                Network::Testnet => Some(bhash!(
-                    "000000007df22db38949c61ceb3d893b26db65e8341611150e7d0a9cd46be927"
-                )),
-                Network::Testnet4 => Some(bhash!(
-                    "0000000000335c2895f02ebc75773d2ca86095325becb51773ce5151e9bcf4e0"
+                    "000000000000000000009d36aae180d04aeac872adb14e22f65c8b6647a8bf79" // 939_969
                 )),
                 Network::Signet => Some(bhash!(
-                    "000000084ece77f20a0b6a7dda9163f4527fd96d59f7941fb8452b3cec855c2e"
+                    "000000068d38e9cfa53268a08b32dab55118a58e5212729b016ee3c9c66387a6" // 296_870
+                )),
+                Network::Testnet => Some(bhash!(
+                    "000000005cf458fb1f79c8fee78822eead52aee40530a6bbe018cd61f22d6bb1" // 4_887_983
+                )),
+                Network::Testnet4 => Some(bhash!(
+                    "000000000066d17b237cd1ac323526731084c3eed82caeacd1ec028c6fea7276" // 126_514
                 )),
                 Network::Regtest => Some(bhash!(
-                    "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"
+                    "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206" // 0
                 )),
             },
         }
