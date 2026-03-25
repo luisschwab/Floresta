@@ -732,7 +732,7 @@ where
                             "handshake with peer={peer} succeeded feeler={:?}",
                             version.kind
                         );
-                        self.handle_peer_ready(peer, &version)?;
+                        self.handle_peer_ready(peer, version)?;
                     }
 
                     PeerMessages::Disconnected(idx) => {

@@ -48,8 +48,7 @@ impl NodeContext for SyncNode {
         ServiceFlags::NETWORK | ServiceFlags::WITNESS | service_flags::UTREEXO_ARCHIVE.into()
     }
 
-    const TRY_NEW_CONNECTION: u64 = 30; // 30 seconds
-    const REQUEST_TIMEOUT: u64 = 60; // 1 minute
+    const REQUEST_TIMEOUT: u64 = 60 * 2; // 2 minutes
     const MAX_INFLIGHT_REQUESTS: usize = 100; // double the default
 
     // A more conservative value than the default of 1 second, since we'll have many peer messages
@@ -321,7 +320,7 @@ where
                     }
 
                     PeerMessages::Ready(version) => {
-                        try_and_log!(self.handle_peer_ready(peer, &version));
+                        try_and_log!(self.handle_peer_ready(peer, version));
                     }
 
                     PeerMessages::Disconnected(idx) => {

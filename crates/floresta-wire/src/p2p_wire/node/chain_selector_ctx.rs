@@ -1005,7 +1005,7 @@ where
             }
 
             PeerMessages::Ready(version) => {
-                self.handle_peer_ready(peer, &version)?;
+                self.handle_peer_ready(peer, version)?;
                 if matches!(self.context.state, ChainSelectorState::LookingForForks(_)) {
                     let locator = self.chain.get_block_locator().unwrap();
                     self.send_to_peer(peer, NodeRequest::GetHeaders(locator))?;

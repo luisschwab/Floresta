@@ -21,6 +21,7 @@ use bitcoin::p2p::ServiceFlags;
 use bitcoin::Network;
 use floresta_chain::DnsSeed;
 use floresta_common::service_flags;
+use rand::seq::IteratorRandom;
 use serde::Deserialize;
 use serde::Serialize;
 use tracing::debug;
@@ -742,15 +743,16 @@ impl AddressMan {
     }
 
     fn get_address_by_service(&self, service: ServiceFlags) -> Option<(usize, LocalAddress)> {
-        let peers = self.good_peers_by_service.get(&service)?;
-        if peers.is_empty() {
-            return None;
-        }
+        let candidates = self.good_peers_by_service.get(&service)?;
 
-        let idx = rand::random::<usize>() % peers.len();
-        let utreexo_peer = peers.get(idx)?;
-
-        Some((*utreexo_peer, self.addresses.get(utreexo_peer)?.to_owned()))
+        candidates
+            .iter()
+            .filter_map(|id| {
+                let addr = self.addresses.get(id)?;
+                (addr.state != AddressState::Connected).then_some((id, addr))
+            })
+            .choose(&mut rand::thread_rng())
+            .map(|(id, addr)| (*id, addr.to_owned()))
     }
 
     pub fn start_addr_man(&mut self, datadir: String) -> Vec<LocalAddress> {
@@ -969,7 +971,7 @@ impl AddressMan {
     /// Updates the service flags after we receive a version message
     pub fn update_set_service_flag(&mut self, idx: usize, flags: ServiceFlags) -> &mut Self {
         // if this peer turns out to not have the minimum required services, we remove it
-        if !flags.has(ServiceFlags::NETWORK) || !flags.has(ServiceFlags::WITNESS) {
+        if !flags.has(ServiceFlags::NETWORK_LIMITED) || !flags.has(ServiceFlags::WITNESS) {
             self.addresses.remove(&idx);
             for peers in self.peers_by_service.values_mut() {
                 peers.retain(|&x| x != idx);
@@ -1319,6 +1321,41 @@ mod test {
             );
             assert_eq!(local_address.port, 8333);
         }
+    }
+
+    #[test]
+    fn test_adding_fixed_peer() {
+        let signet_addresses =
+            load_addresses_from_json("./src/p2p_wire/seeds/signet_seeds.json").unwrap();
+
+        let mut addr_man =
+            AddressMan::new(None, &[ReachableNetworks::IPv4, ReachableNetworks::IPv6]);
+        addr_man.add_fixed_addresses(Network::Signet);
+
+        assert_eq!(addr_man.good_addresses.len(), signet_addresses.len());
+
+        let utreexo_addresses = signet_addresses
+            .iter()
+            .filter(|address| address.services.has(service_flags::UTREEXO.into()))
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            addr_man
+                .good_peers_by_service
+                .get(&service_flags::UTREEXO.into())
+                .unwrap()
+                .len(),
+            utreexo_addresses.len()
+        );
+
+        assert_eq!(
+            addr_man
+                .peers_by_service
+                .get(&service_flags::UTREEXO.into())
+                .unwrap()
+                .len(),
+            utreexo_addresses.len()
+        );
     }
 
     #[test]
