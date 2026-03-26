@@ -301,10 +301,10 @@ curl https://signet.achownodes.xyz/seeds.txt.gz | gzip -dc > seeds_signet.txt
 curl https://testnet.achownodes.xyz/seeds.txt.gz | gzip -dc > seeds_test.txt
 curl https://testnet4.achownodes.xyz/seeds.txt.gz | gzip -dc > seeds_testnet4.txt
 
-./contrib/make_seeds.py seeds_main.txt crates/floresta-wire/src/p2p_wire/seeds/mainnet_seeds.json
-./contrib/make_seeds.py seeds_signet.txt crates/floresta-wire/src/p2p_wire/seeds/signet_seeds.json
-./contrib/make_seeds.py seeds_test.txt crates/floresta-wire/src/p2p_wire/seeds/testnet_seeds.json
-./contrib/make_seeds.py seeds_testnet4.txt crates/floresta-wire/src/p2p_wire/seeds/testnet4_seeds.json
+./contrib/make_seeds.py seeds_main.txt crates/floresta-wire/seeds/mainnet_seeds.json
+./contrib/make_seeds.py seeds_signet.txt crates/floresta-wire/seeds/signet_seeds.json
+./contrib/make_seeds.py seeds_test.txt crates/floresta-wire/seeds/testnet_seeds.json
+./contrib/make_seeds.py seeds_testnet4.txt crates/floresta-wire/seeds/testnet4_seeds.json
 ```
 
 If you have any questions, related to this process or the codebase in general. Don't hesitate to reach us out, we are happy to help newcomers in their amazing journey. Overall, have fun :)
