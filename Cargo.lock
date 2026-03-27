@@ -262,9 +262,9 @@ dependencies = [
 
 [[package]]
 name = "bip324"
-version = "0.7.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53157fcb2d6ec2851c7602d0690536d0b79209e393972cb2b36bd5d72dbd1879"
+checksum = "10e93f07cf774278cf032e8f1d97343a08d079017a33bb20097df380fd55d26c"
 dependencies = [
  "bitcoin",
  "bitcoin_hashes 0.15.0",
