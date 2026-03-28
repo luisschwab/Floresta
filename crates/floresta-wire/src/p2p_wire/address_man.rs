@@ -996,11 +996,11 @@ impl AddressMan {
     /// Returns the file path to the seeds file for the given network
     const fn get_net_seeds(network: Network) -> &'static str {
         match network {
-            Network::Bitcoin => include_str!("seeds/mainnet_seeds.json"),
-            Network::Signet => include_str!("seeds/signet_seeds.json"),
-            Network::Testnet => include_str!("seeds/testnet_seeds.json"),
-            Network::Testnet4 => include_str!("seeds/testnet4_seeds.json"),
-            Network::Regtest => include_str!("seeds/regtest_seeds.json"),
+            Network::Bitcoin => include_str!("../../seeds/mainnet_seeds.json"),
+            Network::Signet => include_str!("../../seeds/signet_seeds.json"),
+            Network::Testnet => include_str!("../../seeds/testnet_seeds.json"),
+            Network::Testnet4 => include_str!("../../seeds/testnet4_seeds.json"),
+            Network::Regtest => include_str!("../../seeds/regtest_seeds.json"),
         }
     }
 
@@ -1107,6 +1107,19 @@ pub enum Address {
     I2p([u8; 32]),
 }
 
+impl From<Address> for AddrV2 {
+    fn from(value: Address) -> Self {
+        match value {
+            Address::V4(addr) => AddrV2::Ipv4(addr),
+            Address::V6(addr) => AddrV2::Ipv6(addr),
+            Address::I2p(addr) => AddrV2::I2p(addr),
+            Address::Cjdns(addr) => AddrV2::Cjdns(addr),
+            Address::OnionV2(addr) => AddrV2::TorV2(addr),
+            Address::OnionV3(addr) => AddrV2::TorV3(addr),
+        }
+    }
+}
+
 /// Simple implementation of a DNS-over-HTTPS (DoH) lookup routed through the SOCKS5 proxy
 pub mod dns_proxy {
     use core::net::IpAddr;
@@ -1198,7 +1211,6 @@ pub mod dns_proxy {
 
 #[cfg(test)]
 mod test {
-    use core::net::Ipv4Addr;
     use std::fs::File;
     use std::io::Read;
     use std::io::{self};
@@ -1210,41 +1222,19 @@ mod test {
     use floresta_common::assert_ok;
     use floresta_common::service_flags;
     use rand::Rng;
-    use serde::Deserialize;
-    use serde::Serialize;
 
     use super::AddressState;
     use super::LocalAddress;
     use crate::address_man::AddressMan;
+    use crate::address_man::DiskLocalAddress;
     use crate::address_man::ReachableNetworks;
     use crate::address_man::SUPPORTED_NETWORKS;
-
-    /// Seed Data for paesing in tests.
-    #[derive(Debug, Clone, PartialEq, Deserialize)]
-    pub struct SeedData {
-        /// An actual address
-        address: SeedAddress,
-        /// Last time we successfully connected to this peer, only relevant is state == State::Tried
-        last_connected: u64,
-        /// Our local state for this peer, as defined in AddressState
-        state: AddressState,
-        /// Network services announced by this peer
-        pub services: u64,
-        /// Network port this peers listens to
-        port: u16,
-    }
-
-    #[allow(non_snake_case)]
-    #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-    struct SeedAddress {
-        V4: Ipv4Addr,
-    }
 
     fn load_addresses_from_json(file_path: &str) -> io::Result<Vec<LocalAddress>> {
         let mut contents = String::new();
         File::open(file_path)?.read_to_string(&mut contents)?;
 
-        let seeds: Vec<SeedData> =
+        let seeds: Vec<DiskLocalAddress> =
             serde_json::from_str(&contents).expect("JSON not well-formatted");
         let mut addresses = Vec::new();
         let mut rng = rand::thread_rng();
@@ -1255,10 +1245,8 @@ mod test {
                 _ => continue,
             };
 
-            let _address = AddrV2::Ipv4(seed.address.V4);
-
             let local_address = LocalAddress {
-                address: _address,
+                address: seed.address.into(),
                 last_connected: seed.last_connected,
                 state,
                 services: ServiceFlags::from(seed.services),
@@ -1325,8 +1313,7 @@ mod test {
 
     #[test]
     fn test_adding_fixed_peer() {
-        let signet_addresses =
-            load_addresses_from_json("./src/p2p_wire/seeds/signet_seeds.json").unwrap();
+        let signet_addresses = load_addresses_from_json("./seeds/signet_seeds.json").unwrap();
 
         let mut addr_man =
             AddressMan::new(None, &[ReachableNetworks::IPv4, ReachableNetworks::IPv6]);
@@ -1360,8 +1347,7 @@ mod test {
 
     #[test]
     fn test_parse() {
-        let signet_address =
-            load_addresses_from_json("./src/p2p_wire/seeds/signet_seeds.json").unwrap();
+        let signet_address = load_addresses_from_json("./seeds/signet_seeds.json").unwrap();
 
         assert!(!signet_address.is_empty());
         let random = rand::thread_rng().gen_range(1..=13);
@@ -1371,10 +1357,10 @@ mod test {
 
     #[test]
     fn test_fixed_peers() {
-        let _ = load_addresses_from_json("./src/p2p_wire/seeds/signet_seeds.json").unwrap();
-        let _ = load_addresses_from_json("./src/p2p_wire/seeds/mainnet_seeds.json").unwrap();
-        let _ = load_addresses_from_json("./src/p2p_wire/seeds/testnet_seeds.json").unwrap();
-        let _ = load_addresses_from_json("./src/p2p_wire/seeds/regtest_seeds.json").unwrap();
+        let _ = load_addresses_from_json("./seeds/signet_seeds.json").unwrap();
+        let _ = load_addresses_from_json("./seeds/mainnet_seeds.json").unwrap();
+        let _ = load_addresses_from_json("./seeds/testnet_seeds.json").unwrap();
+        let _ = load_addresses_from_json("./seeds/regtest_seeds.json").unwrap();
     }
 
     #[test]
@@ -1382,8 +1368,7 @@ mod test {
         let mut address_man =
             AddressMan::new(None, &[ReachableNetworks::IPv4, ReachableNetworks::IPv6]);
 
-        let signet_address =
-            load_addresses_from_json("./src/p2p_wire/seeds/signet_seeds.json").unwrap();
+        let signet_address = load_addresses_from_json("./seeds/signet_seeds.json").unwrap();
 
         address_man.push_addresses(&signet_address);
 
@@ -1447,21 +1432,19 @@ mod test {
         .collect::<Vec<_>>();
 
         for address in addresses {
-            assert!(!address.is_routable());
+            assert!(!address.is_routable(), "{address:?}");
         }
 
         // now load the signet seeds and ensure none are private
-        let signet_address =
-            load_addresses_from_json("./src/p2p_wire/seeds/signet_seeds.json").unwrap();
+        let signet_address = load_addresses_from_json("./seeds/signet_seeds.json").unwrap();
 
         for address in signet_address {
-            assert!(address.is_routable());
+            assert!(address.is_routable(), "{address:?}");
         }
     }
 
     fn get_addresses_and_random_times() -> Vec<LocalAddress> {
-        let signet_address =
-            load_addresses_from_json("./src/p2p_wire/seeds/signet_seeds.json").unwrap();
+        let signet_address = load_addresses_from_json("./seeds/signet_seeds.json").unwrap();
 
         // modify some addresses to have failed connections in the past
         let now = AddressMan::time_since_unix();
