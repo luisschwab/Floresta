@@ -254,7 +254,7 @@ AddNode {
 },
 ```
 
-To generate the man pages for the RPC commands, follow the instructions outlined [here](doc/RPC_man/README.md).
+To generate the man pages for the RPC commands, follow the instructions outlined [here](doc/rpc_man/README.md).
 
 Security
 --------
