@@ -356,7 +356,7 @@ mod utreexo_proof_tests {
             let datadir = format!("./tmp-db/{}.sync_node", rand::random::<u32>());
             let config = FlatChainStoreConfig::new(datadir);
             let store = FlatChainStore::new(config).expect("Failed to create chain store");
-            ChainState::new(store, network, assume_valid)
+            ChainState::open(store, network, assume_valid).expect("Failed to open chain state")
         }
 
         // STEP 0: Set up the block and utreexo data

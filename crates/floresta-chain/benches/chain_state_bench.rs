@@ -72,7 +72,7 @@ fn setup_test_chain(
     };
 
     let chainstore = FlatChainStore::new(config).unwrap();
-    ChainState::new(chainstore, network, assume_valid_arg)
+    ChainState::open(chainstore, network, assume_valid_arg).unwrap()
 }
 
 fn decode_block_and_inputs(

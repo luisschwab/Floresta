@@ -18,7 +18,6 @@ pub use bitcoin::Network;
 use floresta_chain::pruned_utreexo::BlockchainInterface;
 pub use floresta_chain::AssumeUtreexoValue;
 pub use floresta_chain::AssumeValidArg;
-use floresta_chain::BlockchainError;
 use floresta_chain::ChainParams;
 use floresta_chain::ChainState;
 use floresta_chain::FlatChainStore as ChainStore;
@@ -696,25 +695,16 @@ impl Florestad {
         None
     }
 
-    fn load_chain_store(data_dir: String) -> Result<ChainStore, FlorestadError> {
-        let config = FlatChainStoreConfig::new(data_dir + "/chaindata");
-        ChainStore::new(config).map_err(FlorestadError::CouldNotCreateFlatChainStore)
-    }
-
     fn load_chain_state(
         data_dir: String,
         network: Network,
         assume_valid: AssumeValidArg,
     ) -> Result<ChainState<ChainStore>, FlorestadError> {
-        let db = Self::load_chain_store(data_dir.clone())?;
-
-        ChainState::<ChainStore>::load_chain_state(db, network, assume_valid).or_else(|e| match e {
-            BlockchainError::ChainNotInitialized => {
-                let db = Self::load_chain_store(data_dir)?;
-                Ok(ChainState::new(db, network, assume_valid))
-            }
-            anyerr => Err(FlorestadError::CouldNotLoadFlatChainStore(anyerr)),
-        })
+        let config = FlatChainStoreConfig::new(data_dir + "/chaindata");
+        let store = ChainStore::new(config)
+            .map_err(|e| FlorestadError::CouldNotLoadFlatChainStore(e.into()))?;
+        ChainState::open(store, network, assume_valid)
+            .map_err(FlorestadError::CouldNotLoadFlatChainStore)
     }
 
     fn load_wallet(data_dir: &String) -> Result<AddressCache<KvDatabase>, FlorestadError> {

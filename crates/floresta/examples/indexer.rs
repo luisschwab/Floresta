@@ -98,11 +98,9 @@ async fn main() {
     // signatures in the blockchain, just the ones after the assume valid block. We are giving a Disabled
     // value, so we will validate all signatures regardless.
     // We place the chain state in an Arc, so we can share it with other components.
-    let chain = Arc::new(ChainState::new(
-        chain_store,
-        Network::Bitcoin,
-        AssumeValidArg::Disabled,
-    ));
+    let chain = Arc::new(
+        ChainState::open(chain_store, Network::Bitcoin, AssumeValidArg::Disabled).unwrap(),
+    );
 
     // Create the indexer and subscribe to new blocks with the spent UTXOs
     let indexer = FeeRateIndexer::new();
