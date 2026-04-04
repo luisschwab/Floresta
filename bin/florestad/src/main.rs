@@ -37,11 +37,11 @@ use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tokio::time::timeout;
 use tracing::info;
+use tracing::Level;
 
 #[cfg(unix)]
 use crate::daemonize::Daemon;
 use crate::logger::start_logger;
-use crate::logger::LOG_FILE;
 
 fn main() {
     let params = Cli::parse();
@@ -104,20 +104,18 @@ fn main() {
         daemon.fork().expect("failed to daemonize");
     }
 
+    let log_level = match config.debug {
+        true => Level::DEBUG,
+        false => Level::INFO,
+    };
+
     // The guard must stay alive until the end of `main` to flush file logs when dropped.
     let _logger_guard = start_logger(
         &config.data_dir,
         config.log_to_file,
         config.log_to_stdout,
-        config.debug,
-    )
-    .unwrap_or_else(|e| {
-        eprintln!(
-            "Failed to create log file at {}/{LOG_FILE}: {e}",
-            config.data_dir
-        );
-        exit(1);
-    });
+        log_level,
+    );
 
     let _rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()

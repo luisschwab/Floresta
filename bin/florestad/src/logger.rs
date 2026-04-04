@@ -15,20 +15,182 @@
 //! `tokio=trace` and `runtime=trace` so that `tokio-console` can connect,
 //! while the human-facing layers stay quiet through their own per-layer filters.
 
+use core::fmt;
 use std::fs;
 use std::io;
-use std::io::IsTerminal;
+use std::process::exit;
 
+use tracing::Level;
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::fmt;
+use tracing_subscriber::fmt::format::Writer;
+use tracing_subscriber::fmt::layer;
 use tracing_subscriber::fmt::time::ChronoLocal;
+use tracing_subscriber::fmt::time::FormatTime;
+use tracing_subscriber::fmt::FmtContext;
+use tracing_subscriber::fmt::FormatEvent;
+use tracing_subscriber::fmt::FormatFields;
 use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::registry::LookupSpan;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Layer;
 
 /// The file which logging events are written to.
 pub(crate) const LOG_FILE: &str = "debug.log";
+
+/// The string used to format the timestamp into a [`ChronoLocal`].
+pub(crate) const CHRONO_FORMATTER: &str = "%Y-%m-%d %H:%M:%S";
+
+/// Colored `ERROR` in bright red.
+pub(crate) const COLORED_ERROR: &str = "\x1b[0;31mERROR\x1b[0m";
+
+/// Colored `WARN` in bright yellow
+pub(crate) const COLORED_WARN: &str = "\x1b[0;33m WARN\x1b[0m";
+
+/// Colored `INFO` in dim green.
+pub(crate) const COLORED_INFO: &str = "\x1b[0;32m INFO\x1b[0m";
+
+/// Colored `DEBUG` in dim blue.
+pub(crate) const COLORED_DEBUG: &str = "\x1b[0;34mDEBUG\x1b[0m";
+
+/// Colored `TRACE` in dim magenta.
+pub(crate) const COLORED_TRACE: &str = "\x1b[0;35mTRACE\x1b[0m";
+
+/// A custom [`FormatEvent`] implementation for [`tracing-subscriber`]'s `fmt` layer.
+///
+/// Formats log events as:
+/// ```text
+/// YYYY-MM-DD HH:MM:SS LEVEL target: message
+/// ```
+///
+/// ## Target shortening
+///
+/// At `INFO` level and above, well-known `floresta_*` crate prefixes are
+/// replaced with short aliases for readability:
+///
+/// | Module Path Prefix         | Alias        |
+/// |----------------------------|--------------|
+/// | `florestad`                | `florestad`  |
+/// | `floresta_chain`           | `chain`      |
+/// | `floresta_common`          | `common`     |
+/// | `floresta_electrum`        | `electrum`   |
+/// | `floresta_compact_filters` | `filters`    |
+/// | `floresta_mempool`         | `mempool`    |
+/// | `floresta_node`            | `node`       |
+/// | `floresta_rpc`             | `rpc`        |
+/// | `floresta_watch_only`      | `watch_only` |
+/// | `floresta_wire`            | `wire`       |
+///
+/// When the log level is `DEBUG` and below, the full module path is preserved.
+///
+/// ## ANSI colors
+///
+/// When writing to an interactive terminal, log levels are colorized.
+/// Colors are suppressed when writing to a file.
+///
+/// [`tracing-subscriber`]: https://crates.io/crates/tracing-subscriber
+pub struct ShortTargetFormatter {
+    timer: ChronoLocal,
+}
+
+impl Default for ShortTargetFormatter {
+    fn default() -> Self {
+        Self {
+            timer: ChronoLocal::new(CHRONO_FORMATTER.to_string()),
+        }
+    }
+}
+
+impl ShortTargetFormatter {
+    /// Maps a full module path to a short human-friendly alias.
+    ///
+    /// Returns the original target unchanged if no alias is defined for it.
+    fn short_target(target: &str) -> &str {
+        if target.starts_with("florestad") {
+            "florestad"
+        } else if target.starts_with("floresta_chain") {
+            "chain"
+        } else if target.starts_with("floresta_common") {
+            "common"
+        } else if target.starts_with("floresta_electrum") {
+            "electrum"
+        } else if target.starts_with("floresta_compact_filters") {
+            "compact_filters"
+        } else if target.starts_with("floresta_mempool") {
+            "mempool"
+        } else if target.starts_with("floresta_node") {
+            "node"
+        } else if target.starts_with("floresta_rpc") {
+            "rpc"
+        } else if target.starts_with("floresta_watch_only") {
+            "watch_only"
+        } else if target.starts_with("floresta_wire") {
+            "wire"
+        } else {
+            target
+        }
+    }
+}
+
+impl<S, N> FormatEvent<S, N> for ShortTargetFormatter
+where
+    S: tracing::Subscriber + for<'a> LookupSpan<'a>,
+    N: for<'a> FormatFields<'a> + 'static,
+{
+    fn format_event(
+        &self,
+        ctx: &FmtContext<'_, S, N>,
+        mut writer: Writer<'_>,
+        event: &tracing::Event<'_>,
+    ) -> fmt::Result {
+        // Check if the `Writer` has support for ANSI escape codes.
+        let writer_supports_ansi_escaping = writer.has_ansi_escapes();
+
+        // Get the event's metadata.
+        let event_metadata = event.metadata();
+
+        // Timestamp (ANSI colored if the TTY supports it).
+        if writer_supports_ansi_escaping {
+            write!(writer, "\x1b[2m")?;
+        }
+        self.timer.format_time(&mut writer)?;
+        if writer_supports_ansi_escaping {
+            write!(writer, "\x1b[0m ")?;
+        } else {
+            write!(writer, " ")?;
+        }
+
+        // Level (ANSI colored if the TTY supports it).
+        if writer_supports_ansi_escaping {
+            let colored_level = match *event_metadata.level() {
+                Level::ERROR => COLORED_ERROR,
+                Level::WARN => COLORED_WARN,
+                Level::INFO => COLORED_INFO,
+                Level::DEBUG => COLORED_DEBUG,
+                Level::TRACE => COLORED_TRACE,
+            };
+            write!(writer, "{} ", colored_level)?;
+        } else {
+            write!(writer, "{:>5} ", event_metadata.level())?;
+        }
+
+        // Target (ANSI colored if the TTY supports it).
+        let target = if tracing::enabled!(Level::DEBUG) {
+            event_metadata.target()
+        } else {
+            Self::short_target(event_metadata.target())
+        };
+        if writer_supports_ansi_escaping {
+            write!(writer, "\x1b[2m{}\x1b[0m: ", target)?;
+        } else {
+            write!(writer, "{}: ", target)?;
+        }
+
+        // Log Message and Fields.
+        ctx.format_fields(writer.by_ref(), event)?;
+        writeln!(writer)
+    }
+}
 
 /// Initialises the global [`tracing`] subscriber for the application.
 ///
@@ -59,75 +221,59 @@ pub(crate) const LOG_FILE: &str = "debug.log";
 ///
 /// # Panics
 ///
-/// Panics if a global [`tracing`] subscriber has already been installed (i.e.
-/// this function is called more than once).
+/// Panics if a global [`tracing`] subscriber has already been
+/// installed (e.g. if this function is called more than once).
 pub fn start_logger(
-    data_dir: &str,
+    data_directory: &String,
     log_to_file: bool,
     log_to_stdout: bool,
-    debug: bool,
+    log_level: Level,
 ) -> Result<Option<WorkerGuard>, io::Error> {
-    // Get the log level from `--debug`.
-    let log_level = if debug { "debug" } else { "info" };
+    let make_filter = || {
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(log_level.to_string()))
+    };
 
-    // Try to build an `EnvFilter` from the `RUST_LOG` env variable, or fallback to `log_level`.
-    let log_filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(log_level));
+    // Formatter for events destined to `stdout`.
+    let ansi_tty = io::IsTerminal::is_terminal(&io::stdout());
+    let fmt_layer_stdout = log_to_stdout.then(|| {
+        layer()
+            .with_writer(io::stdout)
+            .with_ansi(ansi_tty)
+            .event_format(ShortTargetFormatter::default())
+            .with_filter(make_filter())
+    });
 
-    // For the registry, also enable very verbose runtime traces so `tokio-console` works, but keep
-    // human outputs quiet via per-layer filters below.
-    #[cfg(feature = "tokio-console")]
-    let base_filter = EnvFilter::new(format!("{log_filter},tokio=trace,runtime=trace"));
-
-    #[cfg(not(feature = "tokio-console"))]
-    let base_filter = log_filter.clone();
-
-    // Validate the log file path.
     if log_to_file {
-        let file_path = format!("{data_dir}/{LOG_FILE}");
-        fs::OpenOptions::new()
+        let file_path = format!("{}/{}", data_directory, LOG_FILE);
+
+        // Validate the log file path (`<data_directory>/<LOG_FILE>`).
+        let _ = fs::OpenOptions::new()
             .create(true)
             .append(true)
-            .open(&file_path)?;
+            .open(&file_path)
+            .map_err(|e| {
+                eprintln!(
+                    "Failed to create log file at {}/{LOG_FILE}: {e}",
+                    data_directory
+                );
+                exit(1)
+            });
     }
 
-    // Timer for log events.
-    let log_timer = ChronoLocal::new("%Y-%m-%d %H:%M:%S".to_string());
-
-    // Standard Output layer: human-friendly formatting and level; ANSI only on a real TTY.
-    let fmt_layer_stdout = log_to_stdout.then(|| {
-        fmt::layer()
-            .with_writer(io::stdout)
-            .with_ansi(IsTerminal::is_terminal(&io::stdout()))
-            .with_timer(log_timer.clone())
-            .with_target(true)
-            .with_level(true)
-            .with_filter(log_filter.clone())
-    });
-
-    // File layer: non-blocking writer. Keep the `WorkerGuard` so logs flush on drop.
+    // Formatter for events destined to file.
     let mut guard = None;
     let fmt_layer_logfile = log_to_file.then(|| {
-        let file_appender = tracing_appender::rolling::never(data_dir, "debug.log");
+        let file_appender = tracing_appender::rolling::never(data_directory, LOG_FILE);
         let (non_blocking, file_guard) = tracing_appender::non_blocking(file_appender);
         guard = Some(file_guard);
-
-        fmt::layer()
+        layer()
             .with_writer(non_blocking)
             .with_ansi(false)
-            .with_timer(log_timer)
-            .with_target(true)
-            .with_level(true)
-            .with_filter(log_filter.clone())
+            .event_format(ShortTargetFormatter::default())
+            .with_filter(make_filter())
     });
 
-    // Build the registry with its (possibly more permissive) base filter, then attach layers to it.
-    let registry = tracing_subscriber::registry().with(base_filter);
-
-    #[cfg(feature = "tokio-console")]
-    let registry = registry.with(console_subscriber::spawn());
-
-    registry
+    tracing_subscriber::registry()
         .with(fmt_layer_stdout)
         .with(fmt_layer_logfile)
         .init();
