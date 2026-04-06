@@ -90,6 +90,20 @@ Contributions are welcome. Feel free to open an issue or a pull request. Check o
 If you want to contribute but don't know where to start, take a look at the
 [Good First Issues](https://github.com/getfloresta/Floresta/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22).
 
+## Roadmap
+
+Floresta's technical direction is guided by six strategic themes:
+
+- Reliability & Security
+- Sync & Transaction Relay
+- Bitcoin Ecosystem Support
+- Modular Architecture
+- Testing & Validation
+- Community Adoption & User Experience
+
+For the full 2026 roadmap and ongoing priorities, see [doc/roadmap-2026.md](doc/roadmap-2026.md).
+Active workstreams are tracked on the [Project Board](https://github.com/orgs/getfloresta/projects/2).
+
 ## Community
 
 If you want to discuss this project, you can join the [Discord Server](https://discord.gg/5Wj8fjjS93).
