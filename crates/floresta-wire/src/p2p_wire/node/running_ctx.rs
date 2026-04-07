@@ -323,7 +323,10 @@ where
 
         if *self.kill_signal.read().await {
             self.shutdown();
-            stop_signal.send(()).unwrap();
+            match stop_signal.send(()) {
+                Ok(_) => {}
+                Err(e) => error!("Stop signal receiver already dropped: {e:?}"),
+            }
             return;
         }
 
