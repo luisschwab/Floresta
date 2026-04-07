@@ -106,7 +106,7 @@ Coding Conventions
 
 There's a few rules to make sure the code is readable and maintainable. Most of them are checked by `cargo-fmt` and `clippy`, and are enforced by CI. You can run locally `cargo +nightly fmt && cargo +nightly clippy --all` or, if you have the [Just Command Runner](https://github.com/casey/just) you might use `just lint`.
 
-For the sake of clarity, please use an empty line between items, in both the Python and Rust code. Some examples
+For the sake of clarity, please use an empty line between items, in both the Python and Rust code. Some examples:
 
 ```rust
 ///! Awesome module
@@ -141,7 +141,7 @@ impl Foo {
 }
 ```
 
-Python version
+Python version:
 
 ```python
 """Awesome module comment"""
@@ -156,7 +156,7 @@ class Foo:
 
 Only make `pub` things that needs to be pub. This codebase is meant to be used as a library, we don't want users peeking on our internals.
 
-If you need an attribute, use the attribute **before** the docstring. Example
+If you need an attribute, use the attribute **before** the docstring. Example:
 
 ```rust
 #[derive(Debug, Default)]
@@ -170,14 +170,14 @@ enum Foo {
 }
 ```
 
-All public items must be documented. We adhere to the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/about.html) with respect to documentation
+All public items must be documented. We adhere to the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/about.html) with respect to documentation.
 The library is written using safe rust. Special consideration must be given to code which proposes an exception to the rule.
 
 All new features require testing. Tests should be unique and self-describing. If a test is in development or is broken or no longer useful, then a reason should be given for adding the `#[ignore]` attribute.
 
 If you have `just`, we have a script that performs all the checks we do on CI (test, linting, docker...) use `just pcc` (pre commit check) before pushing your changes.
 
-When it comes error handling, we prefer exact and meaningful error handling to deliver consumers(developers and users) an accurate error that describes exactly what happened wrong.
+When it comes to error handling, we prefer exact and meaningful error handling to deliver consumers (developers and users) an accurate error that describes exactly what happened wrong.
 
 Instead of:
 
@@ -240,6 +240,7 @@ MethodStruct{
 ```
 
 Example:
+
 ```rust
 #[doc = include_str!("../../../doc/rpc/addnode.md")]
 #[command(name = "addnode",
@@ -253,7 +254,7 @@ AddNode {
 },
 ```
 
-To generate the man pages for the RPC commands, follow the instructions outlined [here](doc/RPC_man/README.md).
+To generate the man pages for the RPC commands, follow the instructions outlined [here](doc/rpc_man/README.md).
 
 Security
 --------
@@ -265,8 +266,8 @@ Testing
 
 We expect to have 100% test coverage for critical parts, and a decent level of coverage for everything. We have a few types of tests:
 
-  - Unit: Those tests specific parts of the code, and are usually written in Rust. You can run them using `cargo test`. Ideally, every API-exposed function should have their own unity test.
-  - Functional: Tests the behavior of the running program, intended to check whether the codebase as a whole works as expected. They are either written in Rust or Python
+  - Unit: Those tests specific parts of the code, and are usually written in Rust. You can run them using `cargo test`. Ideally, every API-exposed function should have their own unit test.
+  - Functional: Tests the behavior of the running program, intended to check whether the codebase as a whole works as expected. They are either written in Rust or Python.
   - Integration: Checks if `Floresta` works well with other projects, like `Bitcoin Core`, `utreexod` and `Electrum` (for the electrum server). Mainly written in Python.
 
 License Notice
