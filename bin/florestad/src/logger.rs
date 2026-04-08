@@ -38,8 +38,16 @@ use tracing_subscriber::Layer;
 /// The file which logging events are written to.
 pub(crate) const LOG_FILE: &str = "debug.log";
 
-/// The string used to format the timestamp into a [`ChronoLocal`].
+/// The string used to format the timestamp, via [`ChronoLocal`].
+///
+/// Format: `YYYY-MM-DD HH:mm:ss`
 pub(crate) const CHRONO_FORMATTER: &str = "%Y-%m-%d %H:%M:%S";
+
+/// The string used to format the timestamp when
+/// the log level [`Level::DEBUG`] or higher, via [`ChronoLocal`].
+///
+/// Format: `YYYY-MM-DD HH:mm:ss.sss`
+pub(crate) const CHRONO_FORMATTER_DEBUG: &str = "%Y-%m-%d %H:%M:%S%.3f";
 
 /// Colored `ERROR` in bright red.
 pub(crate) const COLORED_ERROR: &str = "\x1b[0;31mERROR\x1b[0m";
@@ -102,6 +110,20 @@ impl Default for ShortTargetFormatter {
 }
 
 impl ShortTargetFormatter {
+    /// Create a new [`ShortTargetFormatter`].
+    ///
+    /// If `debug` is `true`, it will also log milliseconds.
+    pub fn new(debug: bool) -> Self {
+        let fmt = if debug {
+            CHRONO_FORMATTER_DEBUG
+        } else {
+            CHRONO_FORMATTER
+        };
+        Self {
+            timer: ChronoLocal::new(fmt.to_string()),
+        }
+    }
+
     /// Maps a full module path to a short human-friendly alias.
     ///
     /// Returns the original target unchanged if no alias is defined for it.
@@ -229,6 +251,7 @@ pub fn start_logger(
     log_to_stdout: bool,
     log_level: Level,
 ) -> Result<Option<WorkerGuard>, io::Error> {
+    let is_debug = log_level >= Level::DEBUG;
     let make_filter = || {
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(log_level.to_string()))
     };
@@ -239,7 +262,7 @@ pub fn start_logger(
         layer()
             .with_writer(io::stdout)
             .with_ansi(ansi_tty)
-            .event_format(ShortTargetFormatter::default())
+            .event_format(ShortTargetFormatter::new(is_debug))
             .with_filter(make_filter())
     });
 
@@ -260,7 +283,7 @@ pub fn start_logger(
             });
     }
 
-    // Formatter for events destined to file.
+    // Formatter for events destined to the log file.
     let mut guard = None;
     let fmt_layer_logfile = log_to_file.then(|| {
         let file_appender = tracing_appender::rolling::never(data_directory, LOG_FILE);
@@ -269,7 +292,7 @@ pub fn start_logger(
         layer()
             .with_writer(non_blocking)
             .with_ansi(false)
-            .event_format(ShortTargetFormatter::default())
+            .event_format(ShortTargetFormatter::new(is_debug))
             .with_filter(make_filter())
     });
 
