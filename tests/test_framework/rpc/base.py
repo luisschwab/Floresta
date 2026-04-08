@@ -293,6 +293,12 @@ class BaseRPC(ABC):
         """
         return self.perform_request("getpeerinfo")
 
+    def get_connectioncount(self):
+        """
+        Get the number of connections to other nodes
+        """
+        return self.perform_request("getconnectioncount")
+
     def get_rpcinfo(self):
         """
         Returns stats about our RPC server
