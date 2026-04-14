@@ -214,10 +214,13 @@ impl Mempool {
             .iter()
             .map(|tx| {
                 let short_txid = self.hasher.hash_one(tx.compute_txid());
-                self.transactions
+                if let Some(removed) = self
+                    .transactions
                     .remove(&short_txid)
-                    .map(|tx| tx.transaction);
-
+                    .map(|tx| tx.transaction)
+                {
+                    self.mempool_size -= removed.total_size();
+                }
                 tx.compute_txid()
             })
             .collect()
@@ -478,7 +481,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mepool_accept() {
+    fn test_mempool_accept() {
         let mut mempool = Mempool::new(10_000_000);
 
         let transactions = build_transactions(42, false);
@@ -621,5 +624,36 @@ mod tests {
         assert!(block.check_merkle_root());
 
         check_block_transactions(block);
+    }
+
+    #[test]
+    fn test_consume_block_updates_mempool_size() {
+        let mut mempool = Mempool::new(10_000_000);
+
+        let transactions = build_transactions(15, false);
+        for tx in transactions {
+            mempool
+                .accept_to_mempool(tx)
+                .expect("failed to accept to mempool");
+        }
+
+        let size_before_consume = mempool.mempool_size;
+
+        let target = Target::MAX_ATTAINABLE_REGTEST;
+        let block = mempool.get_block_template(
+            block::Version::ONE,
+            BlockHash::all_zeros(),
+            0,
+            target.to_compact_lossy(),
+            4_000_000,
+        );
+
+        mempool.consume_block(&block);
+
+        assert_eq!(
+            mempool.mempool_size, 0,
+            "mempool_size was {} before consume_block and it is {} after but it should be 0",
+            size_before_consume, mempool.mempool_size
+        );
     }
 }
