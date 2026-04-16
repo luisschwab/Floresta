@@ -525,7 +525,7 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
         }
     }
 
-    pub fn new(
+    fn new(
         mut chainstore: PersistedState,
         network: Network,
         assume_valid: AssumeValidArg,
@@ -692,7 +692,7 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
         }
     }
 
-    pub fn load_chain_state(
+    fn load_chain_state(
         mut chainstore: PersistedState,
         network: Network,
         assume_valid: AssumeValidArg,
@@ -736,6 +736,26 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
         // Check the integrity of our chain
         chainstate.check_chain_integrity()?;
         Ok(chainstate)
+    }
+
+    /// Opens an existing chain state or creates one from genesis if the store is uninitialized.
+    ///
+    /// This is the main entry point for instantiating a [`ChainState`]. If the store already
+    /// has data, the state is loaded from it. Otherwise, the chain is initialized from the
+    /// genesis block for the given network.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the store cannot be read or if the persisted state is corrupted.
+    pub fn open(
+        chainstore: PersistedState,
+        network: Network,
+        assume_valid: AssumeValidArg,
+    ) -> Result<Self, BlockchainError> {
+        if chainstore.load_height()?.is_some() {
+            return Self::load_chain_state(chainstore, network, assume_valid);
+        }
+        Ok(Self::new(chainstore, network, assume_valid))
     }
 
     /// Checks whether our database got a file-level corruption, and if so, reindex.
@@ -1489,7 +1509,7 @@ mod test {
         };
 
         let chainstore = FlatChainStore::new(config).unwrap();
-        ChainState::new(chainstore, network, assume_valid_arg)
+        ChainState::open(chainstore, network, assume_valid_arg).unwrap()
     }
 
     fn decode_block_and_inputs(
@@ -1733,6 +1753,63 @@ mod test {
                 panic!("Expected block at height {i} to be FullyValid, got: {header:?}");
             }
         }
+    }
+
+    #[test]
+    fn open_resumes_existing_chain_state() {
+        let file = include_bytes!("../../testdata/signet_headers.zst");
+        let uncompressed: Vec<u8> = zstd::decode_all(Cursor::new(file)).unwrap();
+        let mut buffer = uncompressed.as_slice();
+
+        let test_id = rand::random::<u64>();
+        let path = format!("./tmp-db/{test_id}/");
+
+        let config = crate::FlatChainStoreConfig {
+            block_index_size: Some(32_768),
+            headers_file_size: Some(32_768),
+            fork_file_size: Some(10_000),
+            cache_size: Some(10),
+            file_permission: Some(0o660),
+            path: path.clone(),
+        };
+        let chain = ChainState::open(
+            crate::FlatChainStore::new(config).unwrap(),
+            Network::Signet,
+            AssumeValidArg::Hardcoded,
+        )
+        .unwrap();
+
+        // Accept 10 headers; accept_header updates inner.best_block
+        let mut count = 0;
+        while let Ok(header) = BlockHeader::consensus_decode(&mut buffer) {
+            chain.accept_header(header).unwrap();
+            count += 1;
+            if count == 10 {
+                break;
+            }
+        }
+
+        let height = chain.get_height().unwrap();
+        assert!(height > 0, "chain did not advance past genesis");
+        chain.flush().unwrap();
+        drop(chain);
+
+        // Reopen: must resume at the same height, not reset to genesis
+        let config2 = crate::FlatChainStoreConfig {
+            block_index_size: Some(32_768),
+            headers_file_size: Some(32_768),
+            fork_file_size: Some(10_000),
+            cache_size: Some(10),
+            file_permission: Some(0o660),
+            path,
+        };
+        let chain2 = ChainState::open(
+            crate::FlatChainStore::new(config2).unwrap(),
+            Network::Signet,
+            AssumeValidArg::Hardcoded,
+        )
+        .unwrap();
+        assert_eq!(chain2.get_height().unwrap(), height);
     }
 
     #[test]

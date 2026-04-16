@@ -304,7 +304,7 @@ pub async fn setup_node(
 
     let chainstore = FlatChainStore::new(config).unwrap();
     let mempool = Arc::new(Mutex::new(Mempool::new(1000)));
-    let chain = ChainState::new(chainstore, network, AssumeValidArg::Disabled);
+    let chain = ChainState::open(chainstore, network, AssumeValidArg::Disabled).unwrap();
     let chain = Arc::new(chain);
 
     let mut headers = signet_headers();

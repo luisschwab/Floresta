@@ -51,11 +51,9 @@ async fn main() {
     // signatures in the blockchain, just the ones after the assume valid block. We are giving a Disabled
     // value, so we will validate all signatures regardless.
     // We place the chain state in an Arc, so we can share it with other components.
-    let chain = Arc::new(ChainState::new(
-        chain_store,
-        Network::Bitcoin,
-        AssumeValidArg::Disabled,
-    ));
+    let chain = Arc::new(
+        ChainState::open(chain_store, Network::Bitcoin, AssumeValidArg::Disabled).unwrap(),
+    );
 
     // Create a new node. It will connect to the Bitcoin network and start downloading the blockchain.
     // It will also start a mempool, which will keep track of the current mempool state, this

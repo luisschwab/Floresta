@@ -1081,11 +1081,12 @@ mod test {
         let test_id = rand::random::<u32>();
         let conf = FlatChainStoreConfig::new(format!("./tmp-db/{test_id}.floresta/"));
         let chainstore = FlatChainStore::new(conf).unwrap();
-        let chain = ChainState::<FlatChainStore>::new(
+        let chain = ChainState::<FlatChainStore>::open(
             chainstore,
             Network::Signet,
             AssumeValidArg::Hardcoded,
-        );
+        )
+        .unwrap();
 
         let headers = get_test_signet_headers();
         chain.push_headers(headers, 1).unwrap();

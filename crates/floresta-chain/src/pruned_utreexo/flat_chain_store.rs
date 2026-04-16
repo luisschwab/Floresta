@@ -1688,7 +1688,7 @@ mod tests {
         let file = include_bytes!("../../testdata/headers.zst");
         let uncompressed: Vec<u8> = zstd::decode_all(std::io::Cursor::new(file)).unwrap();
         let store = get_test_chainstore(None).unwrap();
-        let chain = ChainState::new(store, Network::Bitcoin, AssumeValidArg::Hardcoded);
+        let chain = ChainState::open(store, Network::Bitcoin, AssumeValidArg::Hardcoded).unwrap();
         let mut buffer = uncompressed.as_slice();
 
         while let Ok(header) = Header::consensus_decode(&mut buffer) {
@@ -1702,7 +1702,7 @@ mod tests {
         let file = include_bytes!("../../testdata/signet_headers.zst");
         let uncompressed: Vec<u8> = zstd::decode_all(std::io::Cursor::new(file)).unwrap();
         let store = get_test_chainstore(None).unwrap();
-        let chain = ChainState::new(store, Network::Signet, AssumeValidArg::Hardcoded);
+        let chain = ChainState::open(store, Network::Signet, AssumeValidArg::Hardcoded).unwrap();
         let mut buffer = uncompressed.as_slice();
 
         while let Ok(header) = Header::consensus_decode(&mut buffer) {
