@@ -46,8 +46,6 @@ pub enum BlockchainError {
     ConsensusDecode(bitcoin::consensus::encode::Error),
     ChainNotInitialized,
     InvalidTip(String),
-    Io(ioError),
-    UnsupportedNetwork(Network),
     BadValidationIndex,
     OperationOverflow(ChainWorkOverflow),
 }
@@ -196,7 +194,6 @@ impl<T: DatabaseError> From<T> for BlockchainBuilderError {
     }
 }
 
-impl_error_from!(BlockchainError, ioError, Io);
 impl_error_from!(BlockchainError, TransactionError, TransactionError);
 impl_error_from!(
     BlockchainError,

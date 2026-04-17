@@ -112,9 +112,6 @@ pub enum FlorestadError {
     /// Failed to push a descriptor to the wallet.
     CouldNotPushDescriptor(String),
 
-    /// The network is unsupported.
-    UnsupportedNetwork(bitcoin::Network),
-
     /// Invalid Ip address error.
     InvalidIpAddress(AddrParseError),
 
@@ -208,9 +205,6 @@ impl Display for FlorestadError {
             }
             FlorestadError::CouldNotPushDescriptor(err) => {
                 write!(f, "Could not push descriptor to wallet: {err}")
-            }
-            FlorestadError::UnsupportedNetwork(err) => {
-                write!(f, "Unsupported network: {err}")
             }
             FlorestadError::InvalidIpAddress(err) => {
                 write!(f, "Invalid IP address: {err}")
