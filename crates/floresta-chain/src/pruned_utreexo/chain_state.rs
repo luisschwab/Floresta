@@ -885,7 +885,7 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
         };
 
         let mut acc = acc.as_slice();
-        Stump::deserialize(&mut acc).map_err(BlockchainError::UtreexoError)
+        Stump::deserialize(&mut acc).map_err(BlockchainError::AccumulatorError)
     }
 
     fn update_view(
@@ -1083,7 +1083,7 @@ impl<PersistedState: ChainStore> BlockchainInterface for ChainState<PersistedSta
             .collect();
 
         if !acc.verify(&proof, &del_hashes)? {
-            return Err(BlockValidationErrors::InvalidProof)?;
+            return Err(BlockValidationErrors::InvalidUtreexoProof)?;
         }
 
         let height = self

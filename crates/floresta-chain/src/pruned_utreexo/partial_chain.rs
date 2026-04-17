@@ -148,8 +148,8 @@ impl PartialChainStateInner {
         let acc = match Consensus::update_acc(&self.current_acc, block, height, proof, del_hashes) {
             Ok(acc) => acc,
             Err(_) => {
-                self.error = Some(BlockValidationErrors::InvalidProof);
-                return Err(BlockchainError::InvalidProof);
+                self.error = Some(BlockValidationErrors::InvalidUtreexoProof);
+                return Err(BlockchainError::InvalidUtreexoProof);
             }
         };
 
