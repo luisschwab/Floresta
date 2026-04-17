@@ -4,10 +4,8 @@
 //! our transactions every 1 hour.
 //! Once our transaction is included in a block, we remove it from the mempool.
 
-use core::error::Error;
+use core::error;
 use core::fmt;
-use core::fmt::Display;
-use core::fmt::Formatter;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -70,42 +68,47 @@ pub struct Mempool {
     hasher: ahash::RandomState,
 }
 
+/// Errors that can occur whilst trying to add a transaction to the [`Mempool`].
 #[derive(Debug)]
-/// An error returned when we try to add a transaction to the mempool.
 pub enum AcceptToMempoolError {
-    /// Memory usage is too high.
-    MemoryUsageTooHigh,
+    /// The [`Mempool`] is full and cannot accept more [`Transaction`]s.
+    FullMempool,
 
-    /// The transaction is conflicting with another transaction in the mempool.
+    /// The [`Transaction`] conflicts with another [`Transaction`] in the [`Mempool`].
     ConflictingTransaction,
 
-    /// This transaction has duplicated inputs
+    /// The [`Transaction`] has duplicate inputs.
     DuplicatedInputs,
 
-    /// A validation error happened while consensus checking a transaction
     // TODO(davidson): we might want to make an error type specific for consensus,
     // instead of reusing BlockchainError.
-    Consensus(BlockchainError),
+    /// The [`Transaction`] failed consensus validation.
+    ConsensusValidation(BlockchainError),
 }
 
-impl Display for AcceptToMempoolError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+impl fmt::Display for AcceptToMempoolError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         match self {
-            AcceptToMempoolError::MemoryUsageTooHigh => write!(f, "we are running out of memory"),
+            AcceptToMempoolError::FullMempool => {
+                write!(f, " The mempool is full and cannot accept more transaction")
+            }
             AcceptToMempoolError::ConflictingTransaction => {
-                write!(f, "we have another transaction that spends the same input")
+                write!(
+                    f,
+                    "The transaction conflicts with another transaction in the mempool"
+                )
             }
             AcceptToMempoolError::DuplicatedInputs => {
-                write!(f, "this transaction has duplicated inputs")
+                write!(f, "The transaction has duplicate inputs")
             }
-            AcceptToMempoolError::Consensus(e) => {
-                write!(f, "the transaction failed consensus validation: {e}")
+            AcceptToMempoolError::ConsensusValidation(e) => {
+                write!(f, "The transaction failed consensus validation: {e}")
             }
         }
     }
 }
 
-impl Error for AcceptToMempoolError {}
+impl error::Error for AcceptToMempoolError {}
 
 impl Mempool {
     /// Creates a new mempool with a given maximum size
@@ -298,7 +301,7 @@ impl Mempool {
         // Make sure our mempool has space
         let tx_size = transaction.total_size();
         if self.mempool_size + tx_size > self.max_mempool_size {
-            return Err(AcceptToMempoolError::MemoryUsageTooHigh);
+            return Err(AcceptToMempoolError::FullMempool);
         }
 
         let short_txid = self.hasher.hash_one(transaction.compute_txid());
@@ -310,7 +313,7 @@ impl Mempool {
 
         // Perform context-free consensus checks
         Consensus::check_transaction_context_free(&transaction)
-            .map_err(AcceptToMempoolError::Consensus)?;
+            .map_err(AcceptToMempoolError::ConsensusValidation)?;
 
         // Make sure transaction won't conflict with other mempool transaction
         self.check_for_conflicts(&transaction)?;
