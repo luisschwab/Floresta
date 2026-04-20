@@ -120,8 +120,12 @@ at your option.
 
 ## Acknowledgments
 
-* [Utreexo](https://eprint.iacr.org/2019/611)
-* [Bitcoin Core](https://github.com/bitcoin/bitcoin)
-* [Rust Bitcoin](https://github.com/rust-bitcoin/rust-bitcoin)
-* [Rust Miniscript](https://github.com/rust-bitcoin/rust-miniscript)
-* [Rust Bitcoin Kernel](https://github.com/TheCharlatan/rust-bitcoinkernel)
+- [Utreexo](https://eprint.iacr.org/2019/611)
+  - [Draft BIP-0181 - Accumulator Specification](https://github.com/kcalvinalvin/bips/blob/2025-08-10-utreexo-bips/bip-0181.md)
+  - [Draft BIP-0182 - Transaction and block validation](https://github.com/kcalvinalvin/bips/blob/2025-08-10-utreexo-bips/bip-0182.md)
+  - [Draft BIP-0183 - Peer Services](https://github.com/kcalvinalvin/bips/blob/2025-08-10-utreexo-bips/bip-0183.md)
+  - Note: the Utreexo BIPs are a work in progress and changes are expected. Their proposed merge into the official BIPs repository is tracked in [bitcoin/bips#1923](https://github.com/bitcoin/bips/pull/1923).
+- [Bitcoin Core](https://github.com/bitcoin/bitcoin)
+- [Rust Bitcoin](https://github.com/rust-bitcoin/rust-bitcoin)
+- [Rust Miniscript](https://github.com/rust-bitcoin/rust-miniscript)
+- [Rust Bitcoin Kernel](https://github.com/TheCharlatan/rust-bitcoinkernel)
