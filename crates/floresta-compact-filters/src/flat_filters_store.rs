@@ -15,6 +15,9 @@ use std::sync::PoisonError;
 use crate::IterableFilterStore;
 use crate::IterableFilterStoreError;
 
+/// The maximum size that a block filter can have.
+pub const MAX_FILTER_SIZE: u32 = 1_000_000;
+
 pub struct FiltersIterator {
     reader: BufReader<File>,
 }
@@ -54,7 +57,7 @@ struct FlatFiltersStoreInner {
 
 impl From<PoisonError<MutexGuard<'_, FlatFiltersStoreInner>>> for IterableFilterStoreError {
     fn from(_: PoisonError<MutexGuard<'_, FlatFiltersStoreInner>>) -> Self {
-        IterableFilterStoreError::Poisoned
+        IterableFilterStoreError::PoisonedLock
     }
 }
 
@@ -181,8 +184,8 @@ impl IterableFilterStore for FlatFiltersStore {
     ) -> Result<(), IterableFilterStoreError> {
         let length = block_filter.content.len() as u32;
 
-        if length > 1_000_000 {
-            return Err(IterableFilterStoreError::FilterTooLarge);
+        if length > MAX_FILTER_SIZE {
+            return Err(IterableFilterStoreError::OversizedBlockFilter);
         }
 
         let mut inner = self.0.lock()?;

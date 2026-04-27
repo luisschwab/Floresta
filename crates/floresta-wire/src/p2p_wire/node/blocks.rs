@@ -316,8 +316,8 @@ where
             BlockchainError::TransactionError(tx_err) => Some(tx_err.error),
             BlockchainError::BlockValidation(block_err) => Some(block_err),
             // TODO: we need clearer error definitions for utreexo failures
-            BlockchainError::UtreexoError(_) | BlockchainError::InvalidProof => {
-                Some(BlockValidationErrors::InvalidProof)
+            BlockchainError::AccumulatorError(_) | BlockchainError::InvalidUtreexoProof => {
+                Some(BlockValidationErrors::InvalidUtreexoProof)
             }
             _ => None,
         }
@@ -336,7 +336,7 @@ where
         let hash = block.block_hash();
         match e {
             // The utreexo peer sent us an invalid utreexo proof. Block is not yet processed.
-            BlockValidationErrors::InvalidProof => {
+            BlockValidationErrors::InvalidUtreexoProof => {
                 self.blocks
                     .insert(hash, InflightBlock::new(block, block_peer));
 

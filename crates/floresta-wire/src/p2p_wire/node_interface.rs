@@ -12,7 +12,7 @@ use bitcoin::Block;
 use bitcoin::BlockHash;
 use bitcoin::Transaction;
 use bitcoin::Txid;
-use floresta_mempool::mempool::AcceptToMempoolError;
+use floresta_mempool::mempool::MempoolError;
 use rustreexo::proof::Proof;
 use serde::Serialize;
 use tokio::sync::mpsc::UnboundedSender;
@@ -156,7 +156,7 @@ pub enum NodeResponse {
     Ping(bool),
 
     /// Transaction broadcast
-    TransactionBroadcastResult(Result<Txid, AcceptToMempoolError>),
+    TransactionBroadcastResult(Result<Txid, MempoolError>),
 }
 
 #[derive(Debug, Clone)]
@@ -207,7 +207,7 @@ impl NodeInterface {
     pub async fn broadcast_transaction(
         &self,
         transaction: Transaction,
-    ) -> Result<Result<Txid, AcceptToMempoolError>, oneshot::error::RecvError> {
+    ) -> Result<Result<Txid, MempoolError>, oneshot::error::RecvError> {
         let val = self
             .send_request(UserRequest::SendTransaction(transaction))
             .await?;

@@ -71,41 +71,49 @@ pub struct Mempool {
 }
 
 #[derive(Debug)]
-/// An error returned when we try to add a transaction to the mempool.
-pub enum AcceptToMempoolError {
-    /// Memory usage is too high.
-    MemoryUsageTooHigh,
+/// Errors that can occur whilst trying to add a transaction to the [`Mempool`].
+pub enum MempoolError {
+    /// The [`Mempool`] is full and cannot accept more [`Transaction`]s.
+    FullMempool,
 
-    /// The transaction is conflicting with another transaction in the mempool.
+    /// The [`Transaction`] conflicts with another [`Transaction`] in the [`Mempool`].
     ConflictingTransaction,
 
-    /// This transaction has duplicated inputs
+    /// The [`Transaction`] has duplicate inputs.
     DuplicatedInputs,
 
-    /// A validation error happened while consensus checking a transaction
     // TODO(davidson): we might want to make an error type specific for consensus,
     // instead of reusing BlockchainError.
-    Consensus(BlockchainError),
+    /// The [`Transaction`] failed consensus validation.
+    ConsensusValidation(BlockchainError),
 }
 
-impl Display for AcceptToMempoolError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+impl Display for MempoolError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            AcceptToMempoolError::MemoryUsageTooHigh => write!(f, "we are running out of memory"),
-            AcceptToMempoolError::ConflictingTransaction => {
-                write!(f, "we have another transaction that spends the same input")
+            Self::FullMempool => {
+                write!(
+                    f,
+                    "The mempool is full and cannot accept any more transactions"
+                )
             }
-            AcceptToMempoolError::DuplicatedInputs => {
-                write!(f, "this transaction has duplicated inputs")
+            Self::ConflictingTransaction => {
+                write!(
+                    f,
+                    "The transaction conflicts with another transaction in the mempool"
+                )
             }
-            AcceptToMempoolError::Consensus(e) => {
-                write!(f, "the transaction failed consensus validation: {e}")
+            Self::DuplicatedInputs => {
+                write!(f, "The transaction has duplicate inputs")
+            }
+            Self::ConsensusValidation(e) => {
+                write!(f, "The transaction failed consensus validation: {e}")
             }
         }
     }
 }
 
-impl Error for AcceptToMempoolError {}
+impl Error for MempoolError {}
 
 impl Mempool {
     /// Creates a new mempool with a given maximum size
@@ -248,7 +256,7 @@ impl Mempool {
     }
 
     /// Checks if the transaction doesn't have conflicting inputs or spends the same input twice.
-    fn check_for_conflicts(&self, transaction: &Transaction) -> Result<(), AcceptToMempoolError> {
+    fn check_for_conflicts(&self, transaction: &Transaction) -> Result<(), MempoolError> {
         // check for duplicate inputs
         let inputs = transaction
             .input
@@ -257,14 +265,14 @@ impl Mempool {
             .collect::<BTreeSet<_>>();
 
         if inputs.len() != transaction.input.len() {
-            return Err(AcceptToMempoolError::DuplicatedInputs);
+            return Err(MempoolError::DuplicatedInputs);
         }
 
         // Check this transaction doesn't conflict with another transaction in the mempool
         // TODO(davidson): RBF
         for input in transaction.input.iter() {
             if self.is_already_spent(&input.previous_output) {
-                return Err(AcceptToMempoolError::ConflictingTransaction);
+                return Err(MempoolError::ConflictingTransaction);
             }
         }
 
@@ -285,10 +293,7 @@ impl Mempool {
     ///    the theoretical maximum amount of Bitcoins
     ///  - If either vIn or vOut are empty
     ///  - If any script is larger than the maximum allowed size
-    pub fn accept_to_mempool(
-        &mut self,
-        transaction: Transaction,
-    ) -> Result<(), AcceptToMempoolError> {
+    pub fn accept_to_mempool(&mut self, transaction: Transaction) -> Result<(), MempoolError> {
         debug!(
             "Accepting {} to mempool {:?}",
             transaction.compute_txid(),
@@ -298,7 +303,7 @@ impl Mempool {
         // Make sure our mempool has space
         let tx_size = transaction.total_size();
         if self.mempool_size + tx_size > self.max_mempool_size {
-            return Err(AcceptToMempoolError::MemoryUsageTooHigh);
+            return Err(MempoolError::FullMempool);
         }
 
         let short_txid = self.hasher.hash_one(transaction.compute_txid());
@@ -310,7 +315,7 @@ impl Mempool {
 
         // Perform context-free consensus checks
         Consensus::check_transaction_context_free(&transaction)
-            .map_err(AcceptToMempoolError::Consensus)?;
+            .map_err(MempoolError::ConsensusValidation)?;
 
         // Make sure transaction won't conflict with other mempool transaction
         self.check_for_conflicts(&transaction)?;
@@ -391,7 +396,7 @@ mod tests {
     use rand::SeedableRng;
 
     use super::Mempool;
-    use crate::mempool::AcceptToMempoolError;
+    use crate::mempool::MempoolError;
 
     /// builds a list of transactions in a pseudo-random way
     ///
@@ -505,7 +510,7 @@ mod tests {
         for tx in transactions {
             match mempool.accept_to_mempool(tx) {
                 Ok(_) => {}
-                Err(AcceptToMempoolError::DuplicatedInputs) => {
+                Err(MempoolError::DuplicatedInputs) => {
                     did_conflict = true;
                 }
 
