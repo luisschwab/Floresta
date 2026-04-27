@@ -135,7 +135,7 @@ fn do_request(cmd: &Cli, client: Client) -> anyhow::Result<String> {
 }
 
 #[derive(Debug, Parser)]
-#[command(author = "Davidson Souza", version = "0.1.0", about = r#"
+#[command(author = "Davidson Souza", version = env!("CARGO_PKG_VERSION"), about = r#"
     A simple command line interface to the Floresta JSON RPC interface.
 "#, long_about = None)]
 pub struct Cli {
