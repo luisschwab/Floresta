@@ -4,8 +4,11 @@ use core::fmt;
 use core::fmt::Debug;
 use core::fmt::Display;
 use core::fmt::Formatter;
+use core::num::TryFromIntError;
+use std::convert::Infallible;
 
 use axum::response::IntoResponse;
+use corepc_types::v30::GetBlockHeaderVerbose;
 use corepc_types::v30::GetBlockVerboseOne;
 use floresta_chain::extensions::HeaderExtError;
 use floresta_common::impl_error_from;
@@ -132,6 +135,18 @@ pub enum GetBlockRes {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+/// The response for `getblockheader`, which can be either a raw hex-encoded block header or a verbose
+/// one with all the fields parsed and decoded.
+pub enum GetBlockHeaderRes {
+    /// The raw hex-encoded block header, as returned by `getblockheader` with verbosity false
+    Raw(String),
+
+    /// A verbose block header, as returned by `getblockheader` with verbosity true
+    Verbose(Box<GetBlockHeaderVerbose>),
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct RpcError {
     pub code: i32,
     pub message: String,
@@ -226,6 +241,9 @@ pub enum JsonRpcError {
 
     /// Something went wrong when attempting to publish a transaction to mempool
     MempoolAccept(MempoolError),
+
+    /// A numeric conversion overflows, e.g., u64 to u32
+    ConversionOverflow(String),
 }
 
 impl_error_from!(JsonRpcError, MempoolError, MempoolAccept);
@@ -260,6 +278,7 @@ impl Display for JsonRpcError {
             JsonRpcError::InvalidDisconnectNodeCommand => write!(f, "Invalid disconnectnode command"),
             JsonRpcError::PeerNotFound => write!(f, "Peer not found in the peer list"),
             JsonRpcError::MempoolAccept(e) => write!(f, "Could not send transaction to mempool due to {e}"),
+            JsonRpcError::ConversionOverflow(e) => write!(f, "Numeric conversion overflow: {e}"),
         }
     }
 }
@@ -286,6 +305,18 @@ impl From<HeaderExtError> for JsonRpcError {
             HeaderExtError::BlockNotFound => JsonRpcError::BlockNotFound,
             HeaderExtError::ChainWorkOverflow => JsonRpcError::ChainWorkOverflow,
         }
+    }
+}
+
+impl From<TryFromIntError> for JsonRpcError {
+    fn from(e: TryFromIntError) -> Self {
+        JsonRpcError::ConversionOverflow(e.to_string())
+    }
+}
+
+impl From<Infallible> for JsonRpcError {
+    fn from(e: Infallible) -> Self {
+        JsonRpcError::ConversionOverflow(e.to_string())
     }
 }
 
