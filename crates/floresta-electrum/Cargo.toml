@@ -9,7 +9,7 @@ description = """
     that supports Electrum servers.
 """
 repository = "https://github.com/getfloresta/Floresta"
-license = "MIT"
+license.workspace = true
 readme.workspace = true # Floresta/README.md
 keywords = ["bitcoin", "utreexo", "node", "blockchain", "rust"]
 categories = ["cryptography::cryptocurrencies"]

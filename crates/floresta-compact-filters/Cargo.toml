@@ -9,6 +9,7 @@ description = """
 BIP158 compact filters for easy rescan of the blockchain in light clients.
 """
 readme.workspace = true # Floresta/README.md
+license.workspace = true
 
 [dependencies]
 bitcoin = { workspace = true }
