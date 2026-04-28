@@ -6,58 +6,45 @@ floresta_cli_getconnectioncount.py
 This functional test exercises the `getconnectioncount` RPC by starting
 a Floresta node and multiple bitcoind nodes, then verifying the connection
 count as peers are progressively connected. Also compares behavior against
-bitcoind's own getconnectioncount for parity.
+bitcoind's own `getconnectioncount` for parity.
 """
 
-from test_framework import FlorestaTestFramework
+import pytest
 from test_framework.node import NodeType
 
 
-class GetConnectionCountTest(FlorestaTestFramework):
+@pytest.mark.rpc
+def test_get_connection_count(node_manager, florestad_node, bitcoind_node):
     """
     Test `getconnectioncount` by connecting multiple bitcoind peers
     and verifying the count increases accordingly. Also compares
-    behavior against bitcoind's own getconnectioncount.
+    behavior against bitcoind's own `getconnectioncount`.
     """
+    # Starts at 0
+    assert florestad_node.rpc.get_connectioncount() == 0
 
-    def set_test_params(self):
-        self.florestad = self.add_node_default_args(variant=NodeType.FLORESTAD)
-        self.bitcoind = self.add_node_default_args(variant=NodeType.BITCOIND)
-        self.peers = [
-            self.add_node_default_args(variant=NodeType.BITCOIND) for _ in range(5)
-        ]
+    # Direct comparison — connect florestad to bitcoind, both should report 1
+    node_manager.connect_nodes(florestad_node, bitcoind_node)
 
-    def run_test(self):
-        # Start florestad and bitcoind with shared peers, connect them
-        # progressively, and compare getconnectioncount results.
-        self.run_node(self.florestad)
-        self.run_node(self.bitcoind)
-        for peer in self.peers:
-            self.run_node(peer)
+    floresta_count = florestad_node.rpc.get_connectioncount()
+    bitcoind_count = bitcoind_node.rpc.get_connectioncount()
 
-        # Starts at 0
-        self.assertEqual(self.florestad.rpc.get_connectioncount(), 0)
+    assert floresta_count == bitcoind_count
 
-        # Direct comparison — connect florestad to bitcoind, both should report 1
-        self.connect_nodes(self.florestad, self.bitcoind)
+    # Connect each peer and verify count increments by 1
+    for i in range(5):
+        peer = node_manager.add_node_default_args(variant=NodeType.BITCOIND)
+        node_manager.run_node(peer)
 
-        floresta_count = self.florestad.rpc.get_connectioncount()
-        bitcoind_count = self.bitcoind.rpc.get_connectioncount()
-        self.log(f"florestad={floresta_count}, bitcoind={bitcoind_count}")
-        self.assertEqual(floresta_count, bitcoind_count)
+        node_manager.connect_nodes(florestad_node, peer)
 
-        # Connect each peer and verify count increments by 1
-        for i, peer in enumerate(self.peers):
-            self.connect_nodes(self.florestad, peer)
-            self.assertEqual(self.florestad.rpc.get_connectioncount(), i + 2)
+        assert florestad_node.rpc.get_connectioncount() == i + 2
 
-        # Disconnect bitcoind and verify count decreases
-        self.florestad.rpc.disconnectnode(self.bitcoind.p2p_url)
-        self.wait_for_peers_connections(
-            self.florestad, self.bitcoind, is_connected=False
-        )
-        self.assertEqual(self.florestad.rpc.get_connectioncount(), 5)
+    # Disconnect bitcoind and verify count decreases
+    florestad_node.rpc.disconnectnode(bitcoind_node.p2p_url)
 
+    node_manager.wait_for_peers_connections(
+        florestad_node, bitcoind_node, is_connected=False
+    )
 
-if __name__ == "__main__":
-    GetConnectionCountTest().main()
+    assert florestad_node.rpc.get_connectioncount() == 5
