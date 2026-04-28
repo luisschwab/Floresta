@@ -56,6 +56,8 @@ use super::node_handle::UserRequest;
 use super::peer::PeerMessages;
 use super::socks::Socks5StreamBuilder;
 use super::transport::TransportProtocol;
+use crate::bitcoin_socket_addr::BitcoinSocketAddr;
+use crate::bitcoin_socket_addr::SystemResolver;
 use crate::node_context::PeerId;
 
 /// As per BIP 155, limit the number of addresses to 1,000
@@ -351,7 +353,8 @@ where
         let mut seen = HashSet::new();
         let mut fixed_peers = Vec::with_capacity(config.fixed_peers.len());
         for address in &config.fixed_peers {
-            let resolved = Self::resolve_connect_host(address, config.network)?;
+            let resolved =
+                BitcoinSocketAddr::parse_address(address, Some(config.network), SystemResolver)?;
             if seen.insert(resolved.clone()) {
                 fixed_peers.push(LocalAddress::from(resolved));
             }
