@@ -3,7 +3,7 @@ name = "floresta-rpc"
 version = "0.5.0"
 edition = "2021"
 authors = ["Floresta Developers <contact@getfloresta.org>"]
-license = "MIT"
+license.workspace = true
 description = """
 floresta-rpc is a Rust library that provides a JSON-RPC interface for interacting with Floresta. It allows
 users to perform various operations such as querying blockchain data, managing wallets, and

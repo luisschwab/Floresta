@@ -9,7 +9,7 @@ description = """
     your own transactions.
 """
 repository = "https://github.com/getfloresta/Floresta"
-license = "MIT"
+license.workspace = true
 readme = "README.md"
 keywords = ["bitcoin", "utreexo", "p2p", "networking"]
 categories = ["cryptography::cryptocurrencies", "network-programming"]

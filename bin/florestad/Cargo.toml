@@ -3,7 +3,7 @@ name = "florestad"
 version = "0.9.0"
 edition = "2021"
 authors = ["Floresta Developers <contact@getfloresta.org>"]
-license = "MIT"
+license.workspace = true
 description = """
 The main binary for Floresta, a lightweight Bitcoin node implementation in Rust,
 utilizing Utreexo for efficient state management.
