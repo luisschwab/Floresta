@@ -44,6 +44,7 @@ pub mod jsonrpc_interface {
     use floresta_common::impl_error_from;
     use floresta_mempool::mempool::MempoolError;
     use floresta_watch_only::WatchOnlyError;
+    use floresta_wire::bitcoin_socket_addr::InvalidAddressError;
     use serde::Deserialize;
     use serde::Serialize;
     use serde_json::Value;
@@ -206,9 +207,6 @@ pub mod jsonrpc_interface {
         /// Failed to decode the request payload.
         Decode(String),
 
-        /// The provided network address is invalid.
-        InvalidAddress,
-
         /// Node-level error (e.g. not connected or unresponsive).
         Node(String),
 
@@ -251,16 +249,19 @@ pub mod jsonrpc_interface {
 
         /// A numeric conversion overflows, e.g., u64 to u32
         ConversionOverflow(String),
+
+        /// The provided net address is invalid
+        InvalidNetAddress(InvalidAddressError),
     }
 
     impl_error_from!(JsonRpcError, MempoolError, MempoolAccept);
+    impl_error_from!(JsonRpcError, InvalidAddressError, InvalidNetAddress);
 
     impl JsonRpcError {
         pub fn http_code(&self) -> StatusCode {
             match self {
                 // 400 Bad Request - client sent invalid data
                 JsonRpcError::InvalidHex
-                | JsonRpcError::InvalidAddress
                 | JsonRpcError::InvalidScript
                 | JsonRpcError::InvalidRequest
                 | JsonRpcError::InvalidDescriptor(_)
@@ -277,6 +278,7 @@ pub mod jsonrpc_interface {
                 | JsonRpcError::InvalidParameterType(_)
                 | JsonRpcError::InvalidParameterStructure(_)
                 | JsonRpcError::MissingParameter(_)
+                | JsonRpcError::InvalidNetAddress(_)
                 | JsonRpcError::Wallet(_) => StatusCode::BAD_REQUEST,
 
                 // 404 Not Found - resource/method doesn't exist
@@ -326,11 +328,6 @@ pub mod jsonrpc_interface {
                 JsonRpcError::InvalidHex => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid hex encoding".into(),
-                    data: None,
-                },
-                JsonRpcError::InvalidAddress => RpcError {
-                    code: INVALID_METHOD_PARAMETERS,
-                    message: "Invalid address".into(),
                     data: None,
                 },
                 JsonRpcError::InvalidScript => RpcError {
@@ -394,6 +391,11 @@ pub mod jsonrpc_interface {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Missing parameter".into(),
                     data: Some(Value::String(param.clone())),
+                },
+                JsonRpcError::InvalidNetAddress(err) => RpcError {
+                    code: INVALID_METHOD_PARAMETERS,
+                    message: "Invalid network address provided".into(),
+                    data: Some(Value::String(err.to_string())),
                 },
 
                 // Internal error

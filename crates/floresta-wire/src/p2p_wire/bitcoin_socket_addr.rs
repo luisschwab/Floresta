@@ -23,11 +23,11 @@ use std::io;
 use std::net::IpAddr;
 use std::str::FromStr;
 
+use bitcoin::Network;
 use bitcoin::hex::DisplayHex;
 use bitcoin::p2p::address::AddrV2;
-use bitcoin::Network;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::rng;
+use rand::seq::IndexedRandom;
 
 #[derive(Debug)]
 /// An error returned when trying to parse an address
@@ -45,7 +45,7 @@ pub enum InvalidAddressError {
     InvalidDNSName,
 
     /// The resolver returned no addresses
-    NoAssociatedName,
+    NoAssociatedAddress,
 
     /// No port were provided
     MissingPort,
@@ -339,9 +339,10 @@ impl BitcoinSocketAddr {
             .resolve(address)
             .map_err(|_e| InvalidAddressError::InvalidDNSName)?;
 
+        let mut rng = rng();
         let selected_addr = addresses
-            .choose(&mut thread_rng())
-            .ok_or(InvalidAddressError::NoAssociatedName)?;
+            .choose(&mut rng)
+            .ok_or(InvalidAddressError::NoAssociatedAddress)?;
 
         let address = match selected_addr {
             IpAddr::V4(v4) => AddrV2::Ipv4(*v4),

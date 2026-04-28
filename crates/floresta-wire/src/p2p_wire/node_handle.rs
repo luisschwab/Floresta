@@ -14,7 +14,6 @@
 //! This module actually implement the [`crate::node_interface::NodeMethods`] trait, and
 //! contains the actual type you will use when interacting with a real node.
 
-use core::net::IpAddr;
 use std::time::Instant;
 
 use bitcoin::Block;
@@ -30,6 +29,7 @@ use tokio::sync::oneshot::error::RecvError;
 use super::UtreexoNodeConfig;
 use super::node::NodeNotification;
 use crate::address_man::ConnectionStats;
+use crate::bitcoin_socket_addr::BitcoinSocketAddr;
 use crate::node_interface::ChainMethods;
 use crate::node_interface::MempoolMethods;
 use crate::node_interface::NetworkMethods;
@@ -68,22 +68,22 @@ pub enum UserRequest {
     ///
     /// This function will add this peer to a special list of peers such that, if we lose the
     /// connection, we will keep trying to connect to it until we succeed.
-    Add((IpAddr, u16, bool)),
+    Add((BitcoinSocketAddr, bool)),
 
     /// Removes a node from the node's peer list.
     ///
     /// This function will remove a node that was added with [`UserRequest::Add`]. This will **not**
     /// disconnect the peer, but if it disconnects, it will not be reconnected again.
-    Remove((IpAddr, u16)),
+    Remove(BitcoinSocketAddr),
 
     /// Attempts to connect to a peer once.
     ///
     /// Different from [`UserRequest::Add`], this function will try to connect to the peer once, but
     /// will not add it to the node's added peers list.
-    Onetry((IpAddr, u16, bool)),
+    Onetry((BitcoinSocketAddr, bool)),
 
     /// Attempt to disconnect from a peer.
-    Disconnect((IpAddr, u16)),
+    Disconnect(BitcoinSocketAddr),
 
     /// Ping all connected peers to check if they are alive.
     Ping,
@@ -221,38 +221,34 @@ impl NetworkMethods for NodeHandle {
 
     async fn add_peer(
         &self,
-        addr: IpAddr,
-        port: u16,
+        addr: BitcoinSocketAddr,
         v2transport: bool,
     ) -> Result<bool, Self::Error> {
         let val = self
-            .send_request(UserRequest::Add((addr, port, v2transport)))
+            .send_request(UserRequest::Add((addr, v2transport)))
             .await?;
 
         extract_variant!(Add, val);
     }
 
-    async fn remove_peer(&self, addr: IpAddr, port: u16) -> Result<bool, Self::Error> {
-        let val = self.send_request(UserRequest::Remove((addr, port))).await?;
+    async fn remove_peer(&self, addr: BitcoinSocketAddr) -> Result<bool, Self::Error> {
+        let val = self.send_request(UserRequest::Remove(addr)).await?;
         extract_variant!(Remove, val);
     }
 
-    async fn disconnect_peer(&self, addr: IpAddr, port: u16) -> Result<bool, Self::Error> {
-        let val = self
-            .send_request(UserRequest::Disconnect((addr, port)))
-            .await?;
+    async fn disconnect_peer(&self, addr: BitcoinSocketAddr) -> Result<bool, Self::Error> {
+        let val = self.send_request(UserRequest::Disconnect(addr)).await?;
 
         extract_variant!(Disconnect, val);
     }
 
     async fn onetry_peer(
         &self,
-        addr: IpAddr,
-        port: u16,
+        addr: BitcoinSocketAddr,
         v2transport: bool,
     ) -> Result<bool, Self::Error> {
         let val = self
-            .send_request(UserRequest::Onetry((addr, port, v2transport)))
+            .send_request(UserRequest::Onetry((addr, v2transport)))
             .await?;
         extract_variant!(Onetry, val);
     }

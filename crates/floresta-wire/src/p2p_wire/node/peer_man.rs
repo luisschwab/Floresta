@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use core::net::IpAddr;
-use core::net::SocketAddr;
 use std::time::Instant;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 use bitcoin::Transaction;
 use bitcoin::p2p::ServiceFlags;
-use bitcoin::p2p::address::AddrV2;
 use bitcoin::p2p::address::AddrV2Message;
 use bitcoin::p2p::message_blockdata::Inventory;
 use floresta_chain::ChainBackend;
@@ -31,6 +28,7 @@ use super::PeerStatus;
 use super::UtreexoNode;
 use crate::address_man::AddressState;
 use crate::address_man::LocalAddress;
+use crate::bitcoin_socket_addr::BitcoinSocketAddr;
 use crate::block_proof::Bitmap;
 use crate::node::running_ctx::RunningNode;
 use crate::node_context::NodeContext;
@@ -46,10 +44,7 @@ use crate::p2p_wire::peer::Version;
 /// A simple struct of added peers, used to track the ones we added manually by `addnode <ip:port> add` command.
 pub struct AddedPeerInfo {
     /// The address of the peer
-    pub(crate) address: AddrV2,
-
-    /// The port of the peer
-    pub(crate) port: u16,
+    pub(crate) address: BitcoinSocketAddr,
 
     /// Whether we should allow V1 fallback for this connection
     pub(crate) v1_fallback: bool,
@@ -844,7 +839,7 @@ where
         let peer = self.peers.get(peer_id)?;
         Some(PeerInfo {
             id: *peer_id,
-            address: SocketAddr::new(peer.address, peer.port),
+            address: peer.address.as_bitcoin_socket_addr().clone(),
             services: peer.services,
             user_agent: peer.user_agent.clone(),
             initial_height: peer.height,
@@ -856,49 +851,36 @@ where
 
     // === ADDNODE ===
 
-    // TODO: remove this after bitcoin-0.33.0
-    /// Helper function to resolve an IpAddr to AddrV2
-    /// This is a little bit of a hack while rust-bitcoin
-    /// do not have an `from` or `into` that do IpAddr <> AddrV2
-    pub(crate) fn to_addr_v2(&self, addr: IpAddr) -> AddrV2 {
-        match addr {
-            IpAddr::V4(addr) => AddrV2::Ipv4(addr),
-            IpAddr::V6(addr) => AddrV2::Ipv6(addr),
-        }
-    }
-
     /// Handles addnode-RPC `Add` requests, adding a new peer to the `added_peers` list. This means
     /// the peer is marked as a "manually added peer". We then try to connect to it, or retry later.
     pub fn handle_addnode_add_peer(
         &mut self,
-        addr: IpAddr,
-        port: u16,
+        peer_address: BitcoinSocketAddr,
         v2_transport: bool,
     ) -> Result<(), WireError> {
         // See https://github.com/bitcoin/bitcoin/blob/8309a9747a8df96517970841b3648937d05939a3/src/net.cpp#L3558
-        debug!("Adding node {addr}:{port}");
-        let address = self.to_addr_v2(addr);
+
+        // Add this address to our address manager for later
+        // assume it has the bare-minimum services, otherwise `push_addresses` will ignore it
+        let mut local_address = LocalAddress::from(peer_address.clone());
+        debug!("Adding node {}", local_address);
+
+        local_address.set_services(ServiceFlags::NETWORK_LIMITED | ServiceFlags::WITNESS);
 
         // Check if the peer already exists
         if self
             .added_peers
             .iter()
-            .any(|info| address == info.address && port == info.port)
+            .any(|peer_info| peer_address == peer_info.address)
         {
-            return Err(WireError::PeerAlreadyExists(addr, port));
+            return Err(WireError::PeerAlreadyExists(local_address));
         }
-
-        // Add this address to our address manager for later
-        // assume it has the bare-minimum services, otherwise `push_addresses` will ignore it
-        let mut local_address = LocalAddress::from(address.clone());
-        local_address.set_services(ServiceFlags::NETWORK_LIMITED | ServiceFlags::WITNESS);
 
         self.address_man.push_addresses(&[local_address]);
 
         // Add a simple reference to the peer
         self.added_peers.push(AddedPeerInfo {
-            address,
-            port,
+            address: peer_address,
             v1_fallback: !v2_transport,
         });
 
@@ -917,73 +899,60 @@ where
     ///
     /// If someone wants to remove a peer, it should be done using the
     /// `disconnectnode`.
-    pub fn handle_addnode_remove_peer(&mut self, addr: IpAddr, port: u16) -> Result<(), WireError> {
-        debug!("Trying to remove peer {addr}:{port}");
+    pub fn handle_addnode_remove_peer(&mut self, addr: BitcoinSocketAddr) -> Result<(), WireError> {
+        debug!("Trying to remove peer {addr}");
 
-        let address = self.to_addr_v2(addr);
         let index = self
             .added_peers
             .iter()
-            .position(|info| address == info.address && port == info.port);
+            .position(|info| addr == info.address)
+            .ok_or(WireError::PeerNotFoundAtAddress(addr))?;
 
-        match index {
-            Some(peer_id) => self.added_peers.remove(peer_id),
-            None => return Err(WireError::PeerNotFoundAtAddress(addr, port)),
-        };
+        self.added_peers.remove(index);
 
         Ok(())
     }
 
     /// Handles the node request for immediate disconnection from a peer.
-    pub fn handle_disconnect_peer(&mut self, addr: IpAddr, port: u16) -> Result<(), WireError> {
+    pub fn handle_disconnect_peer(&mut self, addr: BitcoinSocketAddr) -> Result<(), WireError> {
         // Get the peer's index in the [`AddressMan`]'s list, if it exists.
-        let index = self
+        let peer_id = self
             .peers
             .iter()
-            .find(|(_, peer)| addr == peer.address && port == peer.port)
-            .map(|(&peer_id, _)| peer_id);
+            .find_map(|(&id, peer)| (*peer.address.as_bitcoin_socket_addr() == addr).then_some(id))
+            .ok_or(WireError::PeerNotFoundAtAddress(addr))?;
 
-        match index {
-            Some(peer_id) => {
-                self.send_to_peer(peer_id, NodeRequest::Shutdown)?;
-                Ok(())
-            }
-            None => Err(WireError::PeerNotFoundAtAddress(addr, port)),
-        }
+        self.send_to_peer(peer_id, NodeRequest::Shutdown)
     }
 
     /// Handles addnode onetry requests, connecting to the node and this will try to connect to the given address and port.
     /// If it's successful, it will add the node to the peers list, but not to the added_peers list (e.g., it won't be reconnected if disconnected).
     pub fn handle_addnode_onetry_peer(
         &mut self,
-        addr: IpAddr,
-        port: u16,
+        peer_address: BitcoinSocketAddr,
         v2_transport: bool,
     ) -> Result<(), WireError> {
-        debug!("Creating an one-try connection with {addr}:{port}");
+        let kind = ConnectionKind::Manual;
+
+        // Add this address to our address manager for later
+        // assume it has the bare-minimum services, otherwise `push_addresses` will ignore it
+        let mut local_address = LocalAddress::from(peer_address.clone());
+        debug!("Creating an one-try connection with {local_address}");
 
         // Check if the peer already exists
         if self
             .peers
             .iter()
-            .any(|(_, peer)| addr == peer.address && port == peer.port)
+            .any(|(_, peer_info)| *peer_info.address.as_bitcoin_socket_addr() == peer_address)
         {
-            return Err(WireError::PeerAlreadyExists(addr, port));
+            return Err(WireError::PeerAlreadyExists(local_address));
         }
 
-        let kind = ConnectionKind::Manual;
-
-        // Add this address to our address manager for later
-        // assume it has the bare-minimum services, otherwise `push_addresses` will ignore it
-        let address_v2 = self.to_addr_v2(addr);
-        let mut local_address = LocalAddress::from(address_v2.clone());
-
-        local_address.set_port(port);
         local_address.set_services(ServiceFlags::NETWORK_LIMITED | ServiceFlags::WITNESS);
 
         self.address_man.push_addresses(&[local_address.clone()]);
         // Return true if exists or false if anything fails during connection
         // We allow V1 fallback iff the `v2` flag is not set
-        self.open_connection(kind, local_address.id, local_address, !v2_transport)
+        self.open_connection(kind, local_address, !v2_transport)
     }
 }

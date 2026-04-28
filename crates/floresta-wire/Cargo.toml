@@ -18,7 +18,7 @@ categories = ["cryptography::cryptocurrencies", "network-programming"]
 [dependencies]
 # All dependencies MUST be pinned precisely with `X.Y.z`
 bip324 = { version = "=0.10.0", features = [ "tokio" ] }
-bitcoin = { workspace = true }
+bitcoin = { workspace = true, features = ["serde"] }
 dns-lookup = { workspace = true }
 rand = { workspace = true }
 rustls = { version = "=0.23.40", default-features = false, features = ["ring", "std", "tls12"] }
