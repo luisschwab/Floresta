@@ -163,7 +163,7 @@ impl Mempool {
         let mut size = 0;
 
         let mut txs = Vec::new();
-        for (_, tx) in self.transactions.iter() {
+        for tx in self.transactions.values() {
             let tx_size = tx.transaction.weight().to_wu();
             if size + tx_size > max_block_weight {
                 break;

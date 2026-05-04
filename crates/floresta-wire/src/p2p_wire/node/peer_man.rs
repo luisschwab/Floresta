@@ -470,7 +470,7 @@ where
         }
 
         self.peer_ids.retain(|&id| id != peer);
-        for (_, v) in self.peer_by_service.iter_mut() {
+        for v in self.peer_by_service.values_mut() {
             v.retain(|&id| id != peer);
         }
 

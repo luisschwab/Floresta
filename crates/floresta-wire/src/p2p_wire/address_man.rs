@@ -789,7 +789,7 @@ impl AddressMan {
     pub fn rearrange_buckets(&mut self) {
         let now = Self::time_since_unix();
 
-        for (_, address) in self.addresses.iter_mut() {
+        for address in self.addresses.values_mut() {
             match address.state {
                 AddressState::Banned(ban_time) => {
                     if ban_time < now {
