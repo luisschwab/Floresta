@@ -74,6 +74,7 @@
               uv
               gcc
               go
+              cargo-hack
             ];
 
             preCommitHooks = pre-commit-hooks.lib.${system}.run {
