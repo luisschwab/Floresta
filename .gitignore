@@ -21,7 +21,6 @@ utreexod/
 
 # Configuration files
 config.toml
-.pre-commit-config.yaml
 
 # direnv cache
 .direnv/
@@ -35,6 +34,3 @@ config.toml
 
 # tests pycache
 tests/**/__pycache__/*
-
-# commitizen under nixdevshell
-.cz.toml
