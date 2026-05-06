@@ -35,7 +35,9 @@ use floresta_compact_filters::network_filters::NetworkFilters;
 use floresta_watch_only::AddressCache;
 use floresta_watch_only::CachedTransaction;
 use floresta_watch_only::kv_database::KvDatabase;
-use floresta_wire::node_interface::NodeInterface;
+use floresta_wire::node_handle::NodeHandle;
+use floresta_wire::node_interface::ChainMethods;
+use floresta_wire::node_interface::MempoolMethods;
 use serde_json::Value;
 use serde_json::json;
 use tokio::sync::RwLock;
@@ -82,7 +84,7 @@ pub struct RpcImpl<Blockchain: RpcChain> {
     pub(super) network: Network,
     pub(super) chain: Blockchain,
     pub(super) wallet: Arc<AddressCache<KvDatabase>>,
-    pub(super) node: NodeInterface,
+    pub(super) node: NodeHandle,
     pub(super) kill_signal: Arc<RwLock<bool>>,
     pub(super) inflight: Arc<RwLock<HashMap<Value, InflightRpc>>>,
     pub(super) log_path: PathBuf,
@@ -502,7 +504,7 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
         chain: Blockchain,
         wallet: Arc<AddressCache<KvDatabase>>,
         cfilters: Arc<NetworkFilters<FlatFiltersStore>>,
-        node: NodeInterface,
+        node: NodeHandle,
         start_height: Option<u32>,
         stop_height: Option<u32>,
     ) -> Result<()> {
@@ -657,7 +659,7 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
     pub async fn create(
         chain: Blockchain,
         wallet: Arc<AddressCache<KvDatabase>>,
-        node: NodeInterface,
+        node: NodeHandle,
         kill_signal: Arc<RwLock<bool>>,
         network: Network,
         block_filter_storage: Option<Arc<NetworkFilters<FlatFiltersStore>>>,

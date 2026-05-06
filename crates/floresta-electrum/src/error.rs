@@ -21,5 +21,5 @@ pub enum Error {
     Mempool(Box<dyn core::error::Error + Send + 'static>),
 
     #[error("Node isn't working")]
-    NodeInterface(#[from] oneshot::error::RecvError),
+    NodeHandle(#[from] oneshot::error::RecvError),
 }

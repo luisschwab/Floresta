@@ -1,11 +1,25 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! node_interface, which holds [`NodeInterface`] and related methods
-//! that define the API to interact with the floresta node
+//! The node interface definition trait.
+//!
+//! Our node runs as a task that owns it and manages all its state internally. It processes data as
+//! it arrives, updates our local state, and makes sure we keep doing progress. This architecture
+//! is very nice because it requires minimal synchronization, provides near-perfect encapsulation,
+//! improves testing and makes debug easier. The only problem is: if you are not allowed to own or
+//! share the node, how do you communicate with it?
+//!
+//! The answer is: The node handle! You can get one by calling `get_handle`, and use it to send and
+//! receive messages to/from the node. You can use it request blocks, transactions, cfilters,
+//! proofs, ask the node to connect with someone, ask the node to disconnect from some peer, etc.
+//!
+//! This module defines the common interface used by the node handle, the actual implementation is
+//! under `node_handle.rs`. We do this to make our testing easier, since we can mock a node while
+//! testing other modules, and to allow people to reuse other crates without wire: simply
+//! re-implement the relevant parts of node interface and you are fine!
 
 use core::net::IpAddr;
 use core::net::SocketAddr;
-use std::time::Instant;
+use std::future::Future;
 
 use bitcoin::Block;
 use bitcoin::BlockHash;
@@ -13,15 +27,10 @@ use bitcoin::Transaction;
 use bitcoin::Txid;
 use bitcoin::p2p::ServiceFlags;
 use floresta_mempool::mempool::MempoolError;
-use rustreexo::proof::Proof;
 use serde::Serialize;
-use tokio::sync::mpsc::UnboundedSender;
-use tokio::sync::oneshot;
-use tokio::sync::oneshot::error::RecvError;
 
 use super::UtreexoNodeConfig;
 use super::node::ConnectionKind;
-use super::node::NodeNotification;
 use super::node::PeerStatus;
 use super::transport::TransportProtocol;
 use crate::address_man::ConnectionStats;
@@ -121,227 +130,121 @@ pub struct PeerInfo {
     pub transport_protocol: TransportProtocol,
 }
 
-#[derive(Debug)]
-/// A response that can be sent back to the user.
+/// These methods are used to request blocks from the network.
 ///
-/// When the user makes a request to the node, the node will respond with some data. This enum
-/// represents all the possible responses that the node can send back to the user.
-pub enum NodeResponse {
-    /// The [`UtreexoNodeConfig`] of the node.
-    Config(UtreexoNodeConfig),
-
-    /// A response containing a block, if we could fetch it.
-    Block(Option<Block>),
-
-    /// A response containing a Utreexo proof, if we could fetch it.
-    UtreexoProof(Option<Proof>),
-
-    /// A response containing a transaction from the mempool, if we could fetch it.
-    MempoolTransaction(Option<Transaction>),
-
-    /// A response containing a list of peer information.
-    GetPeerInfo(Vec<PeerInfo>),
-
-    /// The number of connected peers
-    GetConnectionCount(usize),
-
-    /// A response indicating whether a peer was successfully added.
-    Add(bool),
-
-    /// A response indicating whether a peer was successfully removed.
-    Remove(bool),
-
-    // A response indicating whether a peer was successfully disconnected from.
-    Disconnect(bool),
-
-    /// A response indicating whether a peer was successfully connected once.
-    Onetry(bool),
-
-    /// A response indicating whether the ping was successful.
-    Ping(bool),
-
-    /// Transaction broadcast
-    TransactionBroadcastResult(Result<Txid, MempoolError>),
-
-    /// Address manager statistics.
-    GetAddrManInfo(ConnectionStats),
-}
-
-#[derive(Debug, Clone)]
-/// A struct representing the interface to the node.
-///
-/// This struct will be used by consumers to interact with the node. You may have as many of it as
-/// you need, and you can use it to send requests to the node and get responses back.
-pub struct NodeInterface {
-    node_sender: UnboundedSender<NodeNotification>,
-}
-
-#[derive(Debug)]
-pub struct RequestData {
-    pub time: Instant,
-    pub resolve: oneshot::Sender<Option<NodeResponse>>,
-    pub req: UserRequest,
-}
-
-impl NodeInterface {
-    pub fn new(node_sender: UnboundedSender<NodeNotification>) -> Self {
-        NodeInterface { node_sender }
-    }
-
-    /// Sends a request to the node.
-    ///
-    /// This is an internal utility function that will be used to send requests to the node. It will
-    /// send the request to the node and return a oneshot receiver that will be used to get the
-    /// response back.
-    async fn send_request(
-        &self,
-        request: UserRequest,
-    ) -> Result<NodeResponse, oneshot::error::RecvError> {
-        let (tx, rx) = oneshot::channel();
-        let _ = self
-            .node_sender
-            .send(NodeNotification::FromUser(request, tx)); // Send the request to the node
-
-        rx.await
-    }
-
-    /// Get the current [`UtreexoNodeConfig`] from the running node.
-    pub async fn get_config(&self) -> Result<UtreexoNodeConfig, oneshot::error::RecvError> {
-        let config = self.send_request(UserRequest::Config).await?;
-
-        extract_variant!(Config, config);
-    }
-
-    pub async fn broadcast_transaction(
-        &self,
-        transaction: Transaction,
-    ) -> Result<Result<Txid, MempoolError>, oneshot::error::RecvError> {
-        let val = self
-            .send_request(UserRequest::SendTransaction(transaction))
-            .await?;
-
-        extract_variant!(TransactionBroadcastResult, val)
-    }
-
-    /// Connects to a specified address and port.
-    /// This function will return a boolean indicating whether the connection was successful. It
-    /// may be called multiple times, and may use hostnames or IP addresses.
-    pub async fn add_peer(
-        &self,
-        addr: IpAddr,
-        port: u16,
-        v2transport: bool,
-    ) -> Result<bool, oneshot::error::RecvError> {
-        let val = self
-            .send_request(UserRequest::Add((addr, port, v2transport)))
-            .await?;
-
-        extract_variant!(Add, val);
-    }
-
-    /// Removes a peer from the node's peer list.
-    /// This function will return a boolean indicating whether the peer was successfully removed.
-    /// It may be called multiple times, and may use hostnames or IP addresses.
-    pub async fn remove_peer(
-        &self,
-        addr: IpAddr,
-        port: u16,
-    ) -> Result<bool, oneshot::error::RecvError> {
-        let val = self.send_request(UserRequest::Remove((addr, port))).await?;
-        extract_variant!(Remove, val);
-    }
-
-    /// Immediately disconnect from a peer.
-    ///
-    /// Returns a bool indicating whether the disconnection was successful.
-    pub async fn disconnect_peer(
-        &self,
-        addr: IpAddr,
-        port: u16,
-    ) -> Result<bool, oneshot::error::RecvError> {
-        let val = self
-            .send_request(UserRequest::Disconnect((addr, port)))
-            .await?;
-
-        extract_variant!(Disconnect, val);
-    }
-
-    /// Attempts to connect to a peer once.
-    ///
-    /// This function will try to connect to the peer once, but will not add it to the node's
-    /// peer list. It will return a boolean indicating whether the connection was successful.
-    /// It may be called multiple times, and may use hostnames or IP addresses.
-    pub async fn onetry_peer(
-        &self,
-        addr: IpAddr,
-        port: u16,
-        v2transport: bool,
-    ) -> Result<bool, oneshot::error::RecvError> {
-        let val = self
-            .send_request(UserRequest::Onetry((addr, port, v2transport)))
-            .await?;
-        extract_variant!(Onetry, val);
-    }
+/// TODO(@davidson): Implement `get_proofs` and allow `get_block` to fetch inputs.
+pub trait ChainMethods {
+    type Error: core::error::Error;
 
     /// Gets a block by its hash.
     ///
     /// This function will try to get a block from the network and return it. Note that we don't
     /// keep a local copy of the blockchain, so this function will always make a network request.
-    pub async fn get_block(
+    fn get_block(
         &self,
         block: BlockHash,
-    ) -> Result<Option<Block>, oneshot::error::RecvError> {
-        let val = self.send_request(UserRequest::Block(block)).await?;
+    ) -> impl Future<Output = Result<Option<Block>, Self::Error>>;
+}
 
-        extract_variant!(Block, val);
-    }
+/// Mempool-oriented methods.
+///
+/// These methods allows users to fetch or update mempool transtactions to/from the network.
+pub trait MempoolMethods {
+    type Error: core::error::Error;
+
+    fn broadcast_transaction(
+        &self,
+        transaction: Transaction,
+    ) -> impl Future<Output = Result<Result<Txid, MempoolError>, Self::Error>>;
 
     /// Gets a transaction from the mempool by its ID.
     ///
     /// This function will return a transaction from the mempool if it exists. If the transaction
     /// is not in the mempool (because it doesn't exist or because it's already been mined), this
     /// function will return `None`.
-    pub async fn get_mempool_transaction(
+    fn get_mempool_transaction(
         &self,
         txid: Txid,
-    ) -> Result<Option<Transaction>, oneshot::error::RecvError> {
-        let val = self
-            .send_request(UserRequest::MempoolTransaction(txid))
-            .await?;
+    ) -> impl Future<Output = Result<Option<Transaction>, Self::Error>>;
+}
 
-        extract_variant!(MempoolTransaction, val);
-    }
+/// Methods for interacting with our peers.
+pub trait NetworkMethods {
+    type Error: core::error::Error;
+
+    /// Connects to a specified address and port.
+    /// This function will return a boolean indicating whether the connection was successful. It
+    /// may be called multiple times, and may use hostnames or IP addresses.
+    fn add_peer(
+        &self,
+        addr: IpAddr,
+        port: u16,
+        v2transport: bool,
+    ) -> impl Future<Output = Result<bool, Self::Error>>;
+
+    /// Removes a peer from the node's peer list.
+    /// This function will return a boolean indicating whether the peer was successfully removed.
+    /// It may be called multiple times, and may use hostnames or IP addresses.
+    fn remove_peer(
+        &self,
+        addr: IpAddr,
+        port: u16,
+    ) -> impl Future<Output = Result<bool, Self::Error>>;
+
+    /// Immediately disconnect from a peer.
+    ///
+    /// Returns a bool indicating whether the disconnection was successful.
+    fn disconnect_peer(
+        &self,
+        addr: IpAddr,
+        port: u16,
+    ) -> impl Future<Output = Result<bool, Self::Error>> + Send;
+
+    /// Attempts to connect to a peer once.
+    ///
+    /// This function will try to connect to the peer once, but will not add it to the node's
+    /// peer list. It will return a boolean indicating whether the connection was successful.
+    /// It may be called multiple times, and may use hostnames or IP addresses.
+    fn onetry_peer(
+        &self,
+        addr: IpAddr,
+        port: u16,
+        v2transport: bool,
+    ) -> impl Future<Output = Result<bool, Self::Error>>;
 
     /// Gets information about all connected peers.
     ///
     /// This function will return a list of `PeerInfo` structs, each of which contains information
     /// about a single peer.
-    pub async fn get_peer_info(&self) -> Result<Vec<PeerInfo>, oneshot::error::RecvError> {
-        let val = self.send_request(UserRequest::GetPeerInfo).await?;
-
-        extract_variant!(GetPeerInfo, val);
-    }
+    fn get_peer_info(&self) -> impl Future<Output = Result<Vec<PeerInfo>, Self::Error>>;
 
     /// Returns the number of peers currently connected to the node
-    pub async fn get_connection_count(&self) -> Result<usize, oneshot::error::RecvError> {
-        let val = self.send_request(UserRequest::GetConnectionCount).await?;
-
-        extract_variant!(GetConnectionCount, val);
-    }
+    fn get_connection_count(&self) -> impl Future<Output = Result<usize, Self::Error>>;
 
     /// Pings all connected peers to check if they are alive.
-    pub async fn ping(&self) -> Result<bool, oneshot::error::RecvError> {
-        let val = self.send_request(UserRequest::Ping).await?;
-
-        extract_variant!(Ping, val)
-    }
+    fn ping(&self) -> impl Future<Output = Result<bool, Self::Error>>;
 
     /// Returns address manager statistics broken down by network.
-    pub async fn get_addrman_info(&self) -> Result<ConnectionStats, RecvError> {
-        let val = self.send_request(UserRequest::GetAddrManInfo).await?;
+    fn get_addrman_info(&self) -> impl Future<Output = Result<ConnectionStats, Self::Error>>;
+}
 
-        extract_variant!(GetAddrManInfo, val)
-    }
+/// Methods used to interact with the node's configuration.
+pub trait NodeConfigMethods {
+    type Error: core::error::Error;
+
+    /// Get the current [`UtreexoNodeConfig`] from the running node.
+    fn get_config(&self) -> impl Future<Output = Result<UtreexoNodeConfig, Self::Error>>;
+}
+
+/// A trait defining what methods our node can expose.
+pub trait NodeMethods:
+    ChainMethods + MempoolMethods + NetworkMethods + NodeConfigMethods + Send + 'static
+{
+}
+
+impl<T> NodeMethods for T where
+    T: ChainMethods + MempoolMethods + NetworkMethods + NodeConfigMethods + Send + 'static
+{
 }
 
 fn serialize_service_flags<S>(flags: &ServiceFlags, serializer: S) -> Result<S::Ok, S::Error>
@@ -350,15 +253,3 @@ where
 {
     serializer.serialize_str(&flags.to_string())
 }
-
-macro_rules! extract_variant {
-    ($variant:ident, $var:ident) => {
-        if let NodeResponse::$variant(val) = $var {
-            return Ok(val);
-        } else {
-            panic!("Unexpected variant");
-        }
-    };
-}
-
-use extract_variant;

@@ -93,6 +93,7 @@ pub mod block_proof;
 pub mod error;
 pub mod node;
 pub mod node_context;
+pub mod node_handle;
 pub mod node_interface;
 pub mod peer;
 pub mod socks;
