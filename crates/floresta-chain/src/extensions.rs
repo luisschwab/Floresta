@@ -342,7 +342,7 @@ mod tests {
         fn get_block_hash(&self, height: u32) -> Result<BlockHash, Self::Error> {
             self.heights
                 .iter()
-                .find(|(_, &h)| h == height)
+                .find(|(_, h)| **h == height)
                 .map(|(hash, _)| *hash)
                 .ok_or(MockBlockchainError::NotFound)
         }

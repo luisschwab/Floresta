@@ -473,11 +473,11 @@ impl BlockIndex {
         index: Index,
         get_header_by_index: impl Fn(Index) -> Result<HashedDiskHeader, FlatChainstoreError>,
     ) -> Result<bool, FlatChainstoreError> {
-        let pos = self.hash_map_find_pos(hash, get_header_by_index)?;
+        let pos = unsafe { self.hash_map_find_pos(hash, get_header_by_index) }?;
 
         match pos {
             IndexBucket::Empty { ptr } => {
-                ptr.write(index);
+                unsafe { ptr.write(index) }
                 Ok(true)
             }
 
@@ -485,7 +485,7 @@ impl BlockIndex {
             // If this is the case, we should update the fork block to make it into the main chain,
             // and mark the old main chain block as a fork.
             IndexBucket::Occupied { ptr, .. } => {
-                ptr.write(index);
+                unsafe { ptr.write(index) }
                 Ok(false)
             }
         }
@@ -497,9 +497,9 @@ impl BlockIndex {
         hash: BlockHash,
         get_header_by_index: impl Fn(Index) -> Result<HashedDiskHeader, FlatChainstoreError>,
     ) -> Result<Option<(Index, DiskBlockHeader)>, FlatChainstoreError> {
-        match self.hash_map_find_pos(hash, get_header_by_index)? {
+        match unsafe { self.hash_map_find_pos(hash, get_header_by_index) }? {
             IndexBucket::Empty { .. } => Ok(None),
-            IndexBucket::Occupied { ptr, header } => Ok(Some((*ptr, header))),
+            IndexBucket::Occupied { ptr, header } => Ok(Some(( unsafe { *ptr }, header))),
         }
     }
 
@@ -526,10 +526,10 @@ impl BlockIndex {
         for _ in 0..self.index_size {
             // Obtain the bucket's address by adding the masked hash to the base pointer
             // SAFETY: the masked hash is lower than the `index_size`
-            let entry_ptr = base_ptr.add(hash & mask);
+            let entry_ptr = unsafe { base_ptr.add(hash & mask) };
 
             // If this is the first time we've accessed this pointer, this candidate index is 0
-            let candidate_index = *entry_ptr;
+            let candidate_index = unsafe { *entry_ptr };
 
             // If the header at `candidate_index` matches `block_hash`, this is the target bucket
             let file_header = get_header_by_index(candidate_index)?;
@@ -778,23 +778,21 @@ impl FlatChainStore {
         hash: BlockHash,
         index: Index,
     ) -> Result<(), FlatChainstoreError> {
-        let metadata = self.get_metadata()?;
+        let metadata = unsafe { self.get_metadata() }?;
         let next_occupancy = metadata.block_index_occupancy + 1;
-
         if next_occupancy >= metadata.index_capacity {
             return Err(FlatChainstoreError::FullIndex);
         }
-
-        let is_new = self
-            .block_index
-            .set_index_for_hash(hash, index, |index| self.get_disk_header(index).copied())?;
-
+        let is_new = unsafe {
+            self.block_index
+                .set_index_for_hash(hash, index, |index|
+                    self.get_disk_header(index).copied())
+        }?;
         // Only increment the index occupancy if this is a new entry, i.e., a new block. Otherwise,
         // if this is a reorg, the occupancy is kept the same as we just overwrite indexes.
         if is_new {
-            self.get_metadata_mut()?.block_index_occupancy = next_occupancy;
+            unsafe { self.get_metadata_mut() }?.block_index_occupancy = next_occupancy;
         }
-
         Ok(())
     }
 
@@ -882,7 +880,9 @@ impl FlatChainStore {
         file.set_len(size as u64)?;
 
         // Return the `MmapMut` instance that represents the file
-        Ok(MmapOptions::default().len(size).map_mut(&file)?)
+        let mmap = unsafe { MmapOptions::default().len(size).map_mut(&file) }?;
+
+        Ok(mmap)
     }
 
     /// Returns a reference to the respective disk header from the file. Errors if nothing is found.
@@ -890,7 +890,7 @@ impl FlatChainStore {
         &self,
         index: Index,
     ) -> Result<&HashedDiskHeader, FlatChainstoreError> {
-        let metadata = self.get_metadata()?;
+        let metadata = unsafe { self.get_metadata()? };
         let (max_size, base_ptr) = match index.is_main_chain() {
             true => (metadata.headers_file_size, self.headers.as_ptr()),
             false => (metadata.fork_file_size, self.fork_headers.as_ptr()),
@@ -902,8 +902,8 @@ impl FlatChainStore {
         }
 
         // SAFETY: we've checked index < max_size
-        let ptr = (base_ptr as *const HashedDiskHeader).add(index);
-        let header = &*ptr;
+        let ptr = unsafe { (base_ptr as *const HashedDiskHeader).add(index) };
+        let header = unsafe { &*ptr };
 
         // Uninitialized memory means we haven't written anything here yet
         if header.hash == BlockHash::all_zeros() {
@@ -919,7 +919,7 @@ impl FlatChainStore {
         &mut self,
         index: Index,
     ) -> Result<&mut HashedDiskHeader, FlatChainstoreError> {
-        let metadata = self.get_metadata()?;
+        let metadata = unsafe { self.get_metadata()? };
         let (max_size, base_ptr) = match index.is_main_chain() {
             true => (metadata.headers_file_size, self.headers.as_ptr()),
             false => (metadata.fork_file_size, self.fork_headers.as_ptr()),
@@ -931,13 +931,13 @@ impl FlatChainStore {
         }
 
         // SAFETY: we've checked index < max_size
-        let ptr = (base_ptr as *mut HashedDiskHeader).add(index);
+        let ptr = unsafe { (base_ptr as *mut HashedDiskHeader).add(index) };
 
-        Ok(&mut *ptr)
+        Ok(unsafe { &mut *ptr })
     }
 
     unsafe fn do_save_height(&mut self, best_block: &BestChain) -> Result<(), FlatChainstoreError> {
-        let metadata = self.get_metadata_mut()?;
+        let metadata = unsafe { self.get_metadata_mut() }?;
 
         metadata.best_block = best_block.best_block;
         metadata.depth = best_block.depth;
@@ -945,19 +945,21 @@ impl FlatChainStore {
 
         assert!(best_block.alternative_tips.len() <= 64);
 
-        metadata
-            .alternative_tips
-            .as_mut_ptr()
-            .copy_from_nonoverlapping(
-                best_block.alternative_tips.as_ptr(),
-                best_block.alternative_tips.len(),
-            );
+        unsafe {
+            metadata
+                .alternative_tips
+                .as_mut_ptr()
+                .copy_from_nonoverlapping(
+                    best_block.alternative_tips.as_ptr(),
+                    best_block.alternative_tips.len(),
+                );
+        }
 
         Ok(())
     }
 
     unsafe fn get_best_chain(&self) -> Result<BestChain, FlatChainstoreError> {
-        let metadata = self.get_metadata()?;
+        let metadata = unsafe { self.get_metadata()? };
 
         Ok(BestChain {
             best_block: metadata.best_block,
@@ -978,28 +980,23 @@ impl FlatChainStore {
         &self,
         hash: BlockHash,
     ) -> Result<Option<DiskBlockHeader>, FlatChainstoreError> {
-        let result = self
-            .block_index
-            .get_index_for_hash(hash, |height| self.get_disk_header(height).copied())?
-            .map(|idx_and_header| idx_and_header.1);
-
+        let result = unsafe {
+            self.block_index
+                .get_index_for_hash(hash, |height|
+                    self.get_disk_header(height).copied())
+        }?
+        .map(|idx_and_header| idx_and_header.1);
         Ok(result)
     }
 
     unsafe fn get_metadata(&self) -> Result<&Metadata, FlatChainstoreError> {
         let ptr = self.metadata.as_ptr() as *const Metadata;
-
-        Ok(ptr
-            .as_ref()
-            .expect("Infallible: we already validated this pointer"))
+        Ok(unsafe { ptr.as_ref() }.expect("Infallible: we already validated this pointer"))
     }
 
     unsafe fn get_metadata_mut(&mut self) -> Result<&mut Metadata, FlatChainstoreError> {
         let ptr = self.metadata.as_ptr() as *mut Metadata;
-
-        Ok(ptr
-            .as_mut()
-            .expect("Infallible: we already validated this pointer"))
+        Ok(unsafe { ptr.as_mut() }.expect("Infallible: we already validated this pointer"))
     }
 
     /// Writes a block header in our storage
@@ -1014,8 +1011,7 @@ impl FlatChainStore {
             .try_height()
             .expect("Infallible: this function is only called for best chain blocks");
         let index = Index::new(height)?;
-
-        let pos = self.get_disk_header_mut(index)?;
+        let pos = unsafe { self.get_disk_header_mut(index) }?;
         *pos = HashedDiskHeader {
             header,
             hash: header.block_hash(),
@@ -1023,7 +1019,6 @@ impl FlatChainStore {
             acc_pos: 0,
             acc_len: 0,
         };
-
         Ok(())
     }
 
@@ -1068,10 +1063,9 @@ impl FlatChainStore {
         &mut self,
         header: DiskBlockHeader,
     ) -> Result<(), FlatChainstoreError> {
-        let fork_blocks = self.get_metadata()?.fork_count;
+        let fork_blocks = unsafe { self.get_metadata() }?.fork_count;
         let index = Index::new_fork(fork_blocks)?;
-
-        let pos = self.get_disk_header_mut(index)?;
+        let pos = unsafe { self.get_disk_header_mut(index) }?;
         let block_hash = header.block_hash();
 
         *pos = HashedDiskHeader {
@@ -1083,9 +1077,8 @@ impl FlatChainStore {
         };
 
         let index = Index::new_fork(fork_blocks)?;
-        self.add_index_entry(block_hash, index)?;
-
-        self.get_metadata_mut()?.fork_count += 1;
+        unsafe { self.add_index_entry(block_hash, index) }?;
+        unsafe { self.get_metadata_mut() }?.fork_count += 1;
 
         Ok(())
     }
@@ -1096,10 +1089,11 @@ impl FlatChainStore {
         self.fork_headers.flush()?;
 
         let checksum = self.compute_checksum();
-        let metadata = self.get_metadata_mut()?;
+        let metadata = unsafe { self.get_metadata_mut() }?;
 
         metadata.checksum = checksum;
         self.metadata.flush()?;
+
         Ok(())
     }
 
