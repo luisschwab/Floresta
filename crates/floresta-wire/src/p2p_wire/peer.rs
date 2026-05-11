@@ -747,7 +747,7 @@ pub(super) mod peer_utils {
     use bitcoin::p2p::Address;
     use floresta_common::advertised_services;
     use floresta_common::PROTOCOL_VERSION;
-    use rand::thread_rng;
+    use rand::rng;
     use rand::Rng;
 
     use crate::address_man::LocalAddress;
@@ -786,8 +786,8 @@ pub(super) mod peer_utils {
         );
 
         // Generate a per-message nonce.
-        let mut prng = thread_rng();
-        let nonce: u64 = prng.gen();
+        let mut prng = rng();
+        let nonce: u64 = prng.random();
 
         // Inform the peer of this node's chain tip.
         let start_height = best_block as i32;

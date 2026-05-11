@@ -59,8 +59,8 @@ use floresta_chain::proof_util;
 use floresta_chain::ChainBackend;
 use floresta_chain::CompactLeafData;
 use floresta_common::service_flags;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::seq::IndexedRandom;
+use rand::rng;
 use rustreexo::node_hash::BitcoinNodeHash;
 use rustreexo::proof::Proof;
 use rustreexo::stump::Stump;
@@ -666,7 +666,7 @@ where
             .ok_or(WireError::NoPeersAvailable)?;
 
         let rand_peer = *peers
-            .choose(&mut thread_rng())
+            .choose(&mut rng())
             .ok_or(WireError::NoPeersAvailable)?;
 
         let block = self.get_block_and_proof(rand_peer, fork).await?;

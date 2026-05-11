@@ -26,6 +26,7 @@ use floresta_common::service_flags;
 use rand::seq::IteratorRandom;
 use serde::Deserialize;
 use serde::Serialize;
+use rand::Rng;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -134,7 +135,7 @@ impl From<AddrV2> for LocalAddress {
             state: AddressState::NeverTried,
             services: ServiceFlags::NONE,
             port: 8333,
-            id: rand::random::<usize>(),
+            id: rand::random::<u64>() as usize,
         }
     }
 }
@@ -147,7 +148,7 @@ impl From<AddrV2Message> for LocalAddress {
             state: AddressState::NeverTried,
             services: value.services,
             port: value.port,
-            id: rand::random::<usize>(),
+            id: rand::random::<u64>() as usize,
         }
     }
 }
@@ -179,7 +180,7 @@ impl TryFrom<&str> for LocalAddress {
             super::address_man::AddressState::NeverTried,
             ServiceFlags::NONE,
             address.port(),
-            rand::random::<usize>(),
+            rand::random::<u64>() as usize,
         ))
     }
 
@@ -683,7 +684,7 @@ impl AddressMan {
         // the features it supports or even if it's a valid peer. The only thing we care about
         // is that we haven't banned it.
         if feeler {
-            let idx = rand::random::<usize>() % self.addresses.len();
+            let idx = rand::rng().random_range(0..self.addresses.len());
             let peer = self.addresses.keys().nth(idx)?;
             let address = self.addresses.get(peer)?.to_owned();
 
@@ -777,7 +778,7 @@ impl AddressMan {
                 let addr = self.addresses.get(id)?;
                 (addr.state != AddressState::Connected).then_some((id, addr))
             })
-            .choose(&mut rand::thread_rng())
+            .choose(&mut rand::rng())
             .map(|(id, addr)| (*id, addr.to_owned()))
     }
 
@@ -870,7 +871,7 @@ impl AddressMan {
                 return None;
             }
 
-            let idx = rand::random::<usize>() % peers.len();
+            let idx = rand::rng().random_range(0..peers.len());
             let utreexo_peer = peers.get(idx)?;
             return Some((**utreexo_peer, self.addresses.get(utreexo_peer)?.to_owned()));
         }
@@ -888,7 +889,7 @@ impl AddressMan {
         }
 
         // if we can't find a peer that advertises the required service, get any peer
-        let idx = rand::random::<usize>() % self.addresses.len();
+        let idx = rand::rng().random_range(0..self.addresses.len());
         let peer = self.addresses.keys().nth(idx)?;
 
         Some((*peer, self.addresses.get(peer)?.to_owned()))
@@ -1114,7 +1115,7 @@ impl From<DiskLocalAddress> for LocalAddress {
             state: value.state,
             services,
             port: value.port,
-            id: value.id.unwrap_or_else(rand::random::<usize>),
+            id: value.id.unwrap_or_else(|| rand::rng().random_range(0..usize::MAX)),
         }
     }
 }
@@ -1265,7 +1266,7 @@ mod test {
         let seeds: Vec<DiskLocalAddress> =
             serde_json::from_str(&contents).expect("JSON not well-formatted");
         let mut addresses = Vec::new();
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for seed in seeds {
             let state = match seed.state {
@@ -1279,7 +1280,7 @@ mod test {
                 state,
                 services: ServiceFlags::from(seed.services),
                 port: seed.port,
-                id: rng.gen(),
+                id: rng.random::<u64>() as usize,
             };
             addresses.push(local_address);
         }
@@ -1378,7 +1379,7 @@ mod test {
         let signet_address = load_addresses_from_json("./seeds/signet_seeds.json").unwrap();
 
         assert!(!signet_address.is_empty());
-        let random = rand::thread_rng().gen_range(1..=13);
+        let random = rand::rng().random_range(1..=13);
         let loc_adr_1 = LocalAddress::from(signet_address[random].address.clone());
         assert_eq!(loc_adr_1.address, signet_address[random].address);
     }

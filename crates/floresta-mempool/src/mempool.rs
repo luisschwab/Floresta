@@ -416,7 +416,7 @@ mod tests {
         let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
         let mut transactions = Vec::new();
 
-        let n = rng.gen_range(1..10);
+        let n = rng.random_range(1..10);
         let mut outputs = Vec::new();
 
         // This output is used as a dummy input for the first transactions, since
@@ -436,13 +436,13 @@ mod tests {
                 output: Vec::new(),
             };
 
-            let inputs = rng.gen_range(1..10);
+            let inputs = rng.random_range(1..10);
             for _ in 0..inputs {
                 if outputs.is_empty() {
                     break;
                 }
 
-                let index = rng.gen_range(0..outputs.len());
+                let index = rng.random_range(0..outputs.len());
                 let previous_output: OutPoint = match conflict {
                     false => outputs.remove(index),
                     true => *outputs.get(index).unwrap(),
@@ -458,12 +458,12 @@ mod tests {
                 tx.input.push(input);
             }
 
-            let n = rng.gen_range(1..10);
+            let n = rng.random_range(1..10);
 
             for _ in 0..n {
-                let script = rng.gen::<[u8; 32]>();
+                let script = rng.random::<[u8; 32]>();
                 let output = bitcoin::TxOut {
-                    value: bitcoin::Amount::from_sat(rng.gen_range(0..100_000_000)),
+                    value: bitcoin::Amount::from_sat(rng.random_range(0..100_000_000)),
                     script_pubkey: bitcoin::Script::from_bytes(&script).into(),
                 };
 

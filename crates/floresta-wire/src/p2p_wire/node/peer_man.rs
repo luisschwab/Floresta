@@ -13,9 +13,9 @@ use bitcoin::p2p::ServiceFlags;
 use bitcoin::Transaction;
 use floresta_chain::ChainBackend;
 use floresta_common::service_flags;
-use rand::distributions::Distribution;
-use rand::distributions::WeightedIndex;
-use rand::prelude::SliceRandom;
+use rand::distr::Distribution;
+use rand::distr::weighted::WeightedIndex;
+use rand::seq::IndexedRandom;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -95,7 +95,7 @@ where
             .collect();
 
         let dist = WeightedIndex::new(&weights).ok()?;
-        let idx = dist.sample(&mut rand::thread_rng());
+        let idx = dist.sample(&mut rand::rng());
 
         let (id, peer, _) = candidates[idx];
         Some((id, peer))
@@ -153,7 +153,7 @@ where
         }
 
         let peer = peers
-            .choose(&mut rand::thread_rng())
+            .choose(&mut rand::rng())
             .expect("infallible: we checked that peers isn't empty");
 
         self.peers

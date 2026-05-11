@@ -944,6 +944,8 @@ mod tests {
     use floresta_common::assert_err;
     use floresta_common::assert_ok;
     use rand::rngs::OsRng;
+    use rand::TryRngCore;
+    use rand::prelude::IndexedMutRandom;
     use rand::rngs::StdRng;
     use rand::seq::SliceRandom;
     use rand::RngCore;
@@ -1549,7 +1551,7 @@ mod tests {
         // All blocks except 9 and 170 just have a single, unspent TxOut
         let default_unspent_idx = HashSet::from_iter(vec![0]);
 
-        let mut rng = OsRng;
+        let mut rng = OsRng.unwrap_err();
         let salt = SipHashKeys::new(
             rng.next_u64(),
             rng.next_u64(),
@@ -1688,7 +1690,7 @@ mod tests {
 
     #[test]
     fn test_swift_sync_hash_midstate() {
-        let mut rng = OsRng;
+        let mut rng = OsRng.unwrap_err();
 
         for _ in 0..10_000 {
             let keys = SipHashKeys::new(

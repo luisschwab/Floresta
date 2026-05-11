@@ -26,6 +26,7 @@ use floresta_chain::FlatChainStoreConfig;
 use floresta_common::service_flags;
 use floresta_common::Ema;
 use floresta_mempool::Mempool;
+use rand::TryRngCore;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use serde::Deserialize;
@@ -77,7 +78,7 @@ impl SimulatedPeer {
             protocol_version: 0,
             blocks: rand::random::<u32>() % 23,
             id: self.peer_id,
-            address_id: rand::random::<usize>(),
+            address_id: rand::random::<u64>() as usize,
             services: ServiceFlags::NETWORK
                 | service_flags::UTREEXO.into()
                 | service_flags::UTREEXO_ARCHIVE.into()
@@ -219,7 +220,8 @@ pub fn serialize(root: UtreexoRoots) -> Vec<u8> {
 
 pub fn create_false_acc(tip: usize) -> Vec<u8> {
     let mut bytes = [0u8; 32];
-    OsRng.fill_bytes(&mut bytes);
+    let mut rng = OsRng.unwrap_err();
+    rng.fill_bytes(&mut bytes);
     let node_hash = encode::serialize_hex(&bytes);
 
     let utreexo_root = UtreexoRoots {

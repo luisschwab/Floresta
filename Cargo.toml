@@ -56,7 +56,7 @@ dns-lookup = "2.1"
 hex = "0.4"
 kv = "0.24"
 miniscript = { version = "12.3", default-features = false }
-rand = "0.8"
+rand = "0.9"
 rcgen = { version = "0.14", default-features = false, features = ["aws_lc_rs", "pem"] }
 rustreexo = "0.5"
 serde = { version = "1.0", features = ["derive"] }

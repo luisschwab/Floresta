@@ -10,7 +10,7 @@ use floresta_chain::proof_util;
 use floresta_chain::ThreadSafeChain;
 use floresta_common::service_flags;
 use rand::seq::IteratorRandom;
-use rand::thread_rng;
+use rand::rng;
 use tokio::time;
 use tokio::time::MissedTickBehavior;
 use tracing::debug;
@@ -158,7 +158,7 @@ where
                 .filter(|peer| {
                     peer.is_regular_peer() && !peer.services.has(service_flags::UTREEXO.into())
                 })
-                .choose(&mut thread_rng())
+                .choose(&mut rng())
                 .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
         }
 

@@ -20,7 +20,7 @@ use floresta_chain::pruned_utreexo::UpdatableChainstate;
 use floresta_chain::ThreadSafeChain;
 use floresta_common::service_flags;
 use rand::seq::IteratorRandom;
-use rand::thread_rng;
+use rand::rng;
 use rustreexo::stump::Stump;
 use tokio::time;
 use tokio::time::MissedTickBehavior;
@@ -153,7 +153,7 @@ where
                 self.peers
                     .values()
                     .filter(|peer| peer.is_regular_peer())
-                    .choose(&mut thread_rng())
+                    .choose(&mut rng())
                     .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
             }
 
@@ -169,7 +169,7 @@ where
                 self.peers
                     .values()
                     .filter(|peer| peer.is_regular_peer())
-                    .choose(&mut thread_rng())
+                    .choose(&mut rng())
                     .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
             }
 

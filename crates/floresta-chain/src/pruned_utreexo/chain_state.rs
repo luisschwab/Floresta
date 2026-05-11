@@ -1903,7 +1903,7 @@ mod test {
         assert!(!chain.get_block_locator().unwrap().is_empty());
 
         // invalidate_block
-        let random_height = rand::thread_rng().gen_range(1..=2014);
+        let random_height = rand::rng().random_range(1..=2014);
 
         chain
             .invalidate_block(headers[random_height].prev_blockhash)

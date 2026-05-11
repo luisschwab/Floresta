@@ -297,15 +297,15 @@ mod tests {
 
     /// Build a header with random values
     fn gen_header() -> BlockHeader {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         BlockHeader {
             version: Version::from_consensus(2),
-            prev_blockhash: BlockHash::from_byte_array(rng.gen()),
-            merkle_root: TxMerkleNode::from_byte_array(rng.gen()),
-            time: rng.gen(),
-            bits: CompactTarget::from_consensus(rng.gen()),
-            nonce: rng.gen(),
+            prev_blockhash: BlockHash::from_byte_array(rng.random()),
+            merkle_root: TxMerkleNode::from_byte_array(rng.random()),
+            time: rng.random(),
+            bits: CompactTarget::from_consensus(rng.random()),
+            nonce: rng.random(),
         }
     }
 
@@ -424,15 +424,15 @@ mod tests {
 
     #[test]
     fn encode_decode_best_chain() {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let alternative_tips = (0..64)
-            .map(|_| BlockHash::from_byte_array(rng.gen()))
+            .map(|_| BlockHash::from_byte_array(rng.random()))
             .collect();
 
         let best = BestChain {
-            best_block: BlockHash::from_byte_array(rng.gen()),
-            depth: rng.gen(),
-            validation_index: BlockHash::from_byte_array(rng.gen()),
+            best_block: BlockHash::from_byte_array(rng.random()),
+            depth: rng.random(),
+            validation_index: BlockHash::from_byte_array(rng.random()),
             alternative_tips,
         };
 

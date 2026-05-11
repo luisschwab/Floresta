@@ -394,7 +394,7 @@ where
                 AddressState::NeverTried,
                 ServiceFlags::NONE,
                 port,
-                rand::random(),
+                rand::random::<u64>() as usize,
             ));
         }
 
@@ -426,7 +426,7 @@ where
                     return Err(AddrParseError::Inconclusive);
                 }
 
-                let id = rand::random();
+                let id = rand::random::<u64>() as usize;
                 Ok(LocalAddress::new(
                     AddrV2::Ipv4(ip),
                     0,
@@ -452,7 +452,7 @@ where
 
                 let ip = dns_lookup::lookup_host(hostname)
                     .map_err(|_e| AddrParseError::InvalidHostname)?;
-                let id = rand::random();
+                let id = rand::random::<u64>() as usize;
                 let ip = match ip[0] {
                     IpAddr::V4(ip) => AddrV2::Ipv4(ip),
                     IpAddr::V6(ip) => AddrV2::Ipv6(ip),
