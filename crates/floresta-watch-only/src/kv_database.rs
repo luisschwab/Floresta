@@ -4,6 +4,7 @@ use core::error::Error;
 use core::fmt;
 use core::fmt::Display;
 use core::fmt::Formatter;
+use std::path::Path;
 
 use bitcoin::consensus::deserialize;
 use bitcoin::consensus::encode::Error as EncodingError;
@@ -21,7 +22,7 @@ use super::Stats;
 
 pub struct KvDatabase(Store, Bucket<'static, String, Vec<u8>>);
 impl KvDatabase {
-    pub fn new(datadir: String) -> Result<KvDatabase> {
+    pub fn new(datadir: impl AsRef<Path>) -> Result<KvDatabase> {
         // Configure the database
         let cfg = Config::new(datadir);
 
