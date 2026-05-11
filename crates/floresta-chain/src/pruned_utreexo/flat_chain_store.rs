@@ -93,8 +93,8 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::PoisonError;
 
-use bitcoin::hashes::Hash;
 use bitcoin::BlockHash;
+use bitcoin::hashes::Hash;
 use floresta_common::impl_error_from;
 use floresta_common::prelude::*;
 use index_impl::Index;
@@ -401,16 +401,32 @@ impl Display for FlatChainstoreError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(e) => write!(f, "FlatChainStore I/O Error: {e:?}"),
-            Self::HeaderNotFound => write!(f, "The requested block header was not found in the FlatChainStore"),
-            Self::FullIndex => write!(f, "Failed to add a block to the FlatChainStore due to a full index"),
+            Self::HeaderNotFound => write!(
+                f,
+                "The requested block header was not found in the FlatChainStore"
+            ),
+            Self::FullIndex => write!(
+                f,
+                "Failed to add a block to the FlatChainStore due to a full index"
+            ),
             Self::OversizedIndex => write!(f, "Attempted to create an index larger than 31 bits"),
-            Self::UnsupportedSchema(schema_version) => write!(f, "Attempted to open the FlatChainStore database using an unsupported schema with version={}", schema_version),
+            Self::UnsupportedSchema(schema_version) => write!(
+                f,
+                "Attempted to open the FlatChainStore database using an unsupported schema with version={}",
+                schema_version
+            ),
             Self::PoisonedLock => write!(f, "The FlatChainStore's cache lock is poisoned"),
             Self::BadMagic(magic) => write!(f, "The FlatChainStore has bad magic={}", magic),
-            Self::OversizedAccumulator => write!(f, "The FlatChainStore's accumulator is larger than the maximum value of {}", MAX_ACCUMULATOR_SIZE),
+            Self::OversizedAccumulator => write!(
+                f,
+                "The FlatChainStore's accumulator is larger than the maximum value of {}",
+                MAX_ACCUMULATOR_SIZE
+            ),
             Self::InvalidMetadataPointer => write!(f, "The FlatChainStore has invalid metadata"),
             Self::CorruptedDatabase => write!(f, "The FlatChainStore is corrupted"),
-            Self::InvalidValidationIndex => write!(f, "The FlatChainStore has an invalid validation index"),
+            Self::InvalidValidationIndex => {
+                write!(f, "The FlatChainStore has an invalid validation index")
+            }
         }
     }
 }
@@ -499,7 +515,7 @@ impl BlockIndex {
     ) -> Result<Option<(Index, DiskBlockHeader)>, FlatChainstoreError> {
         match unsafe { self.hash_map_find_pos(hash, get_header_by_index) }? {
             IndexBucket::Empty { .. } => Ok(None),
-            IndexBucket::Occupied { ptr, header } => Ok(Some(( unsafe { *ptr }, header))),
+            IndexBucket::Occupied { ptr, header } => Ok(Some((unsafe { *ptr }, header))),
         }
     }
 
@@ -785,8 +801,7 @@ impl FlatChainStore {
         }
         let is_new = unsafe {
             self.block_index
-                .set_index_for_hash(hash, index, |index|
-                    self.get_disk_header(index).copied())
+                .set_index_for_hash(hash, index, |index| self.get_disk_header(index).copied())
         }?;
         // Only increment the index occupancy if this is a new entry, i.e., a new block. Otherwise,
         // if this is a reorg, the occupancy is kept the same as we just overwrite indexes.
@@ -982,8 +997,7 @@ impl FlatChainStore {
     ) -> Result<Option<DiskBlockHeader>, FlatChainstoreError> {
         let result = unsafe {
             self.block_index
-                .get_index_for_hash(hash, |height|
-                    self.get_disk_header(height).copied())
+                .get_index_for_hash(hash, |height| self.get_disk_header(height).copied())
         }?
         .map(|idx_and_header| idx_and_header.1);
         Ok(result)
@@ -1360,35 +1374,35 @@ mod tests {
     use core::mem::size_of;
     use std::fs;
 
-    use bitcoin::block::Header;
-    use bitcoin::consensus::deserialize;
-    use bitcoin::consensus::Decodable;
-    use bitcoin::constants::genesis_block;
-    use bitcoin::hashes::Hash;
     use bitcoin::Block;
     use bitcoin::BlockHash;
     use bitcoin::Network;
+    use bitcoin::block::Header;
+    use bitcoin::consensus::Decodable;
+    use bitcoin::consensus::deserialize;
+    use bitcoin::constants::genesis_block;
+    use bitcoin::hashes::Hash;
     use floresta_common::bhash;
     use tempfile::TempDir;
     use twox_hash::XxHash3_64;
 
+    use super::FLAT_CHAINSTORE_MAGIC;
+    use super::FLAT_CHAINSTORE_VERSION;
     use super::FlatChainStore;
     use super::FlatChainStoreConfig;
     use super::FlatChainstoreError;
     use super::Index;
-    use super::FLAT_CHAINSTORE_MAGIC;
-    use super::FLAT_CHAINSTORE_VERSION;
-    use crate::migrate_v0_to_v1::init_mmap;
-    use crate::migrate_v0_to_v1::maybe_migrate;
-    use crate::pruned_utreexo::flat_chain_store::FileChecksum;
-    use crate::pruned_utreexo::flat_chain_store::Metadata;
-    use crate::pruned_utreexo::UpdatableChainstate;
     use crate::AssumeValidArg;
     use crate::BestChain;
     use crate::ChainState;
     use crate::ChainStore;
     use crate::DbCheckSum;
     use crate::DiskBlockHeader;
+    use crate::migrate_v0_to_v1::init_mmap;
+    use crate::migrate_v0_to_v1::maybe_migrate;
+    use crate::pruned_utreexo::UpdatableChainstate;
+    use crate::pruned_utreexo::flat_chain_store::FileChecksum;
+    use crate::pruned_utreexo::flat_chain_store::Metadata;
 
     #[test]
     fn test_truncate_pow2() {
@@ -1468,9 +1482,13 @@ mod tests {
             let store_id = tweak_version_and_magic(version, FLAT_CHAINSTORE_MAGIC);
 
             match get_test_chainstore(Some(store_id)) {
-                Err(FlatChainstoreError::UnsupportedSchema(v)) if v == version => {},
-                Err(e) => panic!("Should have failed with `FlatChainstoreError::DbTooNew({version})`, instead we got {e:?}"),
-                Ok(_) => panic!("Should have failed with `FlatChainstoreError::DbTooNew({version})`, instead we got `Ok`"),
+                Err(FlatChainstoreError::UnsupportedSchema(v)) if v == version => {}
+                Err(e) => panic!(
+                    "Should have failed with `FlatChainstoreError::DbTooNew({version})`, instead we got {e:?}"
+                ),
+                Ok(_) => panic!(
+                    "Should have failed with `FlatChainstoreError::DbTooNew({version})`, instead we got `Ok`"
+                ),
             }
         }
 
@@ -1482,9 +1500,13 @@ mod tests {
             let store_id = tweak_version_and_magic(FLAT_CHAINSTORE_VERSION, magic);
 
             match get_test_chainstore(Some(store_id)) {
-                Err(FlatChainstoreError::BadMagic(m)) if m == magic => {},
-                Err(e) => panic!("Should have failed with `FlatChainstoreError::InvalidMagic({magic})`, instead we got {e:?}"),
-                Ok(_) => panic!("Should have failed with `FlatChainstoreError::InvalidMagic({magic})`, instead we got `Ok`"),
+                Err(FlatChainstoreError::BadMagic(m)) if m == magic => {}
+                Err(e) => panic!(
+                    "Should have failed with `FlatChainstoreError::InvalidMagic({magic})`, instead we got {e:?}"
+                ),
+                Ok(_) => panic!(
+                    "Should have failed with `FlatChainstoreError::InvalidMagic({magic})`, instead we got `Ok`"
+                ),
             }
         }
     }

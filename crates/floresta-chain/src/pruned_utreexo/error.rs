@@ -230,7 +230,10 @@ impl Display for BlockValidationErrors {
                 write!(f, "Coinbase not matured yet")
             }
             BlockValidationErrors::UnspendableUTXO => {
-                write!(f, "Attempts to spend unspendable UTXO that was overwritten by the historical BIP30 violation")
+                write!(
+                    f,
+                    "Attempts to spend unspendable UTXO that was overwritten by the historical BIP30 violation"
+                )
             }
             BlockValidationErrors::BIP94TimeWarp => {
                 write!(f, "BIP94 time warp detected")

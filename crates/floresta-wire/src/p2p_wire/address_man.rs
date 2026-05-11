@@ -17,16 +17,16 @@ use std::path::Path;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
+use bitcoin::Network;
+use bitcoin::p2p::ServiceFlags;
 use bitcoin::p2p::address::AddrV2;
 use bitcoin::p2p::address::AddrV2Message;
-use bitcoin::p2p::ServiceFlags;
-use bitcoin::Network;
 use floresta_chain::DnsSeed;
 use floresta_common::service_flags;
+use rand::Rng;
 use rand::seq::IteratorRandom;
 use serde::Deserialize;
 use serde::Serialize;
-use rand::Rng;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -546,8 +546,7 @@ impl AddressMan {
     }
 
     pub fn get_addresses_to_send(&self) -> AddressToSend {
-        let addresses = self
-            .good_addresses
+        self.good_addresses
             .iter()
             .filter_map(|id| {
                 let address = self.addresses.get(id)?;
@@ -558,9 +557,7 @@ impl AddressMan {
                     address.port,
                 ))
             })
-            .collect();
-
-        addresses
+            .collect()
     }
 
     fn do_lookup(host: &str, default_port: u16, socks5: Option<SocketAddr>) -> Vec<LocalAddress> {
@@ -1115,7 +1112,9 @@ impl From<DiskLocalAddress> for LocalAddress {
             state: value.state,
             services,
             port: value.port,
-            id: value.id.unwrap_or_else(|| rand::rng().random_range(0..usize::MAX)),
+            id: value
+                .id
+                .unwrap_or_else(|| rand::rng().random_range(0..usize::MAX)),
         }
     }
 }
@@ -1158,10 +1157,10 @@ pub mod dns_proxy {
 
     use rustls::crypto;
     use serde::Deserialize;
-    use ureq::tls::TlsConfig;
-    use ureq::tls::TlsProvider;
     use ureq::Agent;
     use ureq::Proxy;
+    use ureq::tls::TlsConfig;
+    use ureq::tls::TlsProvider;
 
     #[derive(Deserialize)]
     /// JSON format from [Google's DoH API](https://developers.google.com/speed/public-dns/docs/doh/json#dns_response_in_json)
@@ -1244,9 +1243,9 @@ mod test {
     use std::io::Read;
     use std::io::{self};
 
-    use bitcoin::p2p::address::AddrV2;
-    use bitcoin::p2p::ServiceFlags;
     use bitcoin::Network;
+    use bitcoin::p2p::ServiceFlags;
+    use bitcoin::p2p::address::AddrV2;
     use floresta_chain::get_chain_dns_seeds;
     use floresta_common::assert_ok;
     use floresta_common::service_flags;
@@ -1407,21 +1406,29 @@ mod test {
 
         assert!(!address_man.get_addresses_to_send().is_empty());
 
-        assert!(address_man
-            .get_address_to_connect(ServiceFlags::default(), true)
-            .is_some());
+        assert!(
+            address_man
+                .get_address_to_connect(ServiceFlags::default(), true)
+                .is_some()
+        );
 
-        assert!(address_man
-            .get_address_to_connect(ServiceFlags::default(), false)
-            .is_some());
+        assert!(
+            address_man
+                .get_address_to_connect(ServiceFlags::default(), false)
+                .is_some()
+        );
 
-        assert!(address_man
-            .get_address_to_connect(ServiceFlags::NONE, false)
-            .is_some());
+        assert!(
+            address_man
+                .get_address_to_connect(ServiceFlags::NONE, false)
+                .is_some()
+        );
 
-        assert!(address_man
-            .get_address_to_connect(service_flags::UTREEXO.into(), false)
-            .is_some());
+        assert!(
+            address_man
+                .get_address_to_connect(service_flags::UTREEXO.into(), false)
+                .is_some()
+        );
 
         assert!(!AddressMan::get_net_seeds(Network::Signet).is_empty());
         assert!(!AddressMan::get_net_seeds(Network::Bitcoin).is_empty());
@@ -1686,10 +1693,12 @@ mod test {
             address_man.update_set_state(addr.id, AddressState::Banned(0));
         }
 
-        assert!(address_man
-            .addresses
-            .values()
-            .all(|addr| matches!(addr.state, AddressState::Banned(_))));
+        assert!(
+            address_man
+                .addresses
+                .values()
+                .all(|addr| matches!(addr.state, AddressState::Banned(_)))
+        );
     }
 
     #[test]
@@ -1708,10 +1717,12 @@ mod test {
             address_man.update_set_service_flag(addr.id, service_flags::UTREEXO.into());
         }
 
-        assert!(address_man
-            .addresses
-            .values()
-            .all(|addr| addr.services.has(service_flags::UTREEXO.into())));
+        assert!(
+            address_man
+                .addresses
+                .values()
+                .all(|addr| addr.services.has(service_flags::UTREEXO.into()))
+        );
     }
 
     #[test]

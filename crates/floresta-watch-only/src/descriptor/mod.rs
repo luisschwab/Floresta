@@ -8,10 +8,10 @@ use core::str::FromStr;
 use bitcoin::Network;
 use bitcoin::ScriptBuf;
 use floresta_common::impl_error_from;
-use miniscript::descriptor::ConversionError;
 use miniscript::Descriptor;
 use miniscript::DescriptorPublicKey;
 use miniscript::Error as MiniscriptError;
+use miniscript::descriptor::ConversionError;
 
 mod slip132;
 

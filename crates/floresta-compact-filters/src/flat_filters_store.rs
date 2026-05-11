@@ -222,8 +222,8 @@ mod tests {
     use std::fs::remove_file;
 
     use super::FlatFiltersStore;
-    use crate::bip158::BlockFilter;
     use crate::IterableFilterStore;
+    use crate::bip158::BlockFilter;
 
     #[test]
     fn test_filter_store() {

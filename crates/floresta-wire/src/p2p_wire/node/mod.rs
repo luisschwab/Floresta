@@ -21,11 +21,11 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
-use bitcoin::p2p::address::AddrV2Message;
-use bitcoin::p2p::ServiceFlags;
 use bitcoin::BlockHash;
 use bitcoin::Network;
 use bitcoin::Txid;
+use bitcoin::p2p::ServiceFlags;
+use bitcoin::p2p::address::AddrV2Message;
 pub(crate) use blocks::InflightBlock;
 use floresta_chain::ChainBackend;
 use floresta_common::Ema;
@@ -36,13 +36,14 @@ pub use peer_man::AddedPeerInfo;
 use running_ctx::RunningNode;
 use serde::Deserialize;
 use serde::Serialize;
-use tokio::sync::mpsc::unbounded_channel;
+use tokio::sync::Mutex;
 use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::oneshot;
-use tokio::sync::Mutex;
 use tracing::info;
 
+use super::UtreexoNodeConfig;
 use super::address_man::AddressMan;
 use super::address_man::LocalAddress;
 use super::block_proof::Bitmap;
@@ -53,7 +54,6 @@ use super::node_interface::UserRequest;
 use super::peer::PeerMessages;
 use super::socks::Socks5StreamBuilder;
 use super::transport::TransportProtocol;
-use super::UtreexoNodeConfig;
 use crate::node_context::PeerId;
 
 /// As per BIP 155, limit the number of addresses to 1,000

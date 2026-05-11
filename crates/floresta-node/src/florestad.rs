@@ -17,29 +17,29 @@ use std::sync::OnceLock;
 use bitcoin::Address;
 pub use bitcoin::Network;
 use bitcoin::ScriptBuf;
-#[cfg(feature = "zmq-server")]
-use floresta_chain::pruned_utreexo::BlockchainInterface;
 pub use floresta_chain::AssumeUtreexoValue;
 pub use floresta_chain::AssumeValidArg;
 use floresta_chain::ChainParams;
 use floresta_chain::ChainState;
 use floresta_chain::FlatChainStore as ChainStore;
 use floresta_chain::FlatChainStoreConfig;
+#[cfg(feature = "zmq-server")]
+use floresta_chain::pruned_utreexo::BlockchainInterface;
 #[cfg(feature = "compact-filters")]
 use floresta_compact_filters::flat_filters_store::FlatFiltersStore;
 #[cfg(feature = "compact-filters")]
 use floresta_compact_filters::network_filters::NetworkFilters;
-use floresta_electrum::electrum_protocol::client_accept_loop;
 use floresta_electrum::electrum_protocol::ElectrumServer;
+use floresta_electrum::electrum_protocol::client_accept_loop;
 use floresta_mempool::Mempool;
-use floresta_watch_only::kv_database::KvDatabase;
 use floresta_watch_only::AddressCache;
 use floresta_watch_only::WatchOnlyError;
+use floresta_watch_only::kv_database::KvDatabase;
+use floresta_wire::UtreexoNodeConfig;
 use floresta_wire::address_man::AddressMan;
 use floresta_wire::address_man::ReachableNetworks;
-use floresta_wire::node::running_ctx::RunningNode;
 use floresta_wire::node::UtreexoNode;
-use floresta_wire::UtreexoNodeConfig;
+use floresta_wire::node::running_ctx::RunningNode;
 use rcgen::BasicConstraints;
 use rcgen::CertificateParams;
 use rcgen::IsCa;
@@ -51,11 +51,11 @@ use tokio::task;
 use tokio::time::Duration;
 #[cfg(feature = "metrics")]
 use tokio::time::{self};
-use tokio_rustls::rustls::pki_types::pem::PemObject;
+use tokio_rustls::TlsAcceptor;
+use tokio_rustls::rustls::ServerConfig;
 use tokio_rustls::rustls::pki_types::CertificateDer;
 use tokio_rustls::rustls::pki_types::PrivateKeyDer;
-use tokio_rustls::rustls::ServerConfig;
-use tokio_rustls::TlsAcceptor;
+use tokio_rustls::rustls::pki_types::pem::PemObject;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -751,9 +751,10 @@ impl Florestad {
         for xpub in self.get_xpubs() {
             match wallet.push_xpub(&xpub, self.config.network) {
                 Ok(()) => info!("Added xpubs to wallet: {xpub}"),
-                Err(WatchOnlyError::DuplicateDescriptor(_)) =>
-                    warn!("Descriptor for the provided XPUB already exists in the wallet. Skipping: {xpub}"),
-                Err(e) => return Err(FlorestadError::from(e))
+                Err(WatchOnlyError::DuplicateDescriptor(_)) => warn!(
+                    "Descriptor for the provided XPUB already exists in the wallet. Skipping: {xpub}"
+                ),
+                Err(e) => return Err(FlorestadError::from(e)),
             }
         }
 

@@ -16,20 +16,20 @@ extern crate alloc;
 use alloc::vec::Vec;
 use core::ffi::c_uint;
 
+use bitcoin::Block;
+use bitcoin::BlockHash;
+use bitcoin::Network;
 use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::constants::SUBSIDY_HALVING_INTERVAL;
 use bitcoin::p2p::ServiceFlags;
 use bitcoin::params::Params;
-use bitcoin::Block;
-use bitcoin::BlockHash;
-use bitcoin::Network;
 use floresta_common::acchashes;
 use floresta_common::bhash;
 use floresta_common::service_flags;
 use rustreexo::node_hash::BitcoinNodeHash;
 
-use crate::prelude::*;
 use crate::AssumeValidArg;
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SubsidyHalvingInterval {

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use bitcoin::consensus::Decodable;
-use bitcoin::consensus::Encodable;
-use bitcoin::hashes::sha256d;
-use bitcoin::hashes::Hash;
-use bitcoin::hashes::HashEngine;
 use bitcoin::Block;
 use bitcoin::Txid;
+use bitcoin::consensus::Decodable;
+use bitcoin::consensus::Encodable;
+use bitcoin::hashes::Hash;
+use bitcoin::hashes::HashEngine;
+use bitcoin::hashes::sha256d;
 use floresta_common::prelude::*;
 use serde::Deserialize;
 use serde::Serialize;
@@ -270,8 +270,10 @@ mod test {
         let block = deserialize(&block_hex).unwrap();
         let merkle = MerkleProof::from_block(&block, 8);
 
-        assert!(merkle
-            .verify(*block.header.merkle_root.as_raw_hash())
-            .unwrap());
+        assert!(
+            merkle
+                .verify(*block.header.merkle_root.as_raw_hash())
+                .unwrap()
+        );
     }
 }

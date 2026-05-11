@@ -11,9 +11,9 @@ use floresta_chain::BlockValidationErrors;
 use floresta_chain::BlockchainError;
 #[cfg(feature = "compact-filters")]
 use floresta_compact_filters::IterableFilterStoreError;
+use floresta_watch_only::WatchOnlyError;
 use floresta_watch_only::descriptor::DescriptorError;
 use floresta_watch_only::kv_database::KvDatabaseError;
-use floresta_watch_only::WatchOnlyError;
 use tokio_rustls::rustls::pki_types;
 
 #[derive(Debug)]

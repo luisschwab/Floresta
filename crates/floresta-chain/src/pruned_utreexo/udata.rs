@@ -3,14 +3,14 @@
 //! UData is the serialized data used for proof propagation in utreexo. It contains all
 //! data needed for validating some piece of information, like a transaction and a block.
 
-use bitcoin::consensus;
-use bitcoin::consensus::Decodable;
-use bitcoin::consensus::Encodable;
-use bitcoin::hashes::sha256;
-use bitcoin::hashes::Hash;
 use bitcoin::BlockHash;
 use bitcoin::OutPoint;
 use bitcoin::TxOut;
+use bitcoin::consensus;
+use bitcoin::consensus::Decodable;
+use bitcoin::consensus::Encodable;
+use bitcoin::hashes::Hash;
+use bitcoin::hashes::sha256;
 use sha2::Digest;
 use sha2::Sha512_256;
 
@@ -185,11 +185,6 @@ pub mod proof_util {
     use core::fmt::Display;
     use core::fmt::Formatter;
 
-    use bitcoin::blockdata::script;
-    use bitcoin::blockdata::script::Instruction;
-    use bitcoin::consensus::Encodable;
-    use bitcoin::hashes::sha256;
-    use bitcoin::hashes::Hash;
     use bitcoin::Amount;
     use bitcoin::Block;
     use bitcoin::BlockHash;
@@ -203,19 +198,24 @@ pub mod proof_util {
     use bitcoin::Txid;
     use bitcoin::WPubkeyHash;
     use bitcoin::WScriptHash;
+    use bitcoin::blockdata::script;
+    use bitcoin::blockdata::script::Instruction;
+    use bitcoin::consensus::Encodable;
+    use bitcoin::hashes::Hash;
+    use bitcoin::hashes::sha256;
     use floresta_common::impl_error_from;
     use rustreexo::node_hash::BitcoinNodeHash;
     use sha2::Digest;
     use sha2::Sha512_256;
 
     use super::LeafData;
+    use crate::BlockchainError;
+    use crate::CompactLeafData;
+    use crate::ScriptPubKeyKind;
     use crate::prelude::*;
     use crate::pruned_utreexo::consensus::Consensus;
     use crate::pruned_utreexo::consensus::UTREEXO_TAG_V1;
     use crate::pruned_utreexo::utxo_data::UtxoData;
-    use crate::BlockchainError;
-    use crate::CompactLeafData;
-    use crate::ScriptPubKeyKind;
 
     #[derive(Debug)]
     /// Errors that may occur while reconstructing a leaf's scriptPubKey.
@@ -546,23 +546,23 @@ pub mod proof_util {
 
 #[cfg(test)]
 mod test {
-    use bitcoin::blockdata::script;
-    use bitcoin::consensus::encode::deserialize_hex;
-    use bitcoin::opcodes::all::OP_NOP;
-    use bitcoin::opcodes::all::OP_PUSHBYTES_1;
     use bitcoin::Amount;
     use bitcoin::BlockHash;
     use bitcoin::ScriptBuf;
     use bitcoin::Transaction;
     use bitcoin::TxIn;
+    use bitcoin::blockdata::script;
+    use bitcoin::consensus::encode::deserialize_hex;
+    use bitcoin::opcodes::all::OP_NOP;
+    use bitcoin::opcodes::all::OP_PUSHBYTES_1;
     use floresta_common::bhash;
 
-    use super::proof_util::reconstruct_leaf_data;
     use super::CompactLeafData;
     use super::LeafData;
     use super::ScriptPubKeyKind;
-    use crate::proof_util::reconstruct_script_pubkey;
+    use super::proof_util::reconstruct_leaf_data;
     use crate::proof_util::LeafErrorKind;
+    use crate::proof_util::reconstruct_script_pubkey;
 
     macro_rules! assert_recover_spk {
         (

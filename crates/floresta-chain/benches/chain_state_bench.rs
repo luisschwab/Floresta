@@ -5,24 +5,24 @@ use std::fs::File;
 use std::hint::black_box;
 use std::io::Cursor;
 
-use bitcoin::block::Header as BlockHeader;
-use bitcoin::consensus::deserialize;
-use bitcoin::consensus::Decodable;
 use bitcoin::Block;
 use bitcoin::Network;
 use bitcoin::OutPoint;
-use criterion::criterion_group;
-use criterion::criterion_main;
+use bitcoin::block::Header as BlockHeader;
+use bitcoin::consensus::Decodable;
+use bitcoin::consensus::deserialize;
 use criterion::BatchSize;
 use criterion::Criterion;
 use criterion::SamplingMode;
-use floresta_chain::pruned_utreexo::consensus::Consensus;
-use floresta_chain::pruned_utreexo::utxo_data::UtxoData;
-use floresta_chain::pruned_utreexo::UpdatableChainstate;
+use criterion::criterion_group;
+use criterion::criterion_main;
 use floresta_chain::AssumeValidArg;
 use floresta_chain::ChainState;
 use floresta_chain::FlatChainStore;
 use floresta_chain::FlatChainStoreConfig;
+use floresta_chain::pruned_utreexo::UpdatableChainstate;
+use floresta_chain::pruned_utreexo::consensus::Consensus;
+use floresta_chain::pruned_utreexo::utxo_data::UtxoData;
 use rustreexo::proof::Proof;
 
 /// Reads the first 151 blocks (or 150 blocks on top of genesis) from `regtest_blocks.txt`

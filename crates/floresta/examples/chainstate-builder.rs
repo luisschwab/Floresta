@@ -6,13 +6,13 @@
 //! block, or that doesn't validate all signatures. All customizations are done through the
 //! ChainStateBuilder struct. This example shows how to use it.
 
-use bitcoin::blockdata::constants::genesis_block;
 use bitcoin::Network;
-use floresta_chain::pruned_utreexo::chain_state_builder::ChainStateBuilder;
+use bitcoin::blockdata::constants::genesis_block;
 use floresta_chain::AssumeValidArg;
 use floresta_chain::ChainParams;
 use floresta_chain::FlatChainStore;
 use floresta_chain::FlatChainStoreConfig;
+use floresta_chain::pruned_utreexo::chain_state_builder::ChainStateBuilder;
 use rustreexo::stump::Stump;
 
 const DATA_DIR: &str = "./tmp-db";

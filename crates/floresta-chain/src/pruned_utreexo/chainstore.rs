@@ -8,15 +8,15 @@
 //! - [DiskBlockHeader]: A block header linked to its validation-state metadata
 //! - [BestChain]: Tracks the current best chain, last valid block, and fork tips
 
+use bitcoin::BlockHash;
 use bitcoin::block::Header as BlockHeader;
-use bitcoin::consensus::encode;
 use bitcoin::consensus::Decodable;
 use bitcoin::consensus::Encodable;
-use bitcoin::BlockHash;
+use bitcoin::consensus::encode;
 
-use crate::prelude::*;
 use crate::BlockchainError;
 use crate::DatabaseError;
+use crate::prelude::*;
 
 /// A trait defining methods for interacting with our chain database. These methods will be used by
 /// the [ChainState](super::chain_state::ChainState) to save and retrieve data about the blockchain,
@@ -282,14 +282,14 @@ impl Decodable for BestChain {
 mod tests {
     use std::io::Cursor;
 
+    use bitcoin::BlockHash;
+    use bitcoin::CompactTarget;
+    use bitcoin::TxMerkleNode;
     use bitcoin::block::Header as BlockHeader;
     use bitcoin::block::Version;
     use bitcoin::consensus::Decodable;
     use bitcoin::consensus::Encodable;
     use bitcoin::hashes::Hash;
-    use bitcoin::BlockHash;
-    use bitcoin::CompactTarget;
-    use bitcoin::TxMerkleNode;
     use rand;
     use rand::Rng;
 

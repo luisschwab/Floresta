@@ -1,10 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use bitcoin::block::Header;
-use bitcoin::consensus::encode::serialize_hex;
-use bitcoin::consensus::Encodable;
-use bitcoin::constants::genesis_block;
-use bitcoin::hashes::Hash;
 use bitcoin::Address;
 use bitcoin::Block;
 use bitcoin::BlockHash;
@@ -14,15 +9,20 @@ use bitcoin::Script;
 use bitcoin::ScriptBuf;
 use bitcoin::Txid;
 use bitcoin::VarInt;
+use bitcoin::block::Header;
+use bitcoin::consensus::Encodable;
+use bitcoin::consensus::encode::serialize_hex;
+use bitcoin::constants::genesis_block;
+use bitcoin::hashes::Hash;
+use corepc_types::ScriptPubkey;
 use corepc_types::v29::GetTxOut;
 use corepc_types::v30::GetBlockHeaderVerbose;
 use corepc_types::v30::GetBlockVerboseOne;
-use corepc_types::ScriptPubkey;
 use floresta_chain::extensions::HeaderExt;
 use floresta_chain::extensions::WorkExt;
 use miniscript::descriptor::checksum;
-use serde_json::json;
 use serde_json::Value;
+use serde_json::json;
 use tracing::debug;
 
 use super::res::GetBlockHeaderRes;

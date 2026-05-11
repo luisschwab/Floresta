@@ -334,18 +334,66 @@ mod test {
     #[test]
     fn test_descriptor_generation_for_xpub() {
         let cases: &[(&str, bool, &str); 12] = &[
-            (XPUB, true, "pkh(xpub6CPimhNogJosVzpueNmrWEfSHc2YTXG1ZyE6TBV4Nx6UxZ7zKSGYv9hKxNjiFY5o1vz7QeZa2m6vQmyndDrkECk8cShWYWxe1gqa1xJEkgs/1/*)"),
-            (XPUB, false, "pkh(xpub6CPimhNogJosVzpueNmrWEfSHc2YTXG1ZyE6TBV4Nx6UxZ7zKSGYv9hKxNjiFY5o1vz7QeZa2m6vQmyndDrkECk8cShWYWxe1gqa1xJEkgs/0/*)"),
-            (YPUB, true, "sh(wpkh(xpub6CvvN4zrkrfXkSixaqSfG3dhqQEpd56sWLjzPjtk2sFEJHymSZXcFaC78fMYZ9cDrHVSRpCiQuV9yvgKw6CZF5PorLr5uQiSUStStZjpSSV/1/*))"),
-            (YPUB, false, "sh(wpkh(xpub6CvvN4zrkrfXkSixaqSfG3dhqQEpd56sWLjzPjtk2sFEJHymSZXcFaC78fMYZ9cDrHVSRpCiQuV9yvgKw6CZF5PorLr5uQiSUStStZjpSSV/0/*))"),
-            (ZPUB, true, "wpkh(xpub6CbPqb3FCEjaF4LnfMwdEAUxKhC6ZP1sJzGiMMz3mfmcjXdFPM9LB9S8HSChXW593am685964YZk8Hng1ekynqNWGRZfpo8PpDaUmyvQqvY/1/*)"),
-            (ZPUB, false, "wpkh(xpub6CbPqb3FCEjaF4LnfMwdEAUxKhC6ZP1sJzGiMMz3mfmcjXdFPM9LB9S8HSChXW593am685964YZk8Hng1ekynqNWGRZfpo8PpDaUmyvQqvY/0/*)"),
-            (TPUB, true, "pkh(tpubDC73PMTHeKDXnFwNFz8CLBy2VVx4D85WW2vbzwVLwCD9zkQ6Vj97muhLRTbKvmue1PyVQLwizvBW6v2SD1LnzbeuHnRsDYQZGE8urTZHMn5/1/*)"),
-            (TPUB, false, "pkh(tpubDC73PMTHeKDXnFwNFz8CLBy2VVx4D85WW2vbzwVLwCD9zkQ6Vj97muhLRTbKvmue1PyVQLwizvBW6v2SD1LnzbeuHnRsDYQZGE8urTZHMn5/0/*)"),
-            (UPUB, true, "sh(wpkh(tpubDCuv8pfb4pMsshrP2WhBqoV3PARvDPPz8rGUV1iWmz6LfNwNBDr5kgpMD6eaH8Y3rxJd9UHyzpDx8Yhj1eQrFoSCYqMc5nP4Nbi1VvJmNco/1/*))"),
-            (UPUB, false, "sh(wpkh(tpubDCuv8pfb4pMsshrP2WhBqoV3PARvDPPz8rGUV1iWmz6LfNwNBDr5kgpMD6eaH8Y3rxJd9UHyzpDx8Yhj1eQrFoSCYqMc5nP4Nbi1VvJmNco/0/*))"),
-            (VPUB, true , "wpkh(tpubDDu2riz4ewPMS4FmiLxtBKABuswcDeKEP674as24hfPTfEjYJtGpVDEZq7jYedsLufq5whFS4cTLaTgxRrBagCK6zNZPJibgoMBxTvUcVFf/1/*)"),
-            (VPUB, false, "wpkh(tpubDDu2riz4ewPMS4FmiLxtBKABuswcDeKEP674as24hfPTfEjYJtGpVDEZq7jYedsLufq5whFS4cTLaTgxRrBagCK6zNZPJibgoMBxTvUcVFf/0/*)"),
+            (
+                XPUB,
+                true,
+                "pkh(xpub6CPimhNogJosVzpueNmrWEfSHc2YTXG1ZyE6TBV4Nx6UxZ7zKSGYv9hKxNjiFY5o1vz7QeZa2m6vQmyndDrkECk8cShWYWxe1gqa1xJEkgs/1/*)",
+            ),
+            (
+                XPUB,
+                false,
+                "pkh(xpub6CPimhNogJosVzpueNmrWEfSHc2YTXG1ZyE6TBV4Nx6UxZ7zKSGYv9hKxNjiFY5o1vz7QeZa2m6vQmyndDrkECk8cShWYWxe1gqa1xJEkgs/0/*)",
+            ),
+            (
+                YPUB,
+                true,
+                "sh(wpkh(xpub6CvvN4zrkrfXkSixaqSfG3dhqQEpd56sWLjzPjtk2sFEJHymSZXcFaC78fMYZ9cDrHVSRpCiQuV9yvgKw6CZF5PorLr5uQiSUStStZjpSSV/1/*))",
+            ),
+            (
+                YPUB,
+                false,
+                "sh(wpkh(xpub6CvvN4zrkrfXkSixaqSfG3dhqQEpd56sWLjzPjtk2sFEJHymSZXcFaC78fMYZ9cDrHVSRpCiQuV9yvgKw6CZF5PorLr5uQiSUStStZjpSSV/0/*))",
+            ),
+            (
+                ZPUB,
+                true,
+                "wpkh(xpub6CbPqb3FCEjaF4LnfMwdEAUxKhC6ZP1sJzGiMMz3mfmcjXdFPM9LB9S8HSChXW593am685964YZk8Hng1ekynqNWGRZfpo8PpDaUmyvQqvY/1/*)",
+            ),
+            (
+                ZPUB,
+                false,
+                "wpkh(xpub6CbPqb3FCEjaF4LnfMwdEAUxKhC6ZP1sJzGiMMz3mfmcjXdFPM9LB9S8HSChXW593am685964YZk8Hng1ekynqNWGRZfpo8PpDaUmyvQqvY/0/*)",
+            ),
+            (
+                TPUB,
+                true,
+                "pkh(tpubDC73PMTHeKDXnFwNFz8CLBy2VVx4D85WW2vbzwVLwCD9zkQ6Vj97muhLRTbKvmue1PyVQLwizvBW6v2SD1LnzbeuHnRsDYQZGE8urTZHMn5/1/*)",
+            ),
+            (
+                TPUB,
+                false,
+                "pkh(tpubDC73PMTHeKDXnFwNFz8CLBy2VVx4D85WW2vbzwVLwCD9zkQ6Vj97muhLRTbKvmue1PyVQLwizvBW6v2SD1LnzbeuHnRsDYQZGE8urTZHMn5/0/*)",
+            ),
+            (
+                UPUB,
+                true,
+                "sh(wpkh(tpubDCuv8pfb4pMsshrP2WhBqoV3PARvDPPz8rGUV1iWmz6LfNwNBDr5kgpMD6eaH8Y3rxJd9UHyzpDx8Yhj1eQrFoSCYqMc5nP4Nbi1VvJmNco/1/*))",
+            ),
+            (
+                UPUB,
+                false,
+                "sh(wpkh(tpubDCuv8pfb4pMsshrP2WhBqoV3PARvDPPz8rGUV1iWmz6LfNwNBDr5kgpMD6eaH8Y3rxJd9UHyzpDx8Yhj1eQrFoSCYqMc5nP4Nbi1VvJmNco/0/*))",
+            ),
+            (
+                VPUB,
+                true,
+                "wpkh(tpubDDu2riz4ewPMS4FmiLxtBKABuswcDeKEP674as24hfPTfEjYJtGpVDEZq7jYedsLufq5whFS4cTLaTgxRrBagCK6zNZPJibgoMBxTvUcVFf/1/*)",
+            ),
+            (
+                VPUB,
+                false,
+                "wpkh(tpubDDu2riz4ewPMS4FmiLxtBKABuswcDeKEP674as24hfPTfEjYJtGpVDEZq7jYedsLufq5whFS4cTLaTgxRrBagCK6zNZPJibgoMBxTvUcVFf/0/*)",
+            ),
         ];
 
         for &(key, internal, expect) in cases.iter() {

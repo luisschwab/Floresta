@@ -6,11 +6,11 @@ use core::fmt::Display;
 use core::fmt::Formatter;
 use std::path::Path;
 
+use bitcoin::Txid;
 use bitcoin::consensus::deserialize;
 use bitcoin::consensus::encode::Error as EncodingError;
 use bitcoin::consensus::serialize;
 use bitcoin::hashes::Hash;
-use bitcoin::Txid;
 use floresta_common::impl_error_from;
 use floresta_common::prelude::*;
 use kv::Bucket;
@@ -231,12 +231,12 @@ impl AddressCacheDatabase for KvDatabase {
 mod test {
     use core::str::FromStr;
 
+    use bitcoin::Address;
+    use bitcoin::Transaction;
     use bitcoin::address::NetworkChecked;
     use bitcoin::consensus::deserialize;
     use bitcoin::hashes::hex::FromHex;
     use bitcoin::hashes::sha256;
-    use bitcoin::Address;
-    use bitcoin::Transaction;
     use floresta_common::get_spk_hash;
 
     use super::KvDatabase;

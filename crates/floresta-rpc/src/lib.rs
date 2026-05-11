@@ -38,8 +38,8 @@ mod tests {
 
     use bitcoin::BlockHash;
     use bitcoin::Txid;
-    use rcgen::generate_simple_self_signed;
     use rcgen::CertifiedKey;
+    use rcgen::generate_simple_self_signed;
 
     use crate::jsonrpc_client::Client;
     use crate::rpc::FlorestaRPC;

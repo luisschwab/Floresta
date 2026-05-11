@@ -36,8 +36,8 @@ use floresta_node::Florestad;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tokio::time::timeout;
-use tracing::info;
 use tracing::Level;
+use tracing::info;
 
 #[cfg(unix)]
 use crate::daemonize::Daemon;

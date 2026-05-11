@@ -9,14 +9,6 @@ extern crate alloc;
 
 use core::ffi::c_uint;
 
-use bitcoin::block::Header as BlockHeader;
-use bitcoin::blockdata::Weight;
-#[cfg(feature = "bitcoinkernel")]
-use bitcoin::consensus::serialize;
-use bitcoin::hashes::sha256;
-use bitcoin::hashes::Hash;
-use bitcoin::merkle_tree;
-use bitcoin::script;
 use bitcoin::Amount;
 use bitcoin::Block;
 use bitcoin::CompactTarget;
@@ -27,6 +19,14 @@ use bitcoin::Target;
 use bitcoin::Transaction;
 use bitcoin::TxIn;
 use bitcoin::Txid;
+use bitcoin::block::Header as BlockHeader;
+use bitcoin::blockdata::Weight;
+#[cfg(feature = "bitcoinkernel")]
+use bitcoin::consensus::serialize;
+use bitcoin::hashes::Hash;
+use bitcoin::hashes::sha256;
+use bitcoin::merkle_tree;
+use bitcoin::script;
 #[cfg(feature = "bitcoinkernel")]
 use bitcoinkernel::PrecomputedTransactionData;
 use floresta_common::prelude::*;
@@ -39,11 +39,11 @@ use super::chainparams::ChainParams;
 use super::error::BlockValidationErrors;
 use super::error::BlockchainError;
 use super::udata;
+use crate::TransactionError;
 use crate::extensions::Bip30UnspendableExt;
 use crate::pruned_utreexo::utxo_data::UtxoData;
 use crate::swift_sync_agg::SipHashKeys;
 use crate::swift_sync_agg::TxidHashMidstate;
-use crate::TransactionError;
 
 /// Maximum halving count before the subsidy shift exceeds a `u64`.
 const MAX_SUBSIDY_HALVINGS: u32 = u64::BITS;
@@ -746,10 +746,10 @@ pub mod swift_sync_agg {
     use core::ops::Add;
     use core::ops::AddAssign;
 
-    use bitcoin::hashes::siphash24;
+    use bitcoin::OutPoint;
     use bitcoin::hashes::Hash;
     use bitcoin::hashes::HashEngine;
-    use bitcoin::OutPoint;
+    use bitcoin::hashes::siphash24;
 
     #[derive(Default)]
     /// A pair of `SipHash24` secret keys, used as the [`SwiftSyncAgg`] session salt.
@@ -823,9 +823,9 @@ pub mod swift_sync_agg {
     ///
     /// # Example
     /// ```
-    /// use bitcoin::hashes::Hash;
     /// use bitcoin::OutPoint;
     /// use bitcoin::Txid;
+    /// use bitcoin::hashes::Hash;
     /// use floresta_chain::swift_sync_agg::SipHashKeys;
     /// use floresta_chain::swift_sync_agg::SwiftSyncAgg;
     ///
@@ -923,14 +923,6 @@ mod tests {
     use core::str::FromStr;
     use std::fs::File;
 
-    use bitcoin::absolute::LockTime;
-    use bitcoin::consensus::deserialize;
-    use bitcoin::consensus::encode::deserialize_hex;
-    use bitcoin::constants::genesis_block;
-    use bitcoin::hashes::Hash;
-    use bitcoin::opcodes::all::OP_NOP;
-    use bitcoin::opcodes::OP_TRUE;
-    use bitcoin::transaction::Version;
     use bitcoin::Amount;
     use bitcoin::Network;
     use bitcoin::OutPoint;
@@ -941,15 +933,23 @@ mod tests {
     use bitcoin::TxOut;
     use bitcoin::Txid;
     use bitcoin::Witness;
+    use bitcoin::absolute::LockTime;
+    use bitcoin::consensus::deserialize;
+    use bitcoin::consensus::encode::deserialize_hex;
+    use bitcoin::constants::genesis_block;
+    use bitcoin::hashes::Hash;
+    use bitcoin::opcodes::OP_TRUE;
+    use bitcoin::opcodes::all::OP_NOP;
+    use bitcoin::transaction::Version;
     use floresta_common::assert_err;
     use floresta_common::assert_ok;
-    use rand::rngs::OsRng;
-    use rand::TryRngCore;
-    use rand::prelude::IndexedMutRandom;
-    use rand::rngs::StdRng;
-    use rand::seq::SliceRandom;
     use rand::RngCore;
     use rand::SeedableRng;
+    use rand::TryRngCore;
+    use rand::prelude::IndexedMutRandom;
+    use rand::rngs::OsRng;
+    use rand::rngs::StdRng;
+    use rand::seq::SliceRandom;
 
     use super::*;
 

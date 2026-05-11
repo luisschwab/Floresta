@@ -22,18 +22,18 @@ use std::process::exit;
 
 use tracing::Level;
 use tracing_appender::non_blocking::WorkerGuard;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::Layer;
+use tracing_subscriber::fmt::FmtContext;
+use tracing_subscriber::fmt::FormatEvent;
+use tracing_subscriber::fmt::FormatFields;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::fmt::layer;
 use tracing_subscriber::fmt::time::ChronoLocal;
 use tracing_subscriber::fmt::time::FormatTime;
-use tracing_subscriber::fmt::FmtContext;
-use tracing_subscriber::fmt::FormatEvent;
-use tracing_subscriber::fmt::FormatFields;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::registry::LookupSpan;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::Layer;
 
 /// The file which logging events are written to.
 pub(crate) const LOG_FILE: &str = "debug.log";
