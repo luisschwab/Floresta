@@ -64,10 +64,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install 1.81.0 Rust Toolchain
+      - name: Install 1.85.0 Rust Toolchain
         run: |
-          rustup toolchain install 1.81.0 --profile minimal --component rustfmt,clippy --no-self-update
-          rustup default 1.81.0
+          rustup toolchain install 1.85.0 --profile minimal --component rustfmt,clippy --no-self-update
+          rustup default 1.85.0
 
       - name: Install cargo-hack
         uses: taiki-e/install-action@c070f87102a1c75b3183910f391c1cb887fe13c8 # v2.77.6
@@ -168,10 +168,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install 1.81.0 Rust Toolchain and no-std Target
+      - name: Install 1.85.0 Rust Toolchain and no-std Target
         run: |
-          rustup toolchain install 1.81.0 --profile minimal --target thumbv7em-none-eabi --no-self-update
-          rustup default 1.81.0
+          rustup toolchain install 1.85.0 --profile minimal --target thumbv7em-none-eabi --no-self-update
+          rustup default 1.85.0
 
       - name: Install ARM GCC (for secp256k1-sys)
         run: |
