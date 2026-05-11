@@ -14,8 +14,8 @@
     <a href="https://docs.getfloresta.sh">
       <img alt="API Docs" src="https://img.shields.io/badge/docs-floresta-brightgreen"/>
     </a>
-    <a href="https://blog.rust-lang.org/2024/09/05/Rust-1.81.0/">
-      <img alt="MSRV 1.81.0+" src="https://img.shields.io/badge/rustc-1.81.0%2B-orange.svg"/>
+    <a href="https://blog.rust-lang.org/2025/02/20/Rust-1.85.0/">
+        <img src="https://img.shields.io/badge/MSRV-1.85.0%2B-orange.svg"/>
     </a>
     <a href="https://github.com/getfloresta/Floresta/blob/master/LICENSE.md">
       <img src="https://img.shields.io/badge/License-MIT%2FApache--2.0-red.svg"/>

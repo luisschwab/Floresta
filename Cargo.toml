@@ -38,7 +38,8 @@ default-members = [
 ]
 
 [workspace.package]
-rust-version = "1.81.0" # MSRV declaration
+rust-version = "1.85.0" # MSRV
+edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 
