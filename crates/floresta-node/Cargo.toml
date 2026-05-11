@@ -1,7 +1,8 @@
 [package]
 name = "floresta-node"
 version = "0.9.0"
-edition = "2021"
+rust-version.workspace = true
+edition.workspace = true
 license.workspace = true
 readme.workspace = true # Floresta/README.md
 authors = ["Floresta Developers <contact@getfloresta.org>"]
