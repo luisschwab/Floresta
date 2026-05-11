@@ -12,9 +12,16 @@ use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
+/// A Merkle inclusion proof for a [`Transaction`](bitcoin::Transaction).
 pub struct MerkleProof {
+    /// The [`Txid`] of the [`Transaction`](bitcoin::Transaction).
     pub target: Txid,
+
+    /// The [`Transaction`](bitcoin::Transaction)'s position
+    /// in the [`Block`]s Merkle tree.
     pub pos: u64,
+
+    /// The Merkle proof's node hashes.
     pub hashes: Vec<sha256d::Hash>,
 }
 
@@ -25,7 +32,7 @@ impl Default for MerkleProof {
 }
 
 impl MerkleProof {
-    /// Creates an empty proof
+    /// Create a new and empty [`MerkleProof`].
     fn new() -> Self {
         MerkleProof {
             target: Txid::all_zeros(),
@@ -34,12 +41,12 @@ impl MerkleProof {
         }
     }
 
-    /// Return the hashes for this proof as a [`Vec<String>`]
+    /// Return the hashes for this [`MerkleProof`], as a [`Vec<String>`].
     pub fn to_string_array(&self) -> Vec<String> {
         self.hashes().iter().map(|hash| hash.to_string()).collect()
     }
 
-    /// Returns the hashes for this proof
+    /// Return the hashes for this [`MerkleProof`].
     pub fn hashes(&self) -> Vec<sha256d::Hash> {
         self.hashes.clone()
     }

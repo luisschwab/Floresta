@@ -181,9 +181,9 @@ pub trait AddressCacheDatabase {
     /// Saves the height of the last block we filtered
     fn set_cache_height(&self, height: u32) -> Result<(), Self::Error>;
     /// Saves the descriptor of associated cache
-    fn desc_save(&self, descriptor: &str) -> Result<(), Self::Error>;
+    fn save_descriptor(&self, descriptor: &str) -> Result<(), Self::Error>;
     /// Get associated descriptors
-    fn descs_get(&self) -> Result<Vec<String>, Self::Error>;
+    fn get_descriptors(&self) -> Result<Vec<String>, Self::Error>;
     /// Get a transaction from the database
     fn get_transaction(&self, txid: &Txid) -> Result<CachedTransaction, Self::Error>;
     /// Saves a transaction to the database
@@ -361,7 +361,7 @@ impl<D: AddressCacheDatabase> AddressCacheInner<D> {
     /// Setup is the first command that should be executed. In a new cache. It sets our wallet's
     /// state, like the height we should start scanning and the wallet's descriptor.
     fn setup(&self) -> Result<(), WatchOnlyError<D::Error>> {
-        if self.database.descs_get().is_err() {
+        if self.database.get_descriptors().is_err() {
             self.database.set_cache_height(0)?;
         }
         Ok(())
@@ -369,7 +369,7 @@ impl<D: AddressCacheDatabase> AddressCacheInner<D> {
 
     fn derive_addresses(&mut self) -> Result<(), WatchOnlyError<D::Error>> {
         let mut stats = self.database.get_stats()?;
-        let descriptors = self.database.descs_get()?;
+        let descriptors = self.database.get_descriptors()?;
 
         let addresses = derive_addresses_from_list_descriptors(
             &descriptors,
@@ -653,7 +653,7 @@ impl<D: AddressCacheDatabase> AddressCache<D> {
     /// Tells whether or not a descriptor is already cached
     pub fn is_cached(&self, desc: &str) -> Result<bool, WatchOnlyError<D::Error>> {
         let inner = self.inner.read().expect("poisoned lock");
-        let known_descs = inner.database.descs_get()?;
+        let known_descs = inner.database.get_descriptors()?;
         Ok(known_descs.iter().any(|s| s == desc))
     }
 
@@ -681,7 +681,7 @@ impl<D: AddressCacheDatabase> AddressCache<D> {
         }
 
         let inner = self.inner.write().expect("poisoned lock");
-        inner.database.desc_save(descriptor)?;
+        inner.database.save_descriptor(descriptor)?;
 
         Ok(address_descriptors)
     }
@@ -809,7 +809,7 @@ impl<D: AddressCacheDatabase> AddressCache<D> {
         let inner = self.inner.read().expect("poisoned lock");
         inner
             .database
-            .descs_get()
+            .get_descriptors()
             .map_err(WatchOnlyError::DatabaseError)
     }
 
