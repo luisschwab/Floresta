@@ -27,6 +27,9 @@ serde_json = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }
 ureq = { version = "3.1", features = ["socks-proxy", "json", "rustls-no-provider"], default-features = false }
+# These pins are needed for MSRV:
+tonic = { version = "=0.14.5" }
+tonic-prost = { version = "=0.14.5" }
 
 # Local dependencies
 floresta-chain = { workspace = true, features = ["flat-chainstore"] }

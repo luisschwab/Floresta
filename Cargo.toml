@@ -71,6 +71,8 @@ tracing = { version = "0.1", default-features = false }
 zstd = "0.13"
 # Pins for MSRV compatibility:
 time = { version = "=0.3.45" }
+tonic = { version = "=0.14.5" }
+tonic-prost = { version = "=0.14.5" }
 
 # Local dependencies
 floresta-chain = { path = "crates/floresta-chain" }
