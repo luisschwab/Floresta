@@ -521,10 +521,9 @@ mod tests {
         for tx in transactions {
             match mempool.accept_to_mempool(tx) {
                 Ok(_) => {}
-                Err(MempoolError::DuplicatedInputs) => {
+                Err(MempoolError::ConflictingTransaction) | Err(MempoolError::DuplicatedInputs) => {
                     did_conflict = true;
                 }
-
                 Err(e) => {
                     panic!("unexpected error: {:?}", e);
                 }
