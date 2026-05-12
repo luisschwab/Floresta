@@ -330,11 +330,13 @@ pub enum Methods {
     #[command(name = "gettxout")]
     GetTxOut { txid: Txid, vout: u32 },
 
-    /// Request a graceful shutdown of Floresta.
-    ///
-    /// Result:
-    /// "str"    (string) A string with the content 'Floresta stopping'
-    #[command(name = "stop")]
+    #[doc = include_str!("../../../doc/rpc/stop.md")]
+    #[command(
+        name = "stop",
+        about = "Request a graceful shutdown of Floresta.",
+        long_about = Some(include_str!("../../../doc/rpc/stop.md")),
+        disable_help_subcommand = true
+    )]
     Stop,
 
     #[doc = include_str!("../../../doc/rpc/addnode.md")]
@@ -404,9 +406,12 @@ pub enum Methods {
     #[command(name = "listdescriptors")]
     ListDescriptors,
 
-    /// Sends a ping to all peers, checking if they are still alive
-    ///
-    /// Result: json null
-    #[command(name = "ping")]
+    #[doc = include_str!("../../../doc/rpc/ping.md")]
+    #[command(
+        name = "ping",
+        about = "Sends a ping to all peers, checking if they are still alive",
+        long_about = Some(include_str!("../../../doc/rpc/ping.md")),
+        disable_help_subcommand = true
+    )]
     Ping,
 }

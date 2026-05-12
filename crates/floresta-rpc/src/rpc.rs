@@ -103,9 +103,7 @@ pub trait FlorestaRPC {
     /// or is spent, an empty object is returned. If you want to find a utxo that's not in
     /// the cache, you can use the findtxout method.
     fn get_tx_out(&self, tx_id: Txid, outpoint: u32) -> Result<GetTxOut>;
-    /// Stops the florestad process
-    ///
-    /// This can be used to gracefully stop the florestad process.
+    #[doc = include_str!("../../../doc/rpc/stop.md")]
     fn stop(&self) -> Result<String>;
     /// Tells florestad to connect with a peer
     ///
@@ -141,7 +139,7 @@ pub trait FlorestaRPC {
     fn uptime(&self) -> Result<u32>;
     /// Returns a list of all descriptors currently loaded in the wallet
     fn list_descriptors(&self) -> Result<Vec<String>>;
-    /// Sends a ping to all peers, checking if they are still alive
+    #[doc = include_str!("../../../doc/rpc/ping.md")]
     fn ping(&self) -> Result<()>;
 }
 
