@@ -6,6 +6,8 @@ on:
   push:
   pull_request:
 
+permissions: {}
+
 jobs:
   functional:
     name: Functional

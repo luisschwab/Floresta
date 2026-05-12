@@ -15,6 +15,8 @@ env:
     Dir::State "./.apt-state";
     Dir::State::lists "./.apt-state/lists/";
 
+permissions: {}
+
 jobs:
   fuzz:
     name: Run Fuzzing Tests

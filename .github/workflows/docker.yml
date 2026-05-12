@@ -6,6 +6,8 @@ on:
   release:
     types: [published]
 
+permissions: {}
+
 jobs:
   build:
     runs-on: ubuntu-latest
