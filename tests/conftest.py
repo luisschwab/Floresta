@@ -9,21 +9,21 @@ This module provides fixtures for creating and managing test nodes
 
 # pylint: disable=redefined-outer-name
 
-import os
 import logging
+import os
 import time
 from typing import List
-import pytest
 
+import pytest
 from test_framework import FlorestaTestFramework
-from test_framework.node import Node, NodeType
-from test_framework.util import Utility
 from test_framework.constants import (
     FLORESTA_TEMP_DIR,
     WALLET_ADDRESS,
     WALLET_DESCRIPTOR_EXTERNAL,
     WALLET_DESCRIPTOR_INTERNAL,
 )
+from test_framework.node import Node, NodeType
+from test_framework.util import Utility
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -64,29 +64,37 @@ def pytest_runtest_makereport(item, call):
     setattr(item, f"rep_{rep.when}", rep)
 
 
-@pytest.fixture(scope="function")
-def setup_logging(request):
+def _create_logger(test_name):
+    """Create a logger with a file handler for the given test name.
+
+    Shared helper used by both function-scoped and class-scoped logging
+    fixtures to avoid duplicating the setup logic.
     """
-    Configure logging for the test, including the file and line number where the log was called.
-    """
-    test_name = request.node.name
     logger = logging.getLogger(test_name)
 
-    # Log format to include the file and line
     formatter = logging.Formatter(
         "%(asctime)s - %(levelname)s - %(pathname)s:%(lineno)d - %(message)s"
     )
 
-    # Configure log file
     git_describe = Utility.get_git_describe()
     log_file = os.path.join(FLORESTA_TEMP_DIR, "logs", git_describe, f"{test_name}.log")
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     file_handler = logging.FileHandler(log_file, mode="w")
     file_handler.setFormatter(formatter)
 
-    # Add handlers to the logger
     if not logger.handlers:
         logger.addHandler(file_handler)
+
+    return logger, log_file
+
+
+@pytest.fixture(scope="function")
+def setup_logging(request):
+    """
+    Configure logging for the test, including the file and line number where the log was called.
+    """
+    test_name = request.node.name
+    logger, log_file = _create_logger(test_name)
 
     yield logger
 
@@ -229,6 +237,63 @@ def add_node_with_tls(node_manager):
         return node
 
     return _create_node
+
+
+@pytest.fixture(scope="class")
+def shared_setup_logging(request):
+    """Class-scoped logging fixture for tests that share a single node."""
+    test_name = request.node.name
+    logger, _log_file = _create_logger(test_name)
+
+    yield logger
+
+    if hasattr(request.node, "rep_call") and request.node.rep_call.failed:
+        logger.error("=" * 80)
+        logger.error("TEST FAILED: %s", test_name)
+        logger.error("=" * 80)
+
+    logger.handlers.clear()
+
+
+@pytest.fixture(scope="class")
+def shared_node_manager(shared_setup_logging, request):
+    """Class-scoped node manager that lives for the entire test class."""
+    manager = FlorestaTestFramework(
+        logger=shared_setup_logging, test_name=request.node.name
+    )
+    yield manager
+    manager.stop()
+
+
+@pytest.fixture(scope="class")
+def shared_florestad_node(shared_node_manager) -> Node:
+    """Single florestad node shared across all methods in a test class."""
+    node = shared_node_manager.add_node_default_args(variant=NodeType.FLORESTAD)
+    shared_node_manager.run_node(node)
+    return node
+
+
+@pytest.fixture(scope="class")
+def shared_bitcoind_node(shared_node_manager) -> Node:
+    """Single bitcoind node shared across all methods in a test class."""
+    node = shared_node_manager.add_node_default_args(variant=NodeType.BITCOIND)
+    shared_node_manager.run_node(node)
+    return node
+
+
+@pytest.fixture(scope="class")
+def shared_utreexod_node(shared_node_manager) -> Node:
+    """Single utreexod node shared across all methods in a test class."""
+    node = shared_node_manager.add_node_extra_args(
+        variant=NodeType.UTREEXOD,
+        extra_args=[
+            f"--miningaddr={WALLET_ADDRESS}",
+            "--utreexoproofindex",
+            "--prune=0",
+        ],
+    )
+    shared_node_manager.run_node(node)
+    return node
 
 
 @pytest.fixture
