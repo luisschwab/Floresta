@@ -27,7 +27,7 @@ use bitcoin::p2p::message_filter::CFHeaders;
 use bitcoin::p2p::message_filter::GetCFHeaders;
 use bitcoin::p2p::message_network::VersionMessage;
 use floresta_common::impl_error_from;
-use floresta_mempool::Mempool;
+use floresta_domain::mempool::MempoolBackend;
 use tokio::io::AsyncRead;
 use tokio::io::AsyncWrite;
 use tokio::spawn;
@@ -132,7 +132,7 @@ pub fn create_actors<R: AsyncRead + Unpin + Send>(
 }
 
 pub struct Peer<T: AsyncWrite + Unpin + Send + Sync> {
-    mempool: Arc<Mutex<Mempool>>,
+    mempool: Arc<Mutex<dyn MempoolBackend>>,
     blocks_only: bool,
     services: ServiceFlags,
     user_agent: String,
@@ -702,7 +702,7 @@ impl<T: AsyncWrite + Unpin + Send + Sync> Peer<T> {
     pub fn create_peer<W: AsyncWrite + Unpin + Send + Sync + 'static>(
         id: u32,
         address: LocalAddress,
-        mempool: Arc<Mutex<Mempool>>,
+        mempool: Arc<Mutex<dyn MempoolBackend>>,
         node_tx: UnboundedSender<NodeNotification>,
         node_requests: UnboundedReceiver<NodeRequest>,
         kind: ConnectionKind,
