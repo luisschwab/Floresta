@@ -192,7 +192,7 @@ where
     /// [halt and catch fire]: https://en.wikipedia.org/wiki/Halt_and_Catch_Fire_(computing)
     pub fn backfill(&self, done_flag: std::sync::mpsc::Sender<()>) -> Result<bool, WireError> {
         // try finding the last state of the sync node
-        let state = std::fs::read(self.config.datadir.clone() + "/.sync_node_state");
+        let state = std::fs::read(self.config.datadir.join(".sync_node_state"));
         // try to recover from the disk state, if it exists. Otherwise, start from genesis
         let (chain, end) = match state {
             Ok(state) => {
@@ -263,13 +263,13 @@ where
                     acc.serialize(&mut ser_acc).unwrap();
                     ser_acc.extend_from_slice(&tip.to_le_bytes());
                     ser_acc.extend_from_slice(&end.to_le_bytes());
-                    std::fs::write(datadir + "/.sync_node_state", ser_acc)
+                    std::fs::write(datadir.join(".sync_node_state"), ser_acc)
                         .expect("Failed to write sync node state");
                     return;
                 }
 
                 // empty the file if we're done
-                std::fs::write(datadir + "/.sync_node_state", Vec::new())
+                std::fs::write(datadir.join(".sync_node_state"), Vec::new())
                     .expect("Failed to write sync node state");
 
                 for block in chain.list_valid_blocks() {

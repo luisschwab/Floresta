@@ -354,30 +354,31 @@ impl Florestad {
         Ok(sock)
     }
 
+    // TODO(@luisschwab): update `datadir.to_str().expect("infallible")` when modifying `floresta-node`'s methods
     /// Actually runs florestad, spawning all modules and waiting until
     /// someone asks to stop.
     ///
     /// This function will return an error if the configured data directory path is not an
     /// **existing and writable directory**, or cannot be validated as such.
     pub async fn start(&self) -> Result<(), FlorestadError> {
-        let data_dir = &self.config.data_dir;
+        let datadir = PathBuf::from(&self.config.data_dir);
 
         // Check that the directory exists and is writable
-        Florestad::validate_data_dir(data_dir)?;
+        Florestad::validate_data_dir(datadir.to_str().expect("infallible"))?;
 
         info!("Loading watch-only wallet");
         let wallet = self.setup_wallet()?;
 
         info!("Loading blockchain database");
         let blockchain_state = Arc::new(Self::load_chain_state(
-            data_dir.clone(),
+            datadir.to_str().expect("infallible").to_owned(),
             self.config.network,
             self.config.assume_valid,
         )?);
 
         #[cfg(feature = "compact-filters")]
         let cfilters = if self.config.cfilters {
-            let filter_store = FlatFiltersStore::new(data_dir.clone() + "/cfilters");
+            let filter_store = FlatFiltersStore::new(datadir.join("cfilters"));
             let cfilters = Arc::new(NetworkFilters::new(filter_store));
 
             let height = cfilters
@@ -412,7 +413,7 @@ impl Florestad {
             network: self.config.network,
             pow_fraud_proofs: false,
             proxy,
-            datadir: data_dir.clone(),
+            datadir: datadir.clone(),
             fixed_peer: self.config.connect.clone(),
             compact_filters: self.config.cfilters,
             assume_utreexo: self.config.assumeutreexo_value.clone().or(assume_utreexo),
@@ -473,7 +474,11 @@ impl Florestad {
                     .as_ref()
                     .map(|x| Self::resolve_hostname(x, 8332))
                     .transpose()?,
-                format!("{data_dir}/debug.log"),
+                datadir
+                    .join("debug.log")
+                    .to_str()
+                    .expect("infallible")
+                    .to_owned(),
             ));
 
             if self.json_rpc.set(server).is_err() {
@@ -542,7 +547,7 @@ impl Florestad {
             // Generate self-signed TLS certificate, if enabled.
             if self.config.generate_cert {
                 // Create TLS directory, if it does not exist.
-                let tls_dir = format!("{data_dir}/tls");
+                let tls_dir = datadir.join("tls").to_str().expect("infallible").to_owned();
                 if !Path::new(&tls_dir).exists() {
                     fs::create_dir_all(&tls_dir).map_err(|e| {
                         FlorestadError::CouldNotCreateTLSDataDir(tls_dir.clone(), e)
@@ -554,8 +559,16 @@ impl Florestad {
                 let subject_alt_names = vec!["localhost".to_string()];
 
                 // Define file paths
-                let tls_key_path = format!("{data_dir}/tls/key.pem");
-                let tls_cert_path = format!("{data_dir}/tls/cert.pem");
+                let tls_key_path = datadir
+                    .join("tls/key.pem")
+                    .to_str()
+                    .expect("infallible")
+                    .to_owned();
+                let tls_cert_path = datadir
+                    .join("tls/cert.pem")
+                    .to_str()
+                    .expect("infallible")
+                    .to_owned();
 
                 // Create the certificate.
                 Self::generate_self_signed_certificate(
@@ -569,7 +582,7 @@ impl Florestad {
             }
 
             // Assemble TLS configuration from file.
-            let tls_config = self.create_tls_config(data_dir)?;
+            let tls_config = self.create_tls_config(datadir.to_str().expect("infallible"))?;
 
             // Electrum TLS accept loop.
             let tls_listener = TcpListener::bind(electrum_addr_tls)

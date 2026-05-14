@@ -2,6 +2,7 @@
 
 use core::net::IpAddr;
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
@@ -191,14 +192,14 @@ pub fn create_peer(
 }
 
 pub fn get_node_config(
-    datadir: String,
+    datadir: impl AsRef<Path>,
     network: Network,
     pow_fraud_proofs: bool,
 ) -> UtreexoNodeConfig {
     UtreexoNodeConfig {
         network,
         pow_fraud_proofs,
-        datadir,
+        datadir: datadir.as_ref().into(),
         user_agent: "node_test".to_string(),
         ..Default::default()
     }
@@ -297,10 +298,10 @@ pub async fn setup_node(
     peers: Vec<PeerData>,
     pow_fraud_proofs: bool,
     network: Network,
-    datadir: &str,
+    datadir: impl AsRef<Path>,
     num_blocks: usize,
 ) -> Arc<ChainState<FlatChainStore>> {
-    let config = FlatChainStoreConfig::new(datadir);
+    let config = FlatChainStoreConfig::new(&datadir);
 
     let chainstore = FlatChainStore::new(config).unwrap();
     let mempool = Arc::new(Mutex::new(Mempool::new(1000)));
@@ -314,7 +315,7 @@ pub async fn setup_node(
         chain.accept_header(header).unwrap();
     }
 
-    let config = get_node_config(datadir.into(), network, pow_fraud_proofs);
+    let config = get_node_config(&datadir, network, pow_fraud_proofs);
     let kill_signal = Arc::new(RwLock::new(false));
     let mut node = UtreexoNode::<Arc<ChainState<FlatChainStore>>, SyncNode>::new(
         config,

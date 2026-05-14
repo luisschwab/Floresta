@@ -17,6 +17,7 @@ use core::net::IpAddr;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::ops::DerefMut;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -287,7 +288,7 @@ pub struct NodeCommon<Chain: ChainBackend> {
 
     // 6. Configuration and Metadata
     pub(crate) config: UtreexoNodeConfig,
-    pub(crate) datadir: String,
+    pub(crate) datadir: PathBuf,
     pub(crate) network: Network,
     pub(crate) kill_signal: Arc<tokio::sync::RwLock<bool>>,
 }

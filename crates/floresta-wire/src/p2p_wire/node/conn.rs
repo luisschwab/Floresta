@@ -575,7 +575,7 @@ where
     }
 
     pub(crate) fn init_peers(&mut self) -> Result<(), WireError> {
-        let anchors = self.common.address_man.start_addr_man(self.datadir.clone());
+        let anchors = self.common.address_man.start_addr_man(&self.common.datadir);
         let enough_addresses = self.common.address_man.enough_addresses();
 
         if !self.config.disable_dns_seeds && !enough_addresses {
