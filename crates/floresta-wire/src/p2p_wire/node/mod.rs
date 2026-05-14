@@ -232,6 +232,11 @@ pub struct LocalPeerView {
 }
 
 impl LocalPeerView {
+    /// Whether this peer advertises any service in `services`.
+    pub(crate) fn has_any_service(&self, services: &[ServiceFlags]) -> bool {
+        services.iter().any(|service| self.services.has(*service))
+    }
+
     /// Whether this is a manually added peer
     pub(crate) const fn is_manual_peer(&self) -> bool {
         matches!(self.kind, ConnectionKind::Manual)
