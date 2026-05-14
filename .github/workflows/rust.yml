@@ -93,16 +93,24 @@ jobs:
           triplet=x64-windows
           vcpkgRoot="${VCPKG_INSTALLATION_ROOT:-C:/vcpkg}"
 
+          # Pin vcpkg to the baseline vendored by libbitcoinkernel-sys's Bitcoin Core subtree
+          # (2025.08.27 release; matches bitcoin/vcpkg.json in the crate's vendored source)
+          git -C "$vcpkgRoot" fetch --depth=1 origin 120deac3062162151622ca4860575a33844ba10b
+          git -C "$vcpkgRoot" checkout 120deac3062162151622ca4860575a33844ba10b
+
+          "$vcpkgRoot/bootstrap-vcpkg.bat"
+
           "$vcpkgRoot/vcpkg.exe" install \
-            boost-system \
-            boost-filesystem \
-            boost-thread \
-            boost-multi-index \
-            --triplet "$triplet" \
-            --clean-after-build \
-            --disable-metrics
+          boost-system \
+          boost-filesystem \
+          boost-thread \
+          boost-multi-index \
+          --triplet "$triplet" \
+          --clean-after-build \
+          --disable-metrics
 
           boostRoot="$vcpkgRoot/installed/$triplet"
+
           echo "BOOST_ROOT=$boostRoot" >> "$GITHUB_ENV"
 
       # Bi-weekly numbers to refresh caches every two weeks, ensuring recent project changes are cached
