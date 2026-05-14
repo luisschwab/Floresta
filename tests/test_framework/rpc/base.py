@@ -8,18 +8,18 @@ Define a base class for making RPC calls to a
 """
 
 import json
+import re
 import socket
 import time
-import re
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
-from abc import ABC, abstractmethod
 
 from requests import post
 from requests.exceptions import HTTPError
 from requests.models import HTTPBasicAuth
-from test_framework.rpc.exceptions import JSONRPCError
 from test_framework.rpc import ConfigRPC
+from test_framework.rpc.exceptions import JSONRPCError
 
 
 # pylint: disable=too-many-public-methods
@@ -365,3 +365,9 @@ class BaseRPC(ABC):
         List all loaded descriptors
         """
         return self.perform_request("listdescriptors")
+
+    def get_addrman_info(self) -> dict:
+        """
+        Get address manager statistics broken down by network
+        """
+        return self.perform_request("getaddrmaninfo")
