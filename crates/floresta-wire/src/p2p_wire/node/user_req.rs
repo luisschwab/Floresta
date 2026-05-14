@@ -160,6 +160,12 @@ where
                 return;
             }
 
+            UserRequest::GetAddrManInfo => {
+                let info = self.address_man.get_connection_stats();
+                try_and_log!(responder.send(NodeResponse::GetAddrManInfo(info)));
+                return;
+            }
+
             UserRequest::SendTransaction(transaction) => {
                 let txid = transaction.compute_txid();
                 let mut mempool = self.mempool.lock().await;

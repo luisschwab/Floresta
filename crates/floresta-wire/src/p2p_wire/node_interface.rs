@@ -17,12 +17,14 @@ use rustreexo::proof::Proof;
 use serde::Serialize;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::oneshot;
+use tokio::sync::oneshot::error::RecvError;
 
 use super::UtreexoNodeConfig;
 use super::node::ConnectionKind;
 use super::node::NodeNotification;
 use super::node::PeerStatus;
 use super::transport::TransportProtocol;
+use crate::address_man::ConnectionStats;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// A request to addnode that can be made to the node.
@@ -96,6 +98,9 @@ pub enum UserRequest {
 
     /// Adds a transaction to mempool and advertises it
     SendTransaction(Transaction),
+
+    /// Return address manager statistics.
+    GetAddrManInfo,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -157,6 +162,9 @@ pub enum NodeResponse {
 
     /// Transaction broadcast
     TransactionBroadcastResult(Result<Txid, MempoolError>),
+
+    /// Address manager statistics.
+    GetAddrManInfo(ConnectionStats),
 }
 
 #[derive(Debug, Clone)]
@@ -326,6 +334,13 @@ impl NodeInterface {
         let val = self.send_request(UserRequest::Ping).await?;
 
         extract_variant!(Ping, val)
+    }
+
+    /// Returns address manager statistics broken down by network.
+    pub async fn get_addrman_info(&self) -> Result<ConnectionStats, RecvError> {
+        let val = self.send_request(UserRequest::GetAddrManInfo).await?;
+
+        extract_variant!(GetAddrManInfo, val)
     }
 }
 
