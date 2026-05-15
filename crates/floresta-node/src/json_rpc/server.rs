@@ -255,8 +255,11 @@ async fn handle_json_rpc_request(
 
         "getblockheader" => {
             let hash = get_hash(&params, 0, "block_hash")?;
+            let verbosity = get_optional_field(&params, 1, "verbosity", get_bool)?.unwrap_or(true);
+
             state
-                .get_block_header(hash)
+                .get_block_header(hash, verbosity)
+                .await
                 .map(|h| serde_json::to_value(h).unwrap())
         }
 
@@ -440,6 +443,7 @@ fn get_http_error_code(err: &JsonRpcError) -> u16 {
         | JsonRpcError::InvalidParameterType(_)
         | JsonRpcError::MissingParameter(_)
         | JsonRpcError::ChainWorkOverflow
+        | JsonRpcError::ConversionOverflow(_)
         | JsonRpcError::MempoolAccept(_)
         | JsonRpcError::Wallet(_) => 400,
 
@@ -480,6 +484,7 @@ fn get_json_rpc_error_code(err: &JsonRpcError) -> i32 {
         | JsonRpcError::InvalidRescanVal
         | JsonRpcError::NoAddressesToRescan
         | JsonRpcError::ChainWorkOverflow
+        | JsonRpcError::ConversionOverflow(_)
         | JsonRpcError::Wallet(_)
         | JsonRpcError::MempoolAccept(_) => -32600,
 

@@ -5,6 +5,7 @@ use core::fmt;
 use core::fmt::Display;
 use core::fmt::Formatter;
 
+use corepc_types::v30::GetBlockHeaderVerbose;
 use corepc_types::v30::GetBlockVerboseOne;
 use serde::Deserialize;
 use serde::Serialize;
@@ -194,6 +195,18 @@ pub enum GetBlockRes {
     Zero(String),
 
     One(Box<GetBlockVerboseOne>),
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+/// The response for getblockheader, which can be either a raw hex-encoded block header or a verbose
+/// one with all the fields parsed and decoded.
+pub enum GetBlockHeaderRes {
+    /// The raw hex-encoded block header, as returned by getblockheader with verbosity false
+    Raw(String),
+
+    /// A verbose block header, as returned by getblockheader with verbosity true
+    Verbose(Box<GetBlockHeaderVerbose>),
 }
 
 /// A confidence enum to auxiliate rescan timestamp values.
