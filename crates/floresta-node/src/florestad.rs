@@ -479,6 +479,8 @@ impl Florestad {
                     .to_str()
                     .expect("infallible")
                     .to_owned(),
+                self.config.user_agent.clone(),
+                proxy,
             ));
 
             if self.json_rpc.set(server).is_err() {

@@ -7,6 +7,7 @@ use core::fmt::Formatter;
 
 use corepc_types::v30::GetBlockHeaderVerbose;
 use corepc_types::v30::GetBlockVerboseOne;
+pub use corepc_types::v30::GetNetworkInfo;
 use serde::Deserialize;
 use serde::Serialize;
 

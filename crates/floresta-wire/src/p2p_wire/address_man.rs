@@ -1257,7 +1257,6 @@ mod test {
     use crate::address_man::AddressMan;
     use crate::address_man::DiskLocalAddress;
     use crate::address_man::ReachableNetworks;
-    use crate::address_man::ReachableNetworks;
 
     fn load_addresses_from_json(file_path: impl AsRef<Path>) -> io::Result<Vec<LocalAddress>> {
         let mut contents = String::new();
