@@ -278,6 +278,15 @@ class BaseRPC(ABC):
 
         return self.perform_request("getblockheader", params=params)
 
+    def get_deployment_info(self, blockhash: str | None = None) -> dict:
+        """
+        Get information about consensus deployment activation state at a block.
+
+        `blockhash` is optional; if omitted the node uses the current chain tip.
+        """
+        params = [blockhash] if blockhash is not None else []
+        return self.perform_request("getdeploymentinfo", params=params)
+
     def get_block(self, blockhash: str, verbosity: int = 1):
         """
         Get a full block, given its hash performing
