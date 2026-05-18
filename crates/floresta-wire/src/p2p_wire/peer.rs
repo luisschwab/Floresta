@@ -27,7 +27,7 @@ use bitcoin::p2p::message_filter::CFHeaders;
 use bitcoin::p2p::message_filter::GetCFHeaders;
 use bitcoin::p2p::message_network::VersionMessage;
 use floresta_common::impl_error_from;
-use floresta_domain::mempool::MempoolBackend;
+use floresta_domain::mempool::MempoolBase;
 use tokio::io::AsyncRead;
 use tokio::io::AsyncWrite;
 use tokio::spawn;
@@ -132,7 +132,7 @@ pub fn create_actors<R: AsyncRead + Unpin + Send>(
 }
 
 pub struct Peer<T: AsyncWrite + Unpin + Send + Sync> {
-    mempool: Arc<Mutex<dyn MempoolBackend>>,
+    mempool: Arc<Mutex<dyn MempoolBase>>,
     blocks_only: bool,
     services: ServiceFlags,
     user_agent: String,
@@ -682,13 +682,13 @@ impl<T: AsyncWrite + Unpin + Send + Sync> Peer<T> {
     pub async fn handle_get_data(&mut self, inv: Inventory) -> Result<()> {
         match inv {
             Inventory::WitnessTransaction(txid) => {
-                let tx = self.mempool.lock().await.get_from_mempool(&txid).cloned();
+                let tx = self.mempool.lock().await.get_from_mempool(txid).cloned();
                 if let Some(tx) = tx {
                     self.write(NetworkMessage::Tx(tx)).await?;
                 }
             }
             Inventory::Transaction(txid) => {
-                let tx = self.mempool.lock().await.get_from_mempool(&txid).cloned();
+                let tx = self.mempool.lock().await.get_from_mempool(txid).cloned();
                 if let Some(tx) = tx {
                     self.write(NetworkMessage::Tx(tx)).await?;
                 }
@@ -702,7 +702,7 @@ impl<T: AsyncWrite + Unpin + Send + Sync> Peer<T> {
     pub fn create_peer<W: AsyncWrite + Unpin + Send + Sync + 'static>(
         id: u32,
         address: LocalAddress,
-        mempool: Arc<Mutex<dyn MempoolBackend>>,
+        mempool: Arc<Mutex<dyn MempoolBase>>,
         node_tx: UnboundedSender<NodeNotification>,
         node_requests: UnboundedReceiver<NodeRequest>,
         kind: ConnectionKind,
