@@ -12,6 +12,7 @@ use core::str::FromStr;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs::read_to_string;
+use std::path::Path;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
@@ -714,7 +715,9 @@ impl AddressMan {
         None
     }
 
-    pub fn dump_peers(&self, datadir: &str) -> std::io::Result<()> {
+    pub fn dump_peers(&self, datadir: impl AsRef<Path>) -> std::io::Result<()> {
+        let datadir = datadir.as_ref();
+
         let peers: Vec<_> = self
             .addresses
             .values()
@@ -723,21 +726,27 @@ impl AddressMan {
             .collect::<Vec<_>>();
         let peers = serde_json::to_string(&peers);
         if let Ok(peers) = peers {
-            std::fs::write(datadir.to_owned() + "/peers.json", peers)?;
+            std::fs::write(datadir.join("peers.json"), peers)?;
         }
         Ok(())
     }
 
     /// Dumps the connected utreexo peers to a file on dir `datadir/anchors.json` in json format `
     /// inputs are the directory to save the file and the list of ids of the connected utreexo peers
-    pub fn dump_utreexo_peers(&self, datadir: &str, peers_id: &[usize]) -> std::io::Result<()> {
+    pub fn dump_utreexo_peers(
+        &self,
+        datadir: impl AsRef<Path>,
+        peers_id: &[usize],
+    ) -> std::io::Result<()> {
+        let datadir = datadir.as_ref();
+
         let addresses: Vec<DiskLocalAddress> = peers_id
             .iter()
             .filter_map(|id| Some(self.addresses.get(id)?.to_owned().into()))
             .collect();
         let addresses: Result<String, serde_json::Error> = serde_json::to_string(&addresses);
         if let Ok(addresses) = addresses {
-            std::fs::write(datadir.to_owned() + "/anchors.json", addresses)?;
+            std::fs::write(datadir.join("anchors.json"), addresses)?;
         }
         Ok(())
     }
@@ -755,8 +764,10 @@ impl AddressMan {
             .map(|(id, addr)| (*id, addr.to_owned()))
     }
 
-    pub fn start_addr_man(&mut self, datadir: String) -> Vec<LocalAddress> {
-        let persisted_peers = read_to_string(format!("{datadir}/peers.json"))
+    pub fn start_addr_man(&mut self, datadir: impl AsRef<Path>) -> Vec<LocalAddress> {
+        let datadir = datadir.as_ref();
+
+        let persisted_peers = read_to_string(datadir.join("peers.json"))
             .map(|seeds| serde_json::from_str::<Vec<DiskLocalAddress>>(&seeds));
 
         if let Ok(Ok(peers)) = persisted_peers {
@@ -768,7 +779,7 @@ impl AddressMan {
             self.push_addresses(&peers);
         }
 
-        let anchors = read_to_string(format!("{datadir}/anchors.json")).and_then(|anchors| {
+        let anchors = read_to_string(datadir.join("anchors.json")).and_then(|anchors| {
             let anchors = serde_json::from_str::<Vec<DiskLocalAddress>>(&anchors)?;
             Ok(anchors
                 .into_iter()
@@ -1225,12 +1236,13 @@ mod test {
 
     use super::AddressState;
     use super::LocalAddress;
+    use super::*;
     use crate::address_man::AddressMan;
     use crate::address_man::DiskLocalAddress;
     use crate::address_man::ReachableNetworks;
     use crate::address_man::SUPPORTED_NETWORKS;
 
-    fn load_addresses_from_json(file_path: &str) -> io::Result<Vec<LocalAddress>> {
+    fn load_addresses_from_json(file_path: impl AsRef<Path>) -> io::Result<Vec<LocalAddress>> {
         let mut contents = String::new();
         File::open(file_path)?.read_to_string(&mut contents)?;
 
