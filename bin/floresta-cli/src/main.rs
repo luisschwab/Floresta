@@ -284,8 +284,13 @@ pub enum Methods {
     )]
     LoadDescriptor { desc: String },
 
-    /// Returns the roots of the current utreexo forest
-    #[command(name = "getroots")]
+    #[doc = include_str!("../../../doc/rpc/getroots.md")]
+    #[command(
+        name = "getroots",
+        about = "Returns the roots of the current utreexo forest",
+        long_about = Some(include_str!("../../../doc/rpc/getroots.md")),
+        disable_help_subcommand = true
+    )]
     GetRoots,
 
     /// Returns a block
@@ -301,8 +306,13 @@ pub enum Methods {
         verbosity: Option<u32>,
     },
 
-    /// Returns information about the peers we are connected to
-    #[command(name = "getpeerinfo")]
+    #[doc = include_str!("../../../doc/rpc/getpeerinfo.md")]
+    #[command(
+        name = "getpeerinfo",
+        about = "Returns information about the peers we are connected to",
+        long_about = Some(include_str!("../../../doc/rpc/getpeerinfo.md")),
+        disable_help_subcommand = true
+    )]
     GetPeerInfo,
 
     #[doc = include_str!("../../../doc/rpc/getconnectioncount.md")]
@@ -381,8 +391,13 @@ pub enum Methods {
     #[command(name = "getrpcinfo")]
     GetRpcInfo,
 
-    /// Returns for how long the node has been running, in seconds
-    #[command(name = "uptime")]
+    #[doc = include_str!("../../../doc/rpc/uptime.md")]
+    #[command(
+        name = "uptime",
+        about = "Returns for how long the node has been running, in seconds",
+        long_about = Some(include_str!("../../../doc/rpc/uptime.md")),
+        disable_help_subcommand = true
+    )]
     Uptime,
 
     /// Returns a list of all descriptors currently loaded in the wallet

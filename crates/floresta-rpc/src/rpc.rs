@@ -85,17 +85,9 @@ pub trait FlorestaRPC {
     /// hexadecimal string. If the transaction is valid, it will be broadcast to the network, and
     /// return the transaction id. If the transaction is invalid, an error will be returned.
     fn send_raw_transaction(&self, tx: String) -> Result<Txid>;
-    /// Gets the current accumulator for the chain we're on
-    ///
-    /// This method returns the current accumulator for the chain we're on. The accumulator is
-    /// a set of roots, that let's us prove that a UTXO exists in the chain. This method returns
-    /// a vector of hexadecimal strings, each of which is a root in the accumulator.
+    #[doc = include_str!("../../../doc/rpc/getroots.md")]
     fn get_roots(&self) -> Result<Vec<String>>;
-    /// Gets information about the peers we're connected with
-    ///
-    /// This method returns information about the peers we're connected with. This includes
-    /// the peer's IP address, the peer's version, the peer's user agent, the transport protocol
-    /// and the peer's current height.
+    #[doc = include_str!("../../../doc/rpc/getpeerinfo.md")]
     fn get_peer_info(&self) -> Result<Vec<PeerInfo>>;
     /// Returns the number of peers currently connected to the node.
     fn get_connection_count(&self) -> Result<usize>;
@@ -145,7 +137,7 @@ pub trait FlorestaRPC {
     fn get_memory_info(&self, mode: String) -> Result<GetMemInfoRes>;
     /// Returns stats about our RPC server
     fn get_rpc_info(&self) -> Result<GetRpcInfoRes>;
-    /// Returns for how long florestad has been running, in seconds
+    #[doc = include_str!("../../../doc/rpc/uptime.md")]
     fn uptime(&self) -> Result<u32>;
     /// Returns a list of all descriptors currently loaded in the wallet
     fn list_descriptors(&self) -> Result<Vec<String>>;
