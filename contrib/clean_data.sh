@@ -1,6 +1,6 @@
-# SPDX-License-Identifier: MIT OR Apache-2.0
-
 #!/bin/bash
+
+# SPDX-License-Identifier: MIT OR Apache-2.0
 
 # Find all 'tmp-db' directories in subdirectories
 dirs=$(find . -type d -name 'tmp-db')

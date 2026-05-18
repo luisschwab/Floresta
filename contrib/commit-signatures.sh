@@ -1,6 +1,6 @@
-# SPDX-License-Identifier: MIT OR Apache-2.0
-
 #!/usr/bin/env bash
+
+# SPDX-License-Identifier: MIT OR Apache-2.0
 
 # Check if all commits in this branch contain PGP or SSH signatures.
 # This is a presence check, not a trust/validity check.
