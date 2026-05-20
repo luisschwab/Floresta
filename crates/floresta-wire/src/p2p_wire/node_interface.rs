@@ -22,6 +22,7 @@ use bitcoin::BlockHash;
 use bitcoin::Transaction;
 use bitcoin::Txid;
 use bitcoin::p2p::ServiceFlags;
+use bitcoin::p2p::message_filter::CFHeaders;
 use floresta_mempool::mempool::MempoolError;
 use serde::Serialize;
 
@@ -65,6 +66,13 @@ pub trait ChainMethods {
         &self,
         block: BlockHash,
     ) -> impl Future<Output = Result<Option<Block>, Self::Error>>;
+
+    /// Returns a list of Compact Block Filters headers for the requested block range.
+    fn get_cfilters_headers(
+        &self,
+        start_height: u32,
+        stop_hash: BlockHash,
+    ) -> impl Future<Output = Result<CFHeaders, Self::Error>>;
 }
 
 /// Mempool-oriented methods.
