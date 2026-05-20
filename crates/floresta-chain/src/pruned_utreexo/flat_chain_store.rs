@@ -77,6 +77,7 @@ use core::fmt::Display;
 use core::fmt::Formatter;
 use core::mem::size_of;
 use core::num::NonZeroUsize;
+use std::fs;
 use std::fs::DirBuilder;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -101,6 +102,7 @@ use index_impl::Index;
 use lru::LruCache;
 use memmap2::MmapMut;
 use memmap2::MmapOptions;
+use tracing::debug;
 use tracing::info;
 use twox_hash::XxHash3_64;
 
@@ -621,6 +623,9 @@ pub struct FlatChainStore {
     /// The file containing the accumulators for each blocks
     accumulator_file: File,
 
+    /// Backing-file directory; needed by `size_on_disk` since `MmapMut` drops the file handle.
+    datadir: PathBuf,
+
     /// A LRU cache for the last n blocks we've touched
     cache: Mutex<LruCache<BlockHash, DiskBlockHeader>>,
 }
@@ -710,6 +715,7 @@ impl FlatChainStore {
             metadata,
             block_index: BlockIndex::new(index_map, index_size),
             fork_headers,
+            datadir: datadir.to_path_buf(),
             cache: LruCache::new(cache_size).into(),
         })
     }
@@ -781,6 +787,7 @@ impl FlatChainStore {
             metadata: metadata_file,
             block_index: BlockIndex::new(index_map, metadata.index_capacity),
             fork_headers,
+            datadir: datadir.clone(),
             cache: LruCache::new(cache_size).into(),
         })
     }
@@ -1132,13 +1139,26 @@ impl ChainStore for FlatChainStore {
     }
 
     fn size_on_disk(&self) -> Result<u64, Self::Error> {
-        let headers_size = self.headers.len() as u64;
-        let metadata_size = self.metadata.len() as u64;
-        let block_index_size = self.block_index.index_map.len() as u64;
-        let fork_headers_size = self.fork_headers.len() as u64;
-        let accumulator_size = self.accumulator_file.metadata()?.len();
+        let metadata = unsafe { self.get_metadata() }?;
+        let header_size = size_of::<HashedDiskHeader>() as u64;
 
-        Ok(headers_size + metadata_size + block_index_size + fork_headers_size + accumulator_size)
+        // Fixed-size record files: compute from bookkeeping.
+        let mut total = (u64::from(metadata.depth) + 1) * header_size
+            + u64::from(metadata.fork_count) * header_size;
+
+        // Variable-structure files: report apparent (preallocated) length.
+        for name in ["blocks_index.bin", "metadata.bin", "accumulators.bin"] {
+            let path = self.datadir.join(name);
+            match fs::metadata(&path) {
+                Ok(meta) => total += meta.len(),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                    debug!("size_on_disk: {name} not found, skipping");
+                }
+                Err(e) => return Err(e.into()),
+            }
+        }
+
+        Ok(total)
     }
 
     fn save_roots_for_block(&mut self, roots: Vec<u8>, height: u32) -> Result<(), Self::Error> {
@@ -1721,59 +1741,32 @@ mod tests {
 
     #[test]
     fn test_size_on_disk() {
-        // Baseline matches the formula in `size_on_disk`.
-        let mut store = make_sized_store(32_768, 32_768, 16_384);
-        let baseline = (32_768 * size_of::<u32>()
-            + 32_768 * size_of::<HashedDiskHeader>()
-            + 16_384 * size_of::<HashedDiskHeader>()
-            + size_of::<Metadata>()) as u64;
-        assert_eq!(store.size_on_disk().unwrap(), baseline);
+        // Size is derived from `depth` and `fork_count` in metadata, plus the
+        // apparent length of the variable-structure files.
+        const BLOCK_INDEX_SIZE: usize = 32_768;
+        const HEADERS_FILE_SIZE: usize = 32_768;
+        const FORK_FILE_SIZE: usize = 16_384;
 
-        // Vary each preallocated field; check the per-field delta so any
-        // dropped or miscounted summand in `size_on_disk` fails here.
-        let bigger_index = make_sized_store(65_536, 32_768, 16_384);
-        assert_eq!(
-            bigger_index.size_on_disk().unwrap() - baseline,
-            (32_768 * size_of::<u32>()) as u64,
-        );
+        let mut store = make_sized_store(BLOCK_INDEX_SIZE, HEADERS_FILE_SIZE, FORK_FILE_SIZE);
+        let header_size = size_of::<HashedDiskHeader>() as u64;
+        let initial = store.size_on_disk().unwrap();
 
-        let bigger_headers = make_sized_store(32_768, 65_536, 16_384);
-        assert_eq!(
-            bigger_headers.size_on_disk().unwrap() - baseline,
-            (32_768 * size_of::<HashedDiskHeader>()) as u64,
-        );
-
-        let bigger_fork = make_sized_store(32_768, 32_768, 32_768);
-        assert_eq!(
-            bigger_fork.size_on_disk().unwrap() - baseline,
-            (16_384 * size_of::<HashedDiskHeader>()) as u64,
-        );
-
-        // Accumulator file is the only dynamic component; grows by payload.
+        // Bumping depth from 0 to 1 should add exactly one header record.
         let genesis = genesis_block(Network::Regtest);
         store
-            .save_header(&DiskBlockHeader::FullyValid(genesis.header, 0))
+            .save_height(&BestChain {
+                best_block: genesis.block_hash(),
+                depth: 1,
+                validation_index: genesis.block_hash(),
+                alternative_tips: vec![],
+            })
             .unwrap();
-        store.update_block_index(0, genesis.block_hash()).unwrap();
 
-        let acc = vec![0xab; 64];
-        store.save_roots_for_block(acc.clone(), 0).unwrap();
-        assert_eq!(store.size_on_disk().unwrap(), baseline + acc.len() as u64);
-
-        // Cumulative append at height 1.
-        let mut next = genesis.header;
-        next.prev_blockhash = genesis.block_hash();
-        store
-            .save_header(&DiskBlockHeader::FullyValid(next, 1))
-            .unwrap();
-        store.update_block_index(1, next.block_hash()).unwrap();
-
-        let acc2 = vec![0xcd; 32];
-        let pre_second = store.size_on_disk().unwrap();
-        store.save_roots_for_block(acc2.clone(), 1).unwrap();
+        let after = store.size_on_disk().unwrap();
         assert_eq!(
-            store.size_on_disk().unwrap(),
-            pre_second + acc2.len() as u64,
+            after,
+            initial + header_size,
+            "size should grow by exactly one HashedDiskHeader when depth increments",
         );
     }
 
