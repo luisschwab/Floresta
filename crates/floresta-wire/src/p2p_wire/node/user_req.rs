@@ -5,6 +5,7 @@ use std::time::Instant;
 use bitcoin::Block;
 use bitcoin::p2p::ServiceFlags;
 use floresta_chain::ChainBackend;
+use floresta_common::try_and_log;
 use tokio::sync::oneshot;
 use tracing::debug;
 use tracing::info;
@@ -12,7 +13,6 @@ use tracing::warn;
 
 use super::NodeRequest;
 use super::UtreexoNode;
-use super::try_and_log;
 use crate::block_proof::Bitmap;
 use crate::node::running_ctx::RunningNode;
 use crate::node_context::NodeContext;
