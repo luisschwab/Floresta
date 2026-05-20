@@ -5,6 +5,7 @@ use core::fmt;
 use core::fmt::Display;
 use core::fmt::Formatter;
 use core::net::AddrParseError;
+use std::path::PathBuf;
 
 use bitcoin::consensus::encode;
 use floresta_chain::BlockValidationErrors;
@@ -73,10 +74,10 @@ pub enum FlorestadError {
     CouldNotGenerateSelfSignedCert(rcgen::Error),
 
     /// Writing a file to the filesystem.
-    CouldNotWriteFile(String, std::io::Error),
+    CouldNotWriteFile(PathBuf, std::io::Error),
 
     /// Data directory doesn't exist or is not writable.
-    InvalidDataDir(String),
+    InvalidDataDir(PathBuf),
 
     /// Obtaining a lock on the data directory.
     CouldNotOpenKvDatabase(KvDatabaseError),
@@ -101,7 +102,7 @@ pub enum FlorestadError {
     FailedToBindElectrumServer(std::io::Error),
 
     /// Failed to create the TLS data directory.
-    CouldNotCreateTLSDataDir(String, std::io::Error),
+    CouldNotCreateTLSDataDir(PathBuf, std::io::Error),
 
     /// Failed to obtain the wallet cache.
     CouldNotObtainWalletCache(WatchOnlyError<KvDatabaseError>),
@@ -162,10 +163,18 @@ impl Display for FlorestadError {
                 write!(f, "Error while generating self-signed certificate: {err}")
             }
             FlorestadError::CouldNotWriteFile(path, err) => {
-                write!(f, "Error while creating file {path}: {err}")
+                write!(
+                    f,
+                    "Error while creating file at path={}: {err}",
+                    path.display()
+                )
             }
             FlorestadError::InvalidDataDir(path) => {
-                write!(f, "Data directory doesn't exist or is not writable: {path}")
+                write!(
+                    f,
+                    "Data directory at path={} doesn't exist or is not writable",
+                    path.display()
+                )
             }
             FlorestadError::CouldNotOpenKvDatabase(err) => {
                 write!(f, "Cannot open a key-value database: {err}")
@@ -192,7 +201,11 @@ impl Display for FlorestadError {
                 write!(f, "Failed to bind Electrum server: {err}")
             }
             FlorestadError::CouldNotCreateTLSDataDir(path, err) => {
-                write!(f, "Could not create TLS data directory {path}: {err}")
+                write!(
+                    f,
+                    "Could not create TLS data directory at path={}: {err}",
+                    path.display()
+                )
             }
             FlorestadError::CouldNotObtainWalletCache(err) => {
                 write!(f, "Could not obtain wallet cache: {err}")

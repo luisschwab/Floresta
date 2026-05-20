@@ -2,6 +2,8 @@
 
 use core::net::SocketAddr;
 use std::collections::HashMap;
+use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -79,7 +81,7 @@ pub struct RpcImpl<Blockchain: RpcChain> {
     pub(super) node: NodeInterface,
     pub(super) kill_signal: Arc<RwLock<bool>>,
     pub(super) inflight: Arc<RwLock<HashMap<Value, InflightRpc>>>,
-    pub(super) log_path: String,
+    pub(super) log_path: PathBuf,
     pub(super) start_time: Instant,
     pub(super) user_agent: String,
     pub(super) proxy: Option<SocketAddr>,
@@ -741,7 +743,7 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
         network: Network,
         block_filter_storage: Option<Arc<NetworkFilters<FlatFiltersStore>>>,
         address: Option<SocketAddr>,
-        log_path: String,
+        log_path: impl AsRef<Path>,
         user_agent: String,
         proxy: Option<SocketAddr>,
     ) {
@@ -782,7 +784,7 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
                 network,
                 block_filter_storage,
                 inflight: Arc::new(RwLock::new(HashMap::new())),
-                log_path,
+                log_path: log_path.as_ref().into(),
                 start_time: Instant::now(),
                 user_agent,
                 proxy,
