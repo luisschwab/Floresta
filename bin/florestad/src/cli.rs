@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::path::PathBuf;
+
 use bitcoin::BlockHash;
 use bitcoin::Network;
 #[cfg(unix)]
@@ -21,7 +23,7 @@ pub struct Cli {
 
     #[arg(short, long, value_name = "FILE")]
     /// Sets a custom config file
-    pub config_file: Option<String>,
+    pub config_file: Option<PathBuf>,
 
     #[arg(short, long, default_value_t=Network::Bitcoin)]
     /// Which network should we use
@@ -41,7 +43,7 @@ pub struct Cli {
     /// Where should we store data. This is the directory where we'll store the chainstate,
     /// the wallet, the logs, the compact block filters, the Utreexo state, etc.
     /// Defaults to `~/.floresta`. The passed value should be an absolute path.
-    pub data_dir: Option<String>,
+    pub data_dir: Option<PathBuf>,
 
     #[arg(long)]
     /// Whether Compact Block Filters should be disabled
@@ -146,7 +148,7 @@ pub struct Cli {
     /// ```shell
     /// openssl genpkey -algorithm RSA -out key.pem -pkeyopt rsa_keygen_bits:2048
     /// ```
-    pub tls_key_path: Option<String>,
+    pub tls_key_path: Option<PathBuf>,
 
     #[arg(long, value_name = "PATH")]
     /// TLS certificate path (defaults to `{data_dir}/tls/cert.pem`).
@@ -155,7 +157,7 @@ pub struct Cli {
     /// ```shell
     /// openssl req -x509 -new -key key.pem -out cert.pem -days 365 -subj "/CN=localhost"
     /// ```
-    pub tls_cert_path: Option<String>,
+    pub tls_cert_path: Option<PathBuf>,
 
     #[arg(long, default_value_t = false)]
     /// Whether we should try to connect with peers using the old, unencrypted V1 P2P protocol,
@@ -174,7 +176,7 @@ pub struct Cli {
     /// In case you're using the daemon option, and you want to know the process ID, you can
     /// write it to a file. This option should be an absolute path to a file. Usually, you'd
     /// write it to `$DATA_DIR/florestad.pid`.
-    pub pid_file: Option<String>,
+    pub pid_file: Option<PathBuf>,
 
     #[arg(long, default_value_t = false)]
     /// Whether backfill should be disabled

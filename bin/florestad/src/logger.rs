@@ -18,6 +18,7 @@
 use core::fmt;
 use std::fs;
 use std::io;
+use std::path::Path;
 use std::process::exit;
 
 use tracing::Level;
@@ -246,11 +247,13 @@ where
 /// Panics if a global [`tracing`] subscriber has already been
 /// installed (e.g. if this function is called more than once).
 pub fn start_logger(
-    data_directory: &String,
+    datadir: impl AsRef<Path>,
     log_to_file: bool,
     log_to_stdout: bool,
     log_level: Level,
 ) -> Result<Option<WorkerGuard>, io::Error> {
+    let datadir = datadir.as_ref();
+
     let is_debug = log_level >= Level::DEBUG;
     let make_filter = || {
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(log_level.to_string()))
@@ -267,17 +270,17 @@ pub fn start_logger(
     });
 
     if log_to_file {
-        let file_path = format!("{}/{}", data_directory, LOG_FILE);
+        let log_file_path = datadir.join(LOG_FILE);
 
-        // Validate the log file path (`<data_directory>/<LOG_FILE>`).
+        // Validate the log file path (`<datadir>/<LOG_FILE>`).
         let _ = fs::OpenOptions::new()
             .create(true)
             .append(true)
-            .open(&file_path)
+            .open(&log_file_path)
             .map_err(|e| {
                 eprintln!(
-                    "Failed to create log file at {}/{LOG_FILE}: {e}",
-                    data_directory
+                    "Failed to create log file at path={}: {e}",
+                    log_file_path.display()
                 );
                 exit(1)
             });
@@ -286,7 +289,7 @@ pub fn start_logger(
     // Formatter for events destined to the log file.
     let mut guard = None;
     let fmt_layer_logfile = log_to_file.then(|| {
-        let file_appender = tracing_appender::rolling::never(data_directory, LOG_FILE);
+        let file_appender = tracing_appender::rolling::never(datadir, LOG_FILE);
         let (non_blocking, file_guard) = tracing_appender::non_blocking(file_appender);
         guard = Some(file_guard);
         layer()
