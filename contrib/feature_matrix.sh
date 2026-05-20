@@ -1,6 +1,7 @@
+#!/bin/sh
+
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
-#!/bin/sh
 # Exit immediately if any command fails
 set -e
 
