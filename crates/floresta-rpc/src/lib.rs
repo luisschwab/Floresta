@@ -258,4 +258,43 @@ mod tests {
                 .unwrap()
         );
     }
+
+    #[test]
+    fn test_get_network_info() {
+        let (_proc, client) = start_florestad();
+
+        let info = client.get_network_info().expect("rpc not working");
+
+        // Floresta does not accept inbound connections, so these are always fixed.
+        assert_eq!(info.connections_in, 0);
+        assert!(info.local_addresses.is_empty());
+
+        // The total connection count must equal in + out.
+        assert_eq!(info.connections, info.connections_in + info.connections_out);
+
+        // P2P networking is enabled by default.
+        assert!(info.network_active);
+
+        // Floresta has no mempool, so relay-related fields are hardcoded.
+        assert!(!info.local_relay);
+        assert_eq!(info.relay_fee, 0.0);
+        assert_eq!(info.incremental_fee, 0.0);
+
+        // time_offset is hardcoded to 0.
+        assert_eq!(info.time_offset, 0);
+
+        // Protocol version is the constant from floresta-common.
+        assert_eq!(info.protocol_version, 70016);
+
+        // All five networks Floresta is aware of should be listed, in ALL order.
+        let names: Vec<&str> = info.networks.iter().map(|n| n.name.as_str()).collect();
+        assert_eq!(names, vec!["ipv4", "ipv6", "onion", "i2p", "cjdns"]);
+
+        // Only ipv4 and ipv6 are currently SUPPORTED; the rest are limited.
+        for net in &info.networks {
+            let supported = matches!(net.name.as_str(), "ipv4" | "ipv6");
+            assert_eq!(net.reachable, supported);
+            assert_eq!(net.limited, !supported);
+        }
+    }
 }

@@ -131,6 +131,7 @@ fn do_request(cmd: &Cli, client: Client) -> anyhow::Result<String> {
         Methods::Uptime => serde_json::to_string_pretty(&client.uptime()?)?,
         Methods::ListDescriptors => serde_json::to_string_pretty(&client.list_descriptors()?)?,
         Methods::Ping => serde_json::to_string_pretty(&client.ping()?)?,
+        Methods::GetNetworkInfo => serde_json::to_string_pretty(&client.get_network_info()?)?,
     })
 }
 
@@ -409,4 +410,13 @@ pub enum Methods {
     /// Result: json null
     #[command(name = "ping")]
     Ping,
+
+    #[doc = include_str!("../../../doc/rpc/getnetworkinfo.md")]
+    #[command(
+        name = "getnetworkinfo",
+        about = "Returns information about the network and connected peers",
+        long_about = Some(include_str!("../../../doc/rpc/getnetworkinfo.md")),
+        disable_help_subcommand = true
+    )]
+    GetNetworkInfo,
 }
