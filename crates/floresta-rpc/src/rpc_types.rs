@@ -4,6 +4,7 @@ use core::error;
 use core::fmt;
 use core::fmt::Display;
 use core::fmt::Formatter;
+use std::path::PathBuf;
 
 use corepc_types::v30::GetBlockHeaderVerbose;
 use corepc_types::v30::GetBlockVerboseOne;
@@ -329,7 +330,7 @@ pub struct ActiveCommand {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetRpcInfoRes {
     pub active_commands: Vec<ActiveCommand>,
-    pub logpath: String,
+    pub logpath: PathBuf,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
