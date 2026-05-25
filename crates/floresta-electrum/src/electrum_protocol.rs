@@ -7,35 +7,35 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
 
-use bitcoin::consensus::deserialize;
-use bitcoin::consensus::encode::serialize_hex;
-use bitcoin::hashes::hex::FromHex;
-use bitcoin::hashes::sha256;
 use bitcoin::ScriptBuf;
 use bitcoin::Transaction;
 use bitcoin::TxOut;
 use bitcoin::Txid;
+use bitcoin::consensus::deserialize;
+use bitcoin::consensus::encode::serialize_hex;
+use bitcoin::hashes::hex::FromHex;
+use bitcoin::hashes::sha256;
 use floresta_chain::pruned_utreexo::BlockchainInterface;
 use floresta_common::get_hash_from_u8;
 use floresta_common::get_spk_hash;
 use floresta_common::spsc::Channel;
 use floresta_compact_filters::flat_filters_store::FlatFiltersStore;
 use floresta_compact_filters::network_filters::NetworkFilters;
-use floresta_watch_only::kv_database::KvDatabase;
 use floresta_watch_only::AddressCache;
 use floresta_watch_only::CachedTransaction;
+use floresta_watch_only::kv_database::KvDatabase;
 use floresta_wire::node_interface::NodeInterface;
-use serde_json::json;
 use serde_json::Value;
+use serde_json::json;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::AsyncRead;
 use tokio::io::AsyncWrite;
 use tokio::io::AsyncWriteExt;
 use tokio::io::BufReader;
 use tokio::net::TcpListener;
-use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::unbounded_channel;
 use tokio_rustls::TlsAcceptor;
 use tracing::debug;
 use tracing::error;
@@ -945,15 +945,15 @@ mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use bitcoin::address::NetworkChecked;
-    use bitcoin::block::Header as BlockHeader;
-    use bitcoin::consensus::deserialize;
-    use bitcoin::consensus::Decodable;
-    use bitcoin::hashes::hex::FromHex;
-    use bitcoin::hashes::sha256;
     use bitcoin::Address;
     use bitcoin::Network;
     use bitcoin::Transaction;
+    use bitcoin::address::NetworkChecked;
+    use bitcoin::block::Header as BlockHeader;
+    use bitcoin::consensus::Decodable;
+    use bitcoin::consensus::deserialize;
+    use bitcoin::hashes::hex::FromHex;
+    use bitcoin::hashes::sha256;
     use floresta_chain::AssumeValidArg;
     use floresta_chain::ChainState;
     use floresta_chain::FlatChainStore;
@@ -961,19 +961,19 @@ mod test {
     use floresta_common::assert_ok;
     use floresta_common::get_spk_hash;
     use floresta_mempool::Mempool;
+    use floresta_watch_only::AddressCache;
     use floresta_watch_only::kv_database::KvDatabase;
     use floresta_watch_only::merkle::MerkleProof;
-    use floresta_watch_only::AddressCache;
+    use floresta_wire::UtreexoNodeConfig;
     use floresta_wire::address_man::AddressMan;
     use floresta_wire::address_man::ReachableNetworks;
-    use floresta_wire::node::running_ctx::RunningNode;
     use floresta_wire::node::UtreexoNode;
-    use floresta_wire::UtreexoNodeConfig;
-    use rcgen::generate_simple_self_signed;
+    use floresta_wire::node::running_ctx::RunningNode;
     use rcgen::CertifiedKey;
-    use serde_json::json;
+    use rcgen::generate_simple_self_signed;
     use serde_json::Number;
     use serde_json::Value;
+    use serde_json::json;
     use tokio::io::AsyncBufReadExt;
     use tokio::io::AsyncWriteExt;
     use tokio::io::BufReader;
@@ -983,13 +983,13 @@ mod test {
     use tokio::sync::RwLock;
     use tokio::task;
     use tokio::time::timeout;
-    use tokio_rustls::rustls::pki_types::pem::PemObject;
-    use tokio_rustls::rustls::pki_types::PrivateKeyDer;
-    use tokio_rustls::rustls::ServerConfig;
     use tokio_rustls::TlsAcceptor;
+    use tokio_rustls::rustls::ServerConfig;
+    use tokio_rustls::rustls::pki_types::PrivateKeyDer;
+    use tokio_rustls::rustls::pki_types::pem::PemObject;
 
-    use super::client_accept_loop;
     use super::ElectrumServer;
+    use super::client_accept_loop;
 
     /// A size used for mempool tests, no specific meaning just a randomly
     /// chosen size.
@@ -1338,9 +1338,11 @@ mod test {
 
         assert_ok!(send_request(mempool_req, port).await);
 
-        assert!(send_request(unsubscribe_req, port).await.unwrap()["result"]
-            .as_bool()
-            .unwrap());
+        assert!(
+            send_request(unsubscribe_req, port).await.unwrap()["result"]
+                .as_bool()
+                .unwrap()
+        );
     }
 
     #[tokio::test]

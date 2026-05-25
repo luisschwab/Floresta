@@ -7,22 +7,22 @@ use core::net::IpAddr;
 use core::net::SocketAddr;
 use std::time::Instant;
 
-use bitcoin::p2p::ServiceFlags;
 use bitcoin::Block;
 use bitcoin::BlockHash;
 use bitcoin::Transaction;
 use bitcoin::Txid;
+use bitcoin::p2p::ServiceFlags;
 use floresta_mempool::mempool::MempoolError;
 use rustreexo::proof::Proof;
 use serde::Serialize;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::oneshot;
 
+use super::UtreexoNodeConfig;
 use super::node::ConnectionKind;
 use super::node::NodeNotification;
 use super::node::PeerStatus;
 use super::transport::TransportProtocol;
-use super::UtreexoNodeConfig;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// A request to addnode that can be made to the node.

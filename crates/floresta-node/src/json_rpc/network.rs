@@ -8,13 +8,13 @@ use core::net::SocketAddr;
 use bitcoin::Network;
 use corepc_types::v30::GetNetworkInfo;
 use corepc_types::v30::GetNetworkInfoNetwork;
+use floresta_common::PROTOCOL_VERSION;
 use floresta_common::advertised_services;
 use floresta_common::service_flags_strings;
-use floresta_common::PROTOCOL_VERSION;
 use floresta_wire::address_man::ReachableNetworks;
 use floresta_wire::node_interface::PeerInfo;
-use serde_json::json;
 use serde_json::Value;
+use serde_json::json;
 
 use super::res::JsonRpcError;
 use super::server::RpcChain;

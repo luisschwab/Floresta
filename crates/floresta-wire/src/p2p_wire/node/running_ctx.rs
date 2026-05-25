@@ -9,18 +9,18 @@ use std::collections::HashMap;
 use std::time::Duration;
 use std::time::Instant;
 
-use bitcoin::bip158::BlockFilter;
-use bitcoin::p2p::address::AddrV2Message;
-use bitcoin::p2p::ServiceFlags;
 use bitcoin::BlockHash;
+use bitcoin::bip158::BlockFilter;
+use bitcoin::p2p::ServiceFlags;
+use bitcoin::p2p::address::AddrV2Message;
+use floresta_chain::ThreadSafeChain;
 use floresta_chain::proof_util;
-use floresta_chain::pruned_utreexo::partial_chain::PartialChainState;
 use floresta_chain::pruned_utreexo::BlockchainInterface;
 use floresta_chain::pruned_utreexo::UpdatableChainstate;
-use floresta_chain::ThreadSafeChain;
+use floresta_chain::pruned_utreexo::partial_chain::PartialChainState;
 use floresta_common::service_flags;
+use rand::rng;
 use rand::seq::IteratorRandom;
-use rand::thread_rng;
 use rustreexo::stump::Stump;
 use tokio::time;
 use tokio::time::MissedTickBehavior;
@@ -29,17 +29,17 @@ use tracing::error;
 use tracing::info;
 use tracing::warn;
 
+use crate::node::ConnectionKind;
+use crate::node::InflightRequests;
+use crate::node::MAX_ADDRV2_ADDRESSES;
+use crate::node::NodeNotification;
+use crate::node::NodeRequest;
+use crate::node::UtreexoNode;
 use crate::node::chain_selector_ctx::ChainSelector;
 use crate::node::periodic_job;
 use crate::node::sync_ctx::SyncNode;
 use crate::node::try_and_log;
 use crate::node::try_and_warn;
-use crate::node::ConnectionKind;
-use crate::node::InflightRequests;
-use crate::node::NodeNotification;
-use crate::node::NodeRequest;
-use crate::node::UtreexoNode;
-use crate::node::MAX_ADDRV2_ADDRESSES;
 use crate::node_context::LoopControl;
 use crate::node_context::NodeContext;
 use crate::node_context::PeerId;
@@ -153,7 +153,7 @@ where
                 self.peers
                     .values()
                     .filter(|peer| peer.is_regular_peer())
-                    .choose(&mut thread_rng())
+                    .choose(&mut rng())
                     .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
             }
 
@@ -169,7 +169,7 @@ where
                 self.peers
                     .values()
                     .filter(|peer| peer.is_regular_peer())
-                    .choose(&mut thread_rng())
+                    .choose(&mut rng())
                     .and_then(|p| p.channel.send(NodeRequest::Shutdown).ok());
             }
 
@@ -665,13 +665,19 @@ where
                             }
 
                             None => {
-                                self.context.last_invs.retain(|_, (when, _)| when.elapsed() <= MAX_INV_RETENTION_TIME);
-                                self.context.last_invs.insert(block, (Instant::now(), vec![peer]));
+                                self.context.last_invs.retain(|_, (when, _)| {
+                                    when.elapsed() <= MAX_INV_RETENTION_TIME
+                                });
+                                self.context
+                                    .last_invs
+                                    .insert(block, (Instant::now(), vec![peer]));
                             }
                         }
 
                         // Don't request a block twice
-                        let already_requested = self.inflight.contains_key(&InflightRequests::Blocks(block)) || self.blocks.contains_key(&block);
+                        let already_requested =
+                            self.inflight.contains_key(&InflightRequests::Blocks(block))
+                                || self.blocks.contains_key(&block);
                         if already_requested {
                             return Ok(());
                         }
@@ -729,7 +735,10 @@ where
                             let block_hash = header.block_hash();
 
                             // Don't request a block twice
-                            let already_requested = self.inflight.contains_key(&InflightRequests::Blocks(block_hash)) || self.blocks.contains_key(&block_hash);
+                            let already_requested = self
+                                .inflight
+                                .contains_key(&InflightRequests::Blocks(block_hash))
+                                || self.blocks.contains_key(&block_hash);
                             if already_requested {
                                 continue;
                             }
@@ -738,7 +747,9 @@ where
                                 continue;
                             }
 
-                            let Some(previous_height) = self.chain.get_block_height(&header.prev_blockhash)? else {
+                            let Some(previous_height) =
+                                self.chain.get_block_height(&header.prev_blockhash)?
+                            else {
                                 // Orphan chain
                                 self.disconnect_and_ban(peer)?;
                                 return Ok(());
@@ -747,7 +758,9 @@ where
                             let current_height = self.chain.get_best_block()?.0;
                             if current_height.saturating_sub(MAX_REORG_DEPTH) > previous_height {
                                 // peer has a super deep reorg, this could be a disk fill attack
-                                warn!("Peer {peer} is trying to reorg a very deep block, might be a disk fill attack. Banning it");
+                                warn!(
+                                    "Peer {peer} is trying to reorg a very deep block, might be a disk fill attack. Banning it"
+                                );
                                 self.disconnect_and_ban(peer)?;
                                 return Ok(());
                             }
@@ -764,7 +777,7 @@ where
                                 (peer, Instant::now()),
                             );
                         }
-                   }
+                    }
 
                     PeerMessages::Ready(version) => {
                         debug!(
@@ -814,7 +827,9 @@ where
                         }
                     }
 
-                    _ => unreachable!("Error: `handle_peer_msg_common` should have handled remaining PeerMessages"),
+                    _ => unreachable!(
+                        "Error: `handle_peer_msg_common` should have handled remaining PeerMessages"
+                    ),
                 }
             }
         }

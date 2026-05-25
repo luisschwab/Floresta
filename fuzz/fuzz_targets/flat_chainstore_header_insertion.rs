@@ -4,16 +4,16 @@
 
 use std::collections::HashMap;
 
-use bitcoin::block::Header as BlockHeader;
-use bitcoin::block::Version;
-use bitcoin::hashes::Hash;
 use bitcoin::BlockHash;
 use bitcoin::CompactTarget;
 use bitcoin::TxMerkleNode;
-use floresta_chain::pruned_utreexo::flat_chain_store::FlatChainStore;
-use floresta_chain::pruned_utreexo::flat_chain_store::FlatChainStoreConfig;
+use bitcoin::block::Header as BlockHeader;
+use bitcoin::block::Version;
+use bitcoin::hashes::Hash;
 use floresta_chain::ChainStore;
 use floresta_chain::DiskBlockHeader;
+use floresta_chain::pruned_utreexo::flat_chain_store::FlatChainStore;
+use floresta_chain::pruned_utreexo::flat_chain_store::FlatChainStoreConfig;
 use libfuzzer_sys::arbitrary::Arbitrary;
 use libfuzzer_sys::arbitrary::Unstructured;
 use libfuzzer_sys::fuzz_target;

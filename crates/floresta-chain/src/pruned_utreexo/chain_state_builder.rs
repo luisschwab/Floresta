@@ -11,20 +11,20 @@
 //! - UTREEXO accumulator state
 //! - Current chain tip and header
 
-use bitcoin::block::Header as BlockHeader;
 use bitcoin::BlockHash;
 use bitcoin::Network;
+use bitcoin::block::Header as BlockHeader;
 use rustreexo::stump::Stump;
 
 use super::chain_state::ChainState;
 use super::chainparams::ChainParams;
-use crate::prelude::Vec;
-use crate::pruned_utreexo::Box;
 use crate::AssumeValidArg;
 use crate::BestChain;
 use crate::ChainStore;
 use crate::DatabaseError;
 use crate::DiskBlockHeader;
+use crate::prelude::Vec;
+use crate::pruned_utreexo::Box;
 
 #[derive(Debug)]
 /// Represents errors that can occur during the construction of a ChainState instance.

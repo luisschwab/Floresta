@@ -251,33 +251,56 @@ impl_error_from!(JsonRpcError, MempoolError, MempoolAccept);
 impl Display for JsonRpcError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            JsonRpcError::InvalidTimestamp => write!(f, "Invalid timestamp, ensure that it is between the genesis and the tip."),
-            JsonRpcError::InvalidRescanVal => write!(f, "Your rescan request contains invalid values"),
-            JsonRpcError::NoAddressesToRescan => write!(f, "You do not have any address to proceed with the rescan"),
+            JsonRpcError::InvalidTimestamp => write!(
+                f,
+                "Invalid timestamp, ensure that it is between the genesis and the tip."
+            ),
+            JsonRpcError::InvalidRescanVal => {
+                write!(f, "Your rescan request contains invalid values")
+            }
+            JsonRpcError::NoAddressesToRescan => {
+                write!(f, "You do not have any address to proceed with the rescan")
+            }
             JsonRpcError::MissingParameter(opt) => write!(f, "Missing parameter: {opt}"),
-            JsonRpcError::InvalidParameterType(opt) => write!(f, "Invalid parameter type for: {opt}"),
+            JsonRpcError::InvalidParameterType(opt) => {
+                write!(f, "Invalid parameter type for: {opt}")
+            }
             JsonRpcError::InvalidRequest => write!(f, "Invalid request"),
-            JsonRpcError::InvalidHex =>  write!(f, "Invalid hex"),
-            JsonRpcError::MethodNotFound =>  write!(f, "Method not found"),
-            JsonRpcError::Decode(e) =>  write!(f, "error decoding request: {e}"),
-            JsonRpcError::TxNotFound =>  write!(f, "Transaction not found"),
-            JsonRpcError::InvalidDescriptor(e) =>  write!(f, "Invalid descriptor: {e}"),
-            JsonRpcError::BlockNotFound =>  write!(f, "Block not found"),
+            JsonRpcError::InvalidHex => write!(f, "Invalid hex"),
+            JsonRpcError::MethodNotFound => write!(f, "Method not found"),
+            JsonRpcError::Decode(e) => write!(f, "error decoding request: {e}"),
+            JsonRpcError::TxNotFound => write!(f, "Transaction not found"),
+            JsonRpcError::InvalidDescriptor(e) => write!(f, "Invalid descriptor: {e}"),
+            JsonRpcError::BlockNotFound => write!(f, "Block not found"),
             JsonRpcError::Chain => write!(f, "Chain error"),
             JsonRpcError::InvalidAddress => write!(f, "Invalid address"),
             JsonRpcError::Node(e) => write!(f, "Node error: {e}"),
-            JsonRpcError::NoBlockFilters => write!(f, "You don't have block filters enabled, please start florestad without --no-cfilters to run this RPC"),
-            JsonRpcError::InInitialBlockDownload => write!(f, "Node is in initial block download, wait until it's finished"),
+            JsonRpcError::NoBlockFilters => write!(
+                f,
+                "You don't have block filters enabled, please start florestad without --no-cfilters to run this RPC"
+            ),
+            JsonRpcError::InInitialBlockDownload => write!(
+                f,
+                "Node is in initial block download, wait until it's finished"
+            ),
             JsonRpcError::InvalidScript => write!(f, "Invalid script"),
             JsonRpcError::InvalidVerbosityLevel => write!(f, "Invalid verbosity level"),
-            JsonRpcError::InvalidMemInfoMode => write!(f, "Invalid meminfo mode, should be stats or mallocinfo"),
+            JsonRpcError::InvalidMemInfoMode => {
+                write!(f, "Invalid meminfo mode, should be stats or mallocinfo")
+            }
             JsonRpcError::Wallet(e) => write!(f, "Wallet error: {e}"),
             JsonRpcError::Filters(e) => write!(f, "Error with filters: {e}"),
-            JsonRpcError::ChainWorkOverflow => write!(f, "Overflow while calculating the chain work"),
+            JsonRpcError::ChainWorkOverflow => {
+                write!(f, "Overflow while calculating the chain work")
+            }
             JsonRpcError::InvalidAddnodeCommand => write!(f, "Invalid addnode command"),
-            JsonRpcError::InvalidDisconnectNodeCommand => write!(f, "Invalid disconnectnode command"),
+            JsonRpcError::InvalidDisconnectNodeCommand => {
+                write!(f, "Invalid disconnectnode command")
+            }
             JsonRpcError::PeerNotFound => write!(f, "Peer not found in the peer list"),
-            JsonRpcError::MempoolAccept(e) => write!(f, "Could not send transaction to mempool due to {e}"),
+            JsonRpcError::MempoolAccept(e) => {
+                write!(f, "Could not send transaction to mempool due to {e}")
+            }
             JsonRpcError::ConversionOverflow(e) => write!(f, "Numeric conversion overflow: {e}"),
         }
     }

@@ -2,11 +2,11 @@
 
 use core::error::Error;
 
-use bitcoin::block::Header;
-use bitcoin::consensus::encode::serialize_hex;
 use bitcoin::Block;
 use bitcoin::BlockHash;
 use bitcoin::Work;
+use bitcoin::block::Header;
+use bitcoin::consensus::encode::serialize_hex;
 use floresta_common::bhash;
 use floresta_common::prelude::Box;
 use floresta_common::prelude::String;
@@ -277,15 +277,15 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Arc;
 
-    use bitcoin::block::Header;
-    use bitcoin::consensus::encode::deserialize_hex;
-    use bitcoin::hashes::sha256::Hash as Sha256Hash;
-    use bitcoin::params::Params;
     use bitcoin::Block;
     use bitcoin::BlockHash;
     use bitcoin::OutPoint;
     use bitcoin::Transaction;
     use bitcoin::Txid;
+    use bitcoin::block::Header;
+    use bitcoin::consensus::encode::deserialize_hex;
+    use bitcoin::hashes::sha256::Hash as Sha256Hash;
+    use bitcoin::params::Params;
     use rustreexo::proof::Proof;
     use rustreexo::stump::Stump;
 
@@ -342,7 +342,7 @@ mod tests {
         fn get_block_hash(&self, height: u32) -> Result<BlockHash, Self::Error> {
             self.heights
                 .iter()
-                .find(|(_, &h)| h == height)
+                .find(|(_, h)| **h == height)
                 .map(|(hash, _)| *hash)
                 .ok_or(MockBlockchainError::NotFound)
         }

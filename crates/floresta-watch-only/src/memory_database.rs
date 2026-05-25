@@ -6,8 +6,8 @@
 //!
 //! For actual databases that can be used for production code, see [KvDatabase](crate::kv_database::KvDatabase).
 
-use bitcoin::hashes::sha256;
 use bitcoin::Txid;
+use bitcoin::hashes::sha256;
 use floresta_common::prelude::sync::RwLock;
 use floresta_common::prelude::*;
 

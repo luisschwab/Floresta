@@ -6,16 +6,16 @@ use std::time::Instant;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
+use bitcoin::Transaction;
+use bitcoin::p2p::ServiceFlags;
 use bitcoin::p2p::address::AddrV2;
 use bitcoin::p2p::address::AddrV2Message;
 use bitcoin::p2p::message_blockdata::Inventory;
-use bitcoin::p2p::ServiceFlags;
-use bitcoin::Transaction;
 use floresta_chain::ChainBackend;
 use floresta_common::service_flags;
-use rand::distributions::Distribution;
-use rand::distributions::WeightedIndex;
-use rand::prelude::SliceRandom;
+use rand::distr::Distribution;
+use rand::distr::weighted::WeightedIndex;
+use rand::seq::IndexedRandom;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -95,7 +95,7 @@ where
             .collect();
 
         let dist = WeightedIndex::new(&weights).ok()?;
-        let idx = dist.sample(&mut rand::thread_rng());
+        let idx = dist.sample(&mut rand::rng());
 
         let (id, peer, _) = candidates[idx];
         Some((id, peer))
@@ -153,7 +153,7 @@ where
         }
 
         let peer = peers
-            .choose(&mut rand::thread_rng())
+            .choose(&mut rand::rng())
             .expect("infallible: we checked that peers isn't empty");
 
         self.peers
@@ -289,7 +289,8 @@ where
             if let ConnectionKind::Regular(needs) = version.kind {
                 if !Self::is_peer_good(peer_data, needs) {
                     info!(
-                        "Disconnecting peer {peer} for not having the required services. has={} needs={}", peer_data.services, needs
+                        "Disconnecting peer {peer} for not having the required services. has={} needs={}",
+                        peer_data.services, needs
                     );
                     peer_data.channel.send(NodeRequest::Shutdown)?;
                     self.address_man.update_set_state(

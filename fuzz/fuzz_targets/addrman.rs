@@ -3,8 +3,8 @@
 #![no_main]
 
 use bitcoin::consensus::encode;
-use bitcoin::p2p::address::AddrV2Message;
 use bitcoin::p2p::ServiceFlags;
+use bitcoin::p2p::address::AddrV2Message;
 use floresta_wire::address_man::AddressMan;
 use floresta_wire::address_man::LocalAddress;
 use floresta_wire::address_man::ReachableNetworks;

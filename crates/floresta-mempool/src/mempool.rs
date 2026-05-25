@@ -13,9 +13,6 @@ use std::collections::HashMap;
 use std::time::Duration;
 use std::time::Instant;
 
-use bitcoin::block::Header;
-use bitcoin::block::Version;
-use bitcoin::hashes::Hash;
 use bitcoin::Block;
 use bitcoin::BlockHash;
 use bitcoin::CompactTarget;
@@ -23,8 +20,11 @@ use bitcoin::OutPoint;
 use bitcoin::Transaction;
 use bitcoin::TxMerkleNode;
 use bitcoin::Txid;
-use floresta_chain::pruned_utreexo::consensus::Consensus;
+use bitcoin::block::Header;
+use bitcoin::block::Version;
+use bitcoin::hashes::Hash;
 use floresta_chain::BlockchainError;
+use floresta_chain::pruned_utreexo::consensus::Consensus;
 use tracing::debug;
 
 /// A short transaction id that we use to identify transactions in the mempool.
@@ -383,12 +383,6 @@ impl Mempool {
 mod tests {
     use std::collections::HashSet;
 
-    use bitcoin::absolute;
-    use bitcoin::block::Header;
-    use bitcoin::block::{self};
-    use bitcoin::consensus::encode::deserialize_hex;
-    use bitcoin::hashes::Hash;
-    use bitcoin::transaction::Version;
     use bitcoin::Amount;
     use bitcoin::Block;
     use bitcoin::BlockHash;
@@ -402,6 +396,12 @@ mod tests {
     use bitcoin::TxOut;
     use bitcoin::Txid;
     use bitcoin::Witness;
+    use bitcoin::absolute;
+    use bitcoin::block::Header;
+    use bitcoin::block::{self};
+    use bitcoin::consensus::encode::deserialize_hex;
+    use bitcoin::hashes::Hash;
+    use bitcoin::transaction::Version;
     use floresta_common::bhash;
     use rand::Rng;
     use rand::SeedableRng;
@@ -416,7 +416,7 @@ mod tests {
         let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
         let mut transactions = Vec::new();
 
-        let n = rng.gen_range(1..10);
+        let n = rng.random_range(1..10);
         let mut outputs = Vec::new();
 
         // This output is used as a dummy input for the first transactions, since
@@ -436,13 +436,13 @@ mod tests {
                 output: Vec::new(),
             };
 
-            let inputs = rng.gen_range(1..10);
+            let inputs = rng.random_range(1..10);
             for _ in 0..inputs {
                 if outputs.is_empty() {
                     break;
                 }
 
-                let index = rng.gen_range(0..outputs.len());
+                let index = rng.random_range(0..outputs.len());
                 let previous_output: OutPoint = match conflict {
                     false => outputs.remove(index),
                     true => *outputs.get(index).unwrap(),
@@ -458,12 +458,12 @@ mod tests {
                 tx.input.push(input);
             }
 
-            let n = rng.gen_range(1..10);
+            let n = rng.random_range(1..10);
 
             for _ in 0..n {
-                let script = rng.gen::<[u8; 32]>();
+                let script = rng.random::<[u8; 32]>();
                 let output = bitcoin::TxOut {
-                    value: bitcoin::Amount::from_sat(rng.gen_range(0..100_000_000)),
+                    value: bitcoin::Amount::from_sat(rng.random_range(0..100_000_000)),
                     script_pubkey: bitcoin::Script::from_bytes(&script).into(),
                 };
 
@@ -521,10 +521,9 @@ mod tests {
         for tx in transactions {
             match mempool.accept_to_mempool(tx) {
                 Ok(_) => {}
-                Err(MempoolError::DuplicatedInputs) => {
+                Err(MempoolError::ConflictingTransaction) | Err(MempoolError::DuplicatedInputs) => {
                     did_conflict = true;
                 }
-
                 Err(e) => {
                     panic!("unexpected error: {:?}", e);
                 }
@@ -723,9 +722,11 @@ mod tests {
         // Sanity check: child currently depends on parent
         let parent_short_txid = mempool.hasher.hash_one(parent_txid);
         let child_short_txid = mempool.hasher.hash_one(child_txid);
-        assert!(mempool.transactions[&child_short_txid]
-            .depends
-            .contains(&parent_short_txid));
+        assert!(
+            mempool.transactions[&child_short_txid]
+                .depends
+                .contains(&parent_short_txid)
+        );
 
         let block = Block {
             header: Header {
@@ -741,8 +742,10 @@ mod tests {
         mempool.consume_block(&block);
 
         assert!(!mempool.transactions.contains_key(&parent_short_txid));
-        assert!(!mempool.transactions[&child_short_txid]
-            .depends
-            .contains(&parent_short_txid));
+        assert!(
+            !mempool.transactions[&child_short_txid]
+                .depends
+                .contains(&parent_short_txid)
+        );
     }
 }

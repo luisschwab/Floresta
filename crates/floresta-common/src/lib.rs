@@ -18,13 +18,13 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
-use bitcoin::consensus::encode;
-use bitcoin::consensus::Decodable;
-use bitcoin::hashes::sha256;
-use bitcoin::hashes::Hash;
-use bitcoin::p2p::ServiceFlags;
 use bitcoin::ScriptBuf;
 use bitcoin::VarInt;
+use bitcoin::consensus::Decodable;
+use bitcoin::consensus::encode;
+use bitcoin::hashes::Hash;
+use bitcoin::hashes::sha256;
+use bitcoin::p2p::ServiceFlags;
 use sha2::Digest;
 
 #[cfg(feature = "std")]
@@ -164,9 +164,9 @@ pub mod prelude {
     pub use alloc::string::ToString;
     pub use std::borrow::ToOwned;
     pub use std::boxed::Box;
-    pub use std::collections::hash_map::Entry;
     pub use std::collections::HashMap;
     pub use std::collections::HashSet;
+    pub use std::collections::hash_map::Entry;
     pub use std::io::Error as ioError;
     pub use std::io::Read;
     pub use std::io::Write;
@@ -181,9 +181,9 @@ pub mod prelude {
 
 #[cfg(test)]
 mod tests {
+    use bitcoin::ScriptBuf;
     use bitcoin::hashes::Hash;
     use bitcoin::hex::DisplayHex;
-    use bitcoin::ScriptBuf;
 
     use super::prelude::*;
 

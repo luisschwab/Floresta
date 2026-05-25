@@ -7,40 +7,41 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
 
-use bitcoin::block::Header;
-use bitcoin::consensus::encode;
-use bitcoin::consensus::encode::deserialize_hex;
-use bitcoin::consensus::Decodable;
-use bitcoin::hex::FromHex;
-use bitcoin::p2p::address::AddrV2;
-use bitcoin::p2p::ServiceFlags;
 use bitcoin::Block;
 use bitcoin::BlockHash;
 use bitcoin::Network;
+use bitcoin::block::Header;
+use bitcoin::consensus::Decodable;
+use bitcoin::consensus::encode;
+use bitcoin::consensus::encode::deserialize_hex;
+use bitcoin::hex::FromHex;
+use bitcoin::p2p::ServiceFlags;
+use bitcoin::p2p::address::AddrV2;
 use derive_more::Constructor;
-use floresta_chain::pruned_utreexo::UpdatableChainstate;
 use floresta_chain::AssumeValidArg;
 use floresta_chain::ChainState;
 use floresta_chain::FlatChainStore;
 use floresta_chain::FlatChainStoreConfig;
-use floresta_common::service_flags;
+use floresta_chain::pruned_utreexo::UpdatableChainstate;
 use floresta_common::Ema;
+use floresta_common::service_flags;
 use floresta_mempool::Mempool;
-use rand::rngs::OsRng;
 use rand::RngCore;
+use rand::TryRngCore;
+use rand::rngs::OsRng;
 use serde::Deserialize;
 use serde::Serialize;
-use tokio::sync::mpsc::unbounded_channel;
-use tokio::sync::mpsc::UnboundedReceiver;
-use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::Mutex;
 use tokio::sync::RwLock;
+use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::unbounded_channel;
 use tokio::task;
 use tokio::time::timeout;
 use zstd;
 
+use crate::UtreexoNodeConfig;
 use crate::address_man::AddressMan;
-use crate::node::sync_ctx::SyncNode;
 use crate::node::ConnectionKind;
 use crate::node::InflightRequests;
 use crate::node::LocalPeerView;
@@ -48,11 +49,11 @@ use crate::node::NodeNotification;
 use crate::node::NodeRequest;
 use crate::node::PeerStatus;
 use crate::node::UtreexoNode;
+use crate::node::sync_ctx::SyncNode;
 use crate::p2p_wire::block_proof::UtreexoProof;
 use crate::p2p_wire::peer::PeerMessages;
 use crate::p2p_wire::peer::Version;
 use crate::p2p_wire::transport::TransportProtocol;
-use crate::UtreexoNodeConfig;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UtreexoRoots {
@@ -77,7 +78,7 @@ impl SimulatedPeer {
             protocol_version: 0,
             blocks: rand::random::<u32>() % 23,
             id: self.peer_id,
-            address_id: rand::random::<usize>(),
+            address_id: rand::random::<u64>() as usize,
             services: ServiceFlags::NETWORK
                 | service_flags::UTREEXO.into()
                 | service_flags::UTREEXO_ARCHIVE.into()
@@ -219,7 +220,8 @@ pub fn serialize(root: UtreexoRoots) -> Vec<u8> {
 
 pub fn create_false_acc(tip: usize) -> Vec<u8> {
     let mut bytes = [0u8; 32];
-    OsRng.fill_bytes(&mut bytes);
+    let mut rng = OsRng.unwrap_err();
+    rng.fill_bytes(&mut bytes);
     let node_hash = encode::serialize_hex(&bytes);
 
     let utreexo_root = UtreexoRoots {
@@ -383,9 +385,9 @@ fn to_addr_v2(addr: IpAddr) -> AddrV2 {
 
 #[cfg(test)]
 mod tests {
+    use bitcoin::BlockHash;
     use bitcoin::consensus::deserialize;
     use bitcoin::hashes::Hash;
-    use bitcoin::BlockHash;
 
     use super::mutated_block_h7;
     use super::signet_blocks;

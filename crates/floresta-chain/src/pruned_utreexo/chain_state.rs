@@ -28,10 +28,6 @@ use core::cell::UnsafeCell;
 use core::cmp::min;
 use core::ops::Add;
 
-use bitcoin::block::Header as BlockHeader;
-use bitcoin::blockdata::constants::genesis_block;
-use bitcoin::hashes::sha256;
-use bitcoin::hashes::Hash;
 use bitcoin::Block;
 use bitcoin::BlockHash;
 use bitcoin::Network;
@@ -40,6 +36,10 @@ use bitcoin::Target;
 use bitcoin::Transaction;
 use bitcoin::Txid;
 use bitcoin::Work;
+use bitcoin::block::Header as BlockHeader;
+use bitcoin::blockdata::constants::genesis_block;
+use bitcoin::hashes::Hash;
+use bitcoin::hashes::sha256;
 use floresta_common::Channel;
 #[cfg(feature = "metrics")]
 use metrics;
@@ -51,6 +51,8 @@ use tracing::debug;
 use tracing::info;
 use tracing::warn;
 
+use super::BlockchainInterface;
+use super::UpdatableChainstate;
 use super::chain_state_builder::BlockchainBuilderError;
 use super::chain_state_builder::ChainStateBuilder;
 use super::chainparams::ChainParams;
@@ -60,15 +62,13 @@ use super::error::BlockValidationErrors;
 use super::error::BlockchainError;
 use super::partial_chain::PartialChainState;
 use super::partial_chain::PartialChainStateInner;
-use super::BlockchainInterface;
-use super::UpdatableChainstate;
+use crate::BestChain;
+use crate::ChainStore;
 use crate::extensions::WorkExt;
 use crate::prelude::*;
 use crate::pruned_utreexo::utxo_data::UtxoData;
 use crate::read_lock;
 use crate::write_lock;
-use crate::BestChain;
-use crate::ChainStore;
 
 /// Trait for components that need to receive notifications about new blocks.
 pub trait BlockConsumer: Sync + Send + 'static {
@@ -173,7 +173,9 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
             let best_height = self.get_best_block()?.0;
 
             if *height > best_height {
-                warn!("Found block with height {height}, while the current best chain is at {best_height}. Reindexing.");
+                warn!(
+                    "Found block with height {height}, while the current best chain is at {best_height}. Reindexing."
+                );
                 self.reindex_chain()?;
             }
         }
@@ -472,20 +474,20 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
 
             match _header {
                 DiskBlockHeader::FullyValid(_, _) | DiskBlockHeader::AssumedValid(_, _) => {
-                    return Ok(_header.block_hash())
+                    return Ok(_header.block_hash());
                 }
                 DiskBlockHeader::Orphan(_) => {
                     return Err(BlockchainError::InvalidTip(format(format_args!(
                         "Block {} doesn't have a known ancestor (i.e an orphan block)",
                         _header.block_hash()
-                    ))))
+                    ))));
                 }
                 DiskBlockHeader::HeadersOnly(_, _) | DiskBlockHeader::InFork(_, _) => {}
                 DiskBlockHeader::InvalidChain(_) => {
                     return Err(BlockchainError::InvalidTip(format(format_args!(
                         "Block {} is in an invalid chain",
                         _header.block_hash()
-                    ))))
+                    ))));
                 }
             }
 
@@ -852,7 +854,9 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
         let last_valid_header = self.get_disk_block_header(&last_valid_block)?;
 
         if !matches!(last_valid_header, DiskBlockHeader::FullyValid(_, _)) {
-            warn!("The validation index header is not `FullyValid`: {last_valid_header:?}, fetched with validation index {validation_index}. Reindexing.");
+            warn!(
+                "The validation index header is not `FullyValid`: {last_valid_header:?}, fetched with validation index {validation_index}. Reindexing."
+            );
             self.reindex_chain()?;
             return Ok(());
         }
@@ -1521,16 +1525,16 @@ mod test {
     use std::io::Cursor;
     use std::vec::Vec;
 
-    use bitcoin::block::Header as BlockHeader;
-    use bitcoin::consensus::deserialize;
-    use bitcoin::consensus::encode::deserialize_hex;
-    use bitcoin::consensus::Decodable;
-    use bitcoin::constants::genesis_block;
     use bitcoin::Block;
     use bitcoin::BlockHash;
     use bitcoin::Network;
     use bitcoin::OutPoint;
     use bitcoin::Work;
+    use bitcoin::block::Header as BlockHeader;
+    use bitcoin::consensus::Decodable;
+    use bitcoin::consensus::deserialize;
+    use bitcoin::consensus::encode::deserialize_hex;
+    use bitcoin::constants::genesis_block;
     use floresta_common::assert_ok;
     use floresta_common::bhash;
     use rand::Rng;
@@ -1542,15 +1546,15 @@ mod test {
     use super::ChainState;
     use super::DiskBlockHeader;
     use super::UpdatableChainstate;
-    use crate::extensions::WorkExt;
-    use crate::prelude::HashMap;
-    use crate::pruned_utreexo::consensus::Consensus;
-    use crate::pruned_utreexo::utxo_data::UtxoData;
     use crate::AssumeValidArg;
     use crate::BlockchainError;
     use crate::ChainStore;
     use crate::FlatChainStore;
     use crate::FlatChainStoreConfig;
+    use crate::extensions::WorkExt;
+    use crate::prelude::HashMap;
+    use crate::pruned_utreexo::consensus::Consensus;
+    use crate::pruned_utreexo::utxo_data::UtxoData;
 
     fn setup_test_chain(
         network: Network,
@@ -1894,16 +1898,18 @@ mod test {
         assert_eq!(chain.find_best_chain().depth, 2015);
 
         // get_block_locator_for_tip
-        assert!(!chain
-            .get_block_locator_for_tip(read_lock!(chain).best_block.best_block)
-            .unwrap()
-            .is_empty());
+        assert!(
+            !chain
+                .get_block_locator_for_tip(read_lock!(chain).best_block.best_block)
+                .unwrap()
+                .is_empty()
+        );
 
         // get_block_locator
         assert!(!chain.get_block_locator().unwrap().is_empty());
 
         // invalidate_block
-        let random_height = rand::thread_rng().gen_range(1..=2014);
+        let random_height = rand::rng().random_range(1..=2014);
 
         chain
             .invalidate_block(headers[random_height].prev_blockhash)

@@ -2,25 +2,25 @@
 
 use std::time::Instant;
 
-use bitcoin::p2p::ServiceFlags;
 use bitcoin::Block;
 use bitcoin::BlockHash;
-use floresta_chain::proof_util;
-use floresta_chain::proof_util::UtreexoLeafError;
+use bitcoin::p2p::ServiceFlags;
 use floresta_chain::BlockValidationErrors;
 use floresta_chain::BlockchainError;
 use floresta_chain::ChainBackend;
 use floresta_chain::CompactLeafData;
+use floresta_chain::proof_util;
+use floresta_chain::proof_util::UtreexoLeafError;
 use floresta_common::service_flags;
 use rustreexo::proof::Proof;
 use tracing::debug;
 use tracing::error;
 use tracing::warn;
 
-use super::try_and_log;
 use super::InflightRequests;
 use super::NodeRequest;
 use super::UtreexoNode;
+use super::try_and_log;
 use crate::block_proof::Bitmap;
 use crate::block_proof::UtreexoProof;
 use crate::node_context::NodeContext;

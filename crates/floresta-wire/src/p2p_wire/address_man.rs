@@ -17,12 +17,13 @@ use std::path::Path;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
+use bitcoin::Network;
+use bitcoin::p2p::ServiceFlags;
 use bitcoin::p2p::address::AddrV2;
 use bitcoin::p2p::address::AddrV2Message;
-use bitcoin::p2p::ServiceFlags;
-use bitcoin::Network;
 use floresta_chain::DnsSeed;
 use floresta_common::service_flags;
+use rand::Rng;
 use rand::seq::IteratorRandom;
 use serde::Deserialize;
 use serde::Serialize;
@@ -134,7 +135,7 @@ impl From<AddrV2> for LocalAddress {
             state: AddressState::NeverTried,
             services: ServiceFlags::NONE,
             port: 8333,
-            id: rand::random::<usize>(),
+            id: rand::random::<u64>() as usize,
         }
     }
 }
@@ -147,7 +148,7 @@ impl From<AddrV2Message> for LocalAddress {
             state: AddressState::NeverTried,
             services: value.services,
             port: value.port,
-            id: rand::random::<usize>(),
+            id: rand::random::<u64>() as usize,
         }
     }
 }
@@ -179,7 +180,7 @@ impl TryFrom<&str> for LocalAddress {
             super::address_man::AddressState::NeverTried,
             ServiceFlags::NONE,
             address.port(),
-            rand::random::<usize>(),
+            rand::random::<u64>() as usize,
         ))
     }
 
@@ -545,8 +546,7 @@ impl AddressMan {
     }
 
     pub fn get_addresses_to_send(&self) -> AddressToSend {
-        let addresses = self
-            .good_addresses
+        self.good_addresses
             .iter()
             .filter_map(|id| {
                 let address = self.addresses.get(id)?;
@@ -557,9 +557,7 @@ impl AddressMan {
                     address.port,
                 ))
             })
-            .collect();
-
-        addresses
+            .collect()
     }
 
     fn do_lookup(host: &str, default_port: u16, socks5: Option<SocketAddr>) -> Vec<LocalAddress> {
@@ -683,7 +681,7 @@ impl AddressMan {
         // the features it supports or even if it's a valid peer. The only thing we care about
         // is that we haven't banned it.
         if feeler {
-            let idx = rand::random::<usize>() % self.addresses.len();
+            let idx = rand::rng().random_range(0..self.addresses.len());
             let peer = self.addresses.keys().nth(idx)?;
             let address = self.addresses.get(peer)?.to_owned();
 
@@ -777,7 +775,7 @@ impl AddressMan {
                 let addr = self.addresses.get(id)?;
                 (addr.state != AddressState::Connected).then_some((id, addr))
             })
-            .choose(&mut rand::thread_rng())
+            .choose(&mut rand::rng())
             .map(|(id, addr)| (*id, addr.to_owned()))
     }
 
@@ -870,7 +868,7 @@ impl AddressMan {
                 return None;
             }
 
-            let idx = rand::random::<usize>() % peers.len();
+            let idx = rand::rng().random_range(0..peers.len());
             let utreexo_peer = peers.get(idx)?;
             return Some((**utreexo_peer, self.addresses.get(utreexo_peer)?.to_owned()));
         }
@@ -888,7 +886,7 @@ impl AddressMan {
         }
 
         // if we can't find a peer that advertises the required service, get any peer
-        let idx = rand::random::<usize>() % self.addresses.len();
+        let idx = rand::rng().random_range(0..self.addresses.len());
         let peer = self.addresses.keys().nth(idx)?;
 
         Some((*peer, self.addresses.get(peer)?.to_owned()))
@@ -1114,7 +1112,9 @@ impl From<DiskLocalAddress> for LocalAddress {
             state: value.state,
             services,
             port: value.port,
-            id: value.id.unwrap_or_else(rand::random::<usize>),
+            id: value
+                .id
+                .unwrap_or_else(|| rand::rng().random_range(0..usize::MAX)),
         }
     }
 }
@@ -1157,10 +1157,10 @@ pub mod dns_proxy {
 
     use rustls::crypto;
     use serde::Deserialize;
-    use ureq::tls::TlsConfig;
-    use ureq::tls::TlsProvider;
     use ureq::Agent;
     use ureq::Proxy;
+    use ureq::tls::TlsConfig;
+    use ureq::tls::TlsProvider;
 
     #[derive(Deserialize)]
     /// JSON format from [Google's DoH API](https://developers.google.com/speed/public-dns/docs/doh/json#dns_response_in_json)
@@ -1243,9 +1243,9 @@ mod test {
     use std::io::Read;
     use std::io::{self};
 
-    use bitcoin::p2p::address::AddrV2;
-    use bitcoin::p2p::ServiceFlags;
     use bitcoin::Network;
+    use bitcoin::p2p::ServiceFlags;
+    use bitcoin::p2p::address::AddrV2;
     use floresta_chain::get_chain_dns_seeds;
     use floresta_common::assert_ok;
     use floresta_common::service_flags;
@@ -1265,7 +1265,7 @@ mod test {
         let seeds: Vec<DiskLocalAddress> =
             serde_json::from_str(&contents).expect("JSON not well-formatted");
         let mut addresses = Vec::new();
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for seed in seeds {
             let state = match seed.state {
@@ -1279,7 +1279,7 @@ mod test {
                 state,
                 services: ServiceFlags::from(seed.services),
                 port: seed.port,
-                id: rng.gen(),
+                id: rng.random::<u64>() as usize,
             };
             addresses.push(local_address);
         }
@@ -1378,7 +1378,7 @@ mod test {
         let signet_address = load_addresses_from_json("./seeds/signet_seeds.json").unwrap();
 
         assert!(!signet_address.is_empty());
-        let random = rand::thread_rng().gen_range(1..=13);
+        let random = rand::rng().random_range(1..=13);
         let loc_adr_1 = LocalAddress::from(signet_address[random].address.clone());
         assert_eq!(loc_adr_1.address, signet_address[random].address);
     }
@@ -1406,21 +1406,29 @@ mod test {
 
         assert!(!address_man.get_addresses_to_send().is_empty());
 
-        assert!(address_man
-            .get_address_to_connect(ServiceFlags::default(), true)
-            .is_some());
+        assert!(
+            address_man
+                .get_address_to_connect(ServiceFlags::default(), true)
+                .is_some()
+        );
 
-        assert!(address_man
-            .get_address_to_connect(ServiceFlags::default(), false)
-            .is_some());
+        assert!(
+            address_man
+                .get_address_to_connect(ServiceFlags::default(), false)
+                .is_some()
+        );
 
-        assert!(address_man
-            .get_address_to_connect(ServiceFlags::NONE, false)
-            .is_some());
+        assert!(
+            address_man
+                .get_address_to_connect(ServiceFlags::NONE, false)
+                .is_some()
+        );
 
-        assert!(address_man
-            .get_address_to_connect(service_flags::UTREEXO.into(), false)
-            .is_some());
+        assert!(
+            address_man
+                .get_address_to_connect(service_flags::UTREEXO.into(), false)
+                .is_some()
+        );
 
         assert!(!AddressMan::get_net_seeds(Network::Signet).is_empty());
         assert!(!AddressMan::get_net_seeds(Network::Bitcoin).is_empty());
@@ -1685,10 +1693,12 @@ mod test {
             address_man.update_set_state(addr.id, AddressState::Banned(0));
         }
 
-        assert!(address_man
-            .addresses
-            .values()
-            .all(|addr| matches!(addr.state, AddressState::Banned(_))));
+        assert!(
+            address_man
+                .addresses
+                .values()
+                .all(|addr| matches!(addr.state, AddressState::Banned(_)))
+        );
     }
 
     #[test]
@@ -1707,10 +1717,12 @@ mod test {
             address_man.update_set_service_flag(addr.id, service_flags::UTREEXO.into());
         }
 
-        assert!(address_man
-            .addresses
-            .values()
-            .all(|addr| addr.services.has(service_flags::UTREEXO.into())));
+        assert!(
+            address_man
+                .addresses
+                .values()
+                .all(|addr| addr.services.has(service_flags::UTREEXO.into()))
+        );
     }
 
     #[test]
