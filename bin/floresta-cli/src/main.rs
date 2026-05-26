@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use core::fmt::Debug;
+use std::path::PathBuf;
 mod parsers;
 
 use anyhow::Ok;
@@ -143,7 +144,7 @@ fn do_request(cmd: &Cli, client: Client) -> anyhow::Result<String> {
 pub struct Cli {
     /// Sets a custom config file
     #[arg(short, long, value_name = "FILE")]
-    pub config_file: Option<String>,
+    pub config_file: Option<PathBuf>,
     /// Which network should we use
     #[arg(short, long, default_value_t=Network::Bitcoin)]
     pub network: Network,
