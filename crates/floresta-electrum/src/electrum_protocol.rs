@@ -349,11 +349,9 @@ impl<Blockchain: BlockchainInterface> ElectrumServer<Blockchain> {
                 for (utxo, prevout) in utxos.unwrap().into_iter() {
                     let height = self.address_cache.get_height(&prevout.txid).unwrap();
 
-                    let position = self.address_cache.get_position(&prevout.txid).unwrap();
-
                     final_utxos.push(json!({
                         "height": height,
-                        "tx_pos": position,
+                        "tx_pos": prevout.vout,
                         "tx_hash": prevout.txid,
                         "value": utxo.value
                     }));
@@ -1379,10 +1377,14 @@ mod test {
             "6bb0665122c7dcecc6e6c45b6384ee2bdce148aea097896e6f3e9e08070353ea".to_string()
         );
 
+        let unspent_response = send_request(unspent_req, port).await.unwrap();
+
         assert_eq!(
-            send_request(unspent_req, port).await.unwrap()["result"][0]["tx_hash"],
+            unspent_response["result"][0]["tx_hash"],
             "6bb0665122c7dcecc6e6c45b6384ee2bdce148aea097896e6f3e9e08070353ea".to_string()
-        )
+        );
+
+        assert_eq!(unspent_response["result"][0]["tx_pos"], 0);
     }
 
     #[tokio::test]
