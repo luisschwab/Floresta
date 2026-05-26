@@ -62,10 +62,11 @@ where
 
     /// Create a new outgoing connection, selecting an appropriate peer address.
     ///
-    /// If a fixed peer is set via the `--connect` CLI argument, its connection
-    /// kind will always be coerced to [`ConnectionKind::Manual`]. Otherwise,
-    /// an address is selected from the [`AddressMan`] based on the required
-    /// [`ServiceFlags`] for the given `connection_kind`.
+    /// If fixed peers are set via the `--connect` CLI argument, their connection
+    /// kind will always be coerced to [`ConnectionKind::Manual`] and the first
+    /// not-yet-connected fixed peer is selected. Otherwise, an address is
+    /// selected from the [`AddressMan`] based on the required [`ServiceFlags`]
+    /// for the given `connection_kind`.
     ///
     /// If no address is available and the kind is not [`ConnectionKind::Manual`],
     /// hardcoded addresses are loaded into the [`AddressMan`] as a fallback.
@@ -74,28 +75,36 @@ where
         mut conn_kind: ConnectionKind,
     ) -> Result<(), WireError> {
         // Set the fixed peer's connection kind to manual, if set.
-        if self.fixed_peer.is_some() {
+        if self.has_fixed_peers() {
             conn_kind = ConnectionKind::Manual;
         }
 
         // Get the peer's `ServiceFlags`.
         let required_services = match conn_kind {
             ConnectionKind::Regular(services) => services,
-            _ => ServiceFlags::NONE,
+            ConnectionKind::Feeler | ConnectionKind::Extra | ConnectionKind::Manual => {
+                ServiceFlags::NONE
+            }
         };
 
-        // Get the fixed peer's `peer_id` and `LocalAddress` if set,
-        // or fetch a new address from the address manager.
-        let candidate_peer = self
-            .fixed_peer
-            .as_ref()
-            .map(|addr| (0, addr.clone()))
-            .or_else(|| {
-                self.address_man.get_address_to_connect(
-                    required_services,
-                    matches!(conn_kind, ConnectionKind::Feeler),
-                )
-            });
+        // Pick the first fixed peer that we are not already connected to, or
+        // fall back to fetching a new address from the address manager when no
+        // fixed peers were configured.
+        let candidate_peer = if self.has_fixed_peers() {
+            self.fixed_peers
+                .iter()
+                .find(|addr| {
+                    self.peers
+                        .values()
+                        .all(|p| p.address != addr.get_net_address() || p.port != addr.get_port())
+                })
+                .map(|addr| (0, addr.clone()))
+        } else {
+            self.address_man.get_address_to_connect(
+                required_services,
+                matches!(conn_kind, ConnectionKind::Feeler),
+            )
+        };
 
         // Load hardcoded addresses to the address manager if no fixed or manual peers exist.
         let Some((peer_id, peer_address)) = candidate_peer else {
@@ -142,7 +151,7 @@ where
 
     pub(crate) fn open_feeler_connection(&mut self) -> Result<(), WireError> {
         // No feeler if `--connect` is set
-        if self.fixed_peer.is_some() {
+        if self.has_fixed_peers() {
             return Ok(());
         }
 
@@ -552,7 +561,7 @@ where
     /// can't find a Utreexo peer in a context we need them. This function
     /// won't do anything if `--connect` was used
     fn maybe_use_hardcoded_addresses(&mut self) {
-        if self.fixed_peer.is_some() {
+        if self.has_fixed_peers() {
             return;
         }
 
@@ -612,11 +621,14 @@ where
 
         let connection_kind = ConnectionKind::Regular(required_service);
 
-        // If the user passes in a `--connect` cli argument, we only connect with
-        // that particular peer.
-        if self.fixed_peer.is_some() {
-            if self.peers.is_empty() {
-                self.create_connection(connection_kind)?;
+        // If the user passes in `--connect` cli arguments, we only connect with
+        // those peers. Try to (re)connect as many as we are missing.
+        if self.has_fixed_peers() {
+            let missing = self.fixed_peers.len().saturating_sub(self.peers.len());
+            for _ in 0..missing {
+                if let Err(e) = self.create_connection(connection_kind) {
+                    debug!("Failed to connect to fixed peer: {e:?}");
+                }
             }
             return Ok(());
         }

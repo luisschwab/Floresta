@@ -101,6 +101,14 @@ where
         Some((id, peer))
     }
 
+    /// Whether the node was configured with a fixed peer list (via `--connect`).
+    ///
+    /// When this is true, we connect *only* to those peers and skip the usual
+    /// peer-discovery paths (address manager, feelers, hardcoded fallback).
+    pub(crate) fn has_fixed_peers(&self) -> bool {
+        !self.fixed_peers.is_empty()
+    }
+
     /// Returns how many connected peers we have.
     ///
     /// This function will only count peers that completed handshake and are ready

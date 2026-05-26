@@ -823,8 +823,8 @@ where
             return true;
         }
 
-        if self.fixed_peer.is_some() && connected_peers >= 1 {
-            return true;
+        if self.has_fixed_peers() {
+            return connected_peers >= 1;
         }
 
         connected_peers >= ChainSelector::MAX_OUTGOING_PEERS

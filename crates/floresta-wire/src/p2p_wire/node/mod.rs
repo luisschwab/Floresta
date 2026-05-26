@@ -15,6 +15,7 @@ mod user_req;
 use core::fmt::Debug;
 use core::net::IpAddr;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::path::PathBuf;
@@ -270,7 +271,7 @@ pub struct NodeCommon<Chain: ChainBackend> {
 
     // 4. Networking Configuration
     pub(crate) socks5: Option<Socks5StreamBuilder>,
-    pub(crate) fixed_peer: Option<LocalAddress>,
+    pub(crate) fixed_peers: Vec<LocalAddress>,
 
     // 5. Time and Event Tracking
     pub(crate) inflight: HashMap<InflightRequests, (u32, Instant)>,
@@ -348,11 +349,15 @@ where
         let (node_tx, node_rx) = unbounded_channel();
         let socks5 = config.proxy.map(Socks5StreamBuilder::new);
 
-        let fixed_peer = config
-            .fixed_peer
-            .as_ref()
-            .map(|address| Self::resolve_connect_host(address, Self::get_port(config.network)))
-            .transpose()?;
+        // Dedup the resolved fixed peers so we don't open multiple connections to the same host.
+        let mut seen = HashSet::new();
+        let mut fixed_peers = Vec::with_capacity(config.fixed_peers.len());
+        for address in &config.fixed_peers {
+            let resolved = Self::resolve_connect_host(address, Self::get_port(config.network))?;
+            if seen.insert((resolved.get_net_address(), resolved.get_port())) {
+                fixed_peers.push(resolved);
+            }
+        }
 
         Ok(UtreexoNode {
             common: NodeCommon {
@@ -386,7 +391,7 @@ where
                 datadir: config.datadir.clone(),
                 max_banscore: config.max_banscore,
                 socks5,
-                fixed_peer,
+                fixed_peers,
                 config,
                 kill_signal,
                 added_peers: Vec::new(),

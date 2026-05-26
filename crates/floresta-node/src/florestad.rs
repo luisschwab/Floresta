@@ -157,10 +157,10 @@ pub struct Config {
     /// is the address that we'll listen for incoming connections.
     pub zmq_address: Option<String>,
 
-    /// A node to connect to
+    /// Nodes to connect to
     ///
-    /// If this option is provided, we'll connect **only** to this node.
-    pub connect: Option<String>,
+    /// If non-empty, we'll connect **only** to these nodes.
+    pub connect: Vec<String>,
 
     #[cfg(feature = "json-rpc")]
     /// The address our json-rpc should listen to
@@ -238,7 +238,7 @@ impl Config {
             filters_start_height: None,
             #[cfg(feature = "zmq-server")]
             zmq_address: None,
-            connect: None,
+            connect: Vec::new(),
             #[cfg(feature = "json-rpc")]
             json_rpc_address: None,
             log_to_stdout: false,
@@ -412,7 +412,7 @@ impl Florestad {
             pow_fraud_proofs: false,
             proxy,
             datadir: datadir.into(),
-            fixed_peer: self.config.connect.clone(),
+            fixed_peers: self.config.connect.clone(),
             compact_filters: self.config.cfilters,
             assume_utreexo: self.config.assumeutreexo_value.clone().or(assume_utreexo),
             backfill: self.config.backfill,

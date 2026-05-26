@@ -141,6 +141,13 @@ where
     ///   - we have enough peers to download blocks from (at most `MAX_OUTGOING_PEERS`)
     ///   - if some of peers are too slow, and potentially stalling our block download (TODO)
     fn check_connections(&mut self) -> Result<(), WireError> {
+        // With `--connect`, the user pins us to a specific peer set; don't search
+        // for extra utreexo or network peers. `maybe_open_connection` still
+        // reconnects any fixed peer that has dropped.
+        if self.has_fixed_peers() {
+            return self.maybe_open_connection(service_flags::UTREEXO.into());
+        }
+
         let total_peers = self.connected_peers();
         let utreexo_peers = self
             .peer_by_service
