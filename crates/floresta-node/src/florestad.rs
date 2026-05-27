@@ -88,7 +88,7 @@ pub struct Config {
     /// This directory must be readable and writable by our process. We'll use this dir to store
     /// both chain and wallet data, so this should be kept in a non-volatile medium. We are not
     /// particularly aggressive in disk usage, so we don't need a fast disk to work.
-    pub data_dir: String,
+    pub datadir: PathBuf,
 
     /// Assume that all blocks prior to and including this block have valid scripts.
     ///
@@ -121,7 +121,7 @@ pub struct Config {
     /// used:
     ///     - For vectors, we use the combination of both vectors
     ///     - for mutually exclusive options, this struct has precedence over the config file
-    pub config_file: Option<String>,
+    pub config_file: Option<PathBuf>,
 
     /// A proxy that we should use to connect with others
     ///
@@ -198,7 +198,7 @@ pub struct Config {
     /// ```shell
     /// openssl genpkey -algorithm RSA -out key.pem -pkeyopt rsa_keygen_bits:2048
     /// ```
-    pub tls_key_path: Option<String>,
+    pub tls_key_path: Option<PathBuf>,
 
     /// TLS certificate path (defaults to `{data_dir}/tls/cert.pem`).
     /// It must be PKCS#8-encoded. You can use `openssl` to generate it from a PKCS#8-encoded private key:
@@ -206,7 +206,7 @@ pub struct Config {
     /// ```shell
     /// openssl req -x509 -new -key key.pem -out cert.pem -days 365 -subj "/CN=localhost"
     /// ```
-    pub tls_cert_path: Option<String>,
+    pub tls_cert_path: Option<PathBuf>,
 
     /// Whether to create self signed certificate for `tls_key_path` and `tls_cert_path`.
     pub generate_cert: bool,
@@ -223,10 +223,10 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(network: Network, data_dir: String) -> Self {
+    pub fn new(network: Network, datadir: impl AsRef<Path>) -> Self {
         Self {
             disable_dns_seeds: false,
-            data_dir,
+            datadir: datadir.as_ref().into(),
             assume_valid: AssumeValidArg::Hardcoded,
             wallet_xpub: None,
             wallet_descriptor: None,
@@ -354,24 +354,23 @@ impl Florestad {
         Ok(sock)
     }
 
-    // TODO(@luisschwab): update `datadir.to_str().expect("infallible")` when modifying `floresta-node`'s methods
     /// Actually runs florestad, spawning all modules and waiting until
     /// someone asks to stop.
     ///
     /// This function will return an error if the configured data directory path is not an
     /// **existing and writable directory**, or cannot be validated as such.
     pub async fn start(&self) -> Result<(), FlorestadError> {
-        let datadir = PathBuf::from(&self.config.data_dir);
+        let datadir: &Path = self.config.datadir.as_ref();
 
         // Check that the directory exists and is writable
-        Florestad::validate_data_dir(datadir.to_str().expect("infallible"))?;
+        Florestad::validate_data_dir(datadir)?;
 
         info!("Loading watch-only wallet");
         let wallet = self.setup_wallet()?;
 
         info!("Loading blockchain database");
         let blockchain_state = Arc::new(Self::load_chain_state(
-            datadir.to_str().expect("infallible").to_owned(),
+            datadir,
             self.config.network,
             self.config.assume_valid,
         )?);
@@ -413,7 +412,7 @@ impl Florestad {
             network: self.config.network,
             pow_fraud_proofs: false,
             proxy,
-            datadir: datadir.clone(),
+            datadir: datadir.into(),
             fixed_peer: self.config.connect.clone(),
             compact_filters: self.config.cfilters,
             assume_utreexo: self.config.assumeutreexo_value.clone().or(assume_utreexo),
@@ -474,11 +473,7 @@ impl Florestad {
                     .as_ref()
                     .map(|x| Self::resolve_hostname(x, 8332))
                     .transpose()?,
-                datadir
-                    .join("debug.log")
-                    .to_str()
-                    .expect("infallible")
-                    .to_owned(),
+                datadir.join("debug.log"),
                 self.config.user_agent.clone(),
                 proxy,
             ));
@@ -549,28 +544,21 @@ impl Florestad {
             // Generate self-signed TLS certificate, if enabled.
             if self.config.generate_cert {
                 // Create TLS directory, if it does not exist.
-                let tls_dir = datadir.join("tls").to_str().expect("infallible").to_owned();
+                let tls_dir = datadir.join("tls");
                 if !Path::new(&tls_dir).exists() {
                     fs::create_dir_all(&tls_dir).map_err(|e| {
                         FlorestadError::CouldNotCreateTLSDataDir(tls_dir.clone(), e)
                     })?;
-                    info!("Created TLS directory at {tls_dir}");
+                    info!("Created TLS directory at path={}", tls_dir.display());
                 }
 
                 // Create information for the self-signed certificate about the current node.
                 let subject_alt_names = vec!["localhost".to_string()];
 
                 // Define file paths
-                let tls_key_path = datadir
-                    .join("tls/key.pem")
-                    .to_str()
-                    .expect("infallible")
-                    .to_owned();
-                let tls_cert_path = datadir
-                    .join("tls/cert.pem")
-                    .to_str()
-                    .expect("infallible")
-                    .to_owned();
+                let tls_key_path = datadir.join("tls").join("key.pem");
+
+                let tls_cert_path = datadir.join("tls").join("cert.pem");
 
                 // Create the certificate.
                 Self::generate_self_signed_certificate(
@@ -579,12 +567,12 @@ impl Florestad {
                     subject_alt_names,
                 )?;
 
-                info!("TLS private key saved to {tls_key_path}");
-                info!("TLS certificate saved to {tls_cert_path}");
+                info!("TLS private key saved to path={}", tls_key_path.display());
+                info!("TLS certificate saved to path={}", tls_cert_path.display());
             }
 
             // Assemble TLS configuration from file.
-            let tls_config = self.create_tls_config(datadir.to_str().expect("infallible"))?;
+            let tls_config = self.create_tls_config(datadir)?;
 
             // Electrum TLS accept loop.
             let tls_listener = TcpListener::bind(electrum_addr_tls)
@@ -642,20 +630,20 @@ impl Florestad {
         Self::from(config)
     }
 
-    pub fn new(network: Network, data_dir: String) -> Self {
-        Self::from_config(Config::new(network, data_dir))
+    pub fn new(network: Network, datadir: impl AsRef<Path>) -> Self {
+        Self::from_config(Config::new(network, datadir))
     }
 
-    fn validate_data_dir(path: &str) -> Result<(), FlorestadError> {
-        let p = Path::new(path);
+    fn validate_data_dir(path: impl AsRef<Path>) -> Result<(), FlorestadError> {
+        let path = path.as_ref();
 
-        let md = fs::metadata(p).map_err(|_| FlorestadError::InvalidDataDir(path.into()))?;
+        let md = fs::metadata(path).map_err(|_| FlorestadError::InvalidDataDir(path.into()))?;
         if !md.is_dir() {
-            return Err(FlorestadError::InvalidDataDir(path.into()));
+            return Err(FlorestadError::InvalidDataDir(path.to_path_buf()));
         }
 
         // Reliable cross-platform writability test:
-        let probe = p.join(".perm_probe");
+        let probe = path.join(".perm_probe");
         if OpenOptions::new()
             .create(true)
             .write(true)
@@ -673,9 +661,12 @@ impl Florestad {
     /// Load config from disk; prefer explicit `config_file`, otherwise use `{data_dir}/config.toml`.
     /// Returns default if it cannot load it
     fn get_config_file(&self) -> ConfigFile {
-        let path = match &self.config.config_file {
+        let datadir = &self.config.datadir;
+        let config_file = self.config.config_file.as_ref();
+
+        let path = match config_file {
             Some(path) => path.clone(),
-            None => format!("{}/config.toml", self.config.data_dir),
+            None => datadir.join("config.toml"),
         };
 
         let data = ConfigFile::from_file(&path);
@@ -713,20 +704,22 @@ impl Florestad {
     }
 
     fn load_chain_state(
-        data_dir: String,
+        datadir: impl AsRef<Path>,
         network: Network,
         assume_valid: AssumeValidArg,
     ) -> Result<ChainState<ChainStore>, FlorestadError> {
-        let config = FlatChainStoreConfig::new(data_dir + "/chaindata");
-        let store = ChainStore::new(config)
+        let chain_store_config = FlatChainStoreConfig::new(datadir.as_ref().join("chaindata"));
+
+        let chain_store = ChainStore::new(chain_store_config)
             .map_err(|e| FlorestadError::CouldNotLoadFlatChainStore(e.into()))?;
-        ChainState::open(store, network, assume_valid)
+
+        ChainState::open(chain_store, network, assume_valid)
             .map_err(FlorestadError::CouldNotLoadFlatChainStore)
     }
 
     /// Setup the wallet by initializing the database and adding descriptors, xpubs, and addresses.
     fn setup_wallet(&self) -> Result<AddressCache<KvDatabase>, FlorestadError> {
-        let database = KvDatabase::new(self.config.data_dir.clone())
+        let database = KvDatabase::new(&self.config.datadir)
             .map_err(FlorestadError::CouldNotOpenKvDatabase)?;
 
         let wallet = AddressCache::new(database);
@@ -833,8 +826,8 @@ impl Florestad {
 
     /// Generate a self-signed TLS certificate from a random private key.
     pub fn generate_self_signed_certificate(
-        tls_key_path: String,
-        tls_cert_path: String,
+        tls_key_path: impl AsRef<Path>,
+        tls_cert_path: impl AsRef<Path>,
         subject_alt_names: Vec<String>,
     ) -> Result<(), FlorestadError> {
         // Generate a key pair
@@ -850,41 +843,35 @@ impl Florestad {
             .map_err(FlorestadError::CouldNotGenerateSelfSignedCert)?;
 
         // Create files
-        fs::write(&tls_key_path, tls_key_pair.serialize_pem())
-            .map_err(|err| FlorestadError::CouldNotWriteFile(tls_key_path, err))?;
+        fs::write(&tls_key_path, tls_key_pair.serialize_pem()).map_err(|err| {
+            FlorestadError::CouldNotWriteFile(tls_key_path.as_ref().to_path_buf(), err)
+        })?;
 
-        fs::write(&tls_cert_path, certificate.pem())
-            .map_err(|err| FlorestadError::CouldNotWriteFile(tls_cert_path, err))?;
+        fs::write(&tls_cert_path, certificate.pem()).map_err(|err| {
+            FlorestadError::CouldNotWriteFile(tls_cert_path.as_ref().to_path_buf(), err)
+        })?;
 
         Ok(())
     }
 
     /// Create the TLS configuration from a PKCS#8 private key and certificate.
-    fn create_tls_config(&self, data_dir: &str) -> Result<Arc<ServerConfig>, FlorestadError> {
-        // Use an agnostic way to build paths for platforms and fix the differences
-        // in how Unix and Windows represent strings, maybe a user could use a weird
-        // string on his/her path.
-        //
-        // See more at https://doc.rust-lang.org/std/ffi/struct.OsStr.html#method.to_string_lossy
-        let tls_cert_path = self.config.tls_cert_path.clone().unwrap_or_else(|| {
-            PathBuf::from(&data_dir)
-                .join("tls")
-                .join("cert.pem")
-                .to_string_lossy()
-                .into_owned()
-        });
+    fn create_tls_config(
+        &self,
+        datadir: impl AsRef<Path>,
+    ) -> Result<Arc<ServerConfig>, FlorestadError> {
+        let datadir = datadir.as_ref();
 
-        let tls_key_path = self.config.tls_key_path.clone().unwrap_or_else(|| {
-            PathBuf::from(&data_dir)
-                .join("tls")
-                .join("key.pem")
-                .to_string_lossy()
-                .into_owned()
-        });
+        let tls_cert_path = self
+            .config
+            .tls_cert_path
+            .clone()
+            .unwrap_or_else(|| datadir.join("tls").join("cert.pem"));
 
-        // Convert paths to a [`Path`] for system-agnostic handling.
-        let tls_cert_path = Path::new(&tls_cert_path);
-        let tls_key_path = Path::new(&tls_key_path);
+        let tls_key_path = self
+            .config
+            .tls_key_path
+            .clone()
+            .unwrap_or_else(|| datadir.join("tls").join("key.pem"));
 
         // Parse the certificate's chain from the file.
         let tls_cert_chain =
