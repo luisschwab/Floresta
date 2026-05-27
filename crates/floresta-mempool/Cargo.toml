@@ -15,7 +15,8 @@ readme.workspace = true
 keywords = ["bitcoin", "mempool", "transactions"]
 
 [dependencies]
-ahash = { version = "0.8", default-features = false }
+# All dependencies MUST be pinned precisely with `X.Y.z`
+ahash = { version = "=0.8.12", default-features = false }
 bitcoin = { workspace = true }
 rand = { workspace = true }
 rustreexo = { workspace = true }
