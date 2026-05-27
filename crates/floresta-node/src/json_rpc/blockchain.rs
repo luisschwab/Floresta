@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::collections::BTreeMap;
+
 use bitcoin::Address;
 use bitcoin::Block;
 use bitcoin::BlockHash;
@@ -16,8 +18,11 @@ use bitcoin::constants::genesis_block;
 use bitcoin::hashes::Hash;
 use corepc_types::ScriptPubkey;
 use corepc_types::v29::GetTxOut;
+use corepc_types::v30::DeploymentInfo;
 use corepc_types::v30::GetBlockHeaderVerbose;
 use corepc_types::v30::GetBlockVerboseOne;
+use corepc_types::v30::GetDeploymentInfo;
+use floresta_chain::buried_deployments_for;
 use floresta_chain::extensions::HeaderExt;
 use floresta_chain::extensions::WorkExt;
 use miniscript::descriptor::checksum;
@@ -311,7 +316,45 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
     // getchainstates
     // getchaintips
     // getchaintxstats
+
     // getdeploymentinfo
+    pub(super) fn get_deployment_info(
+        &self,
+        hash: Option<BlockHash>,
+    ) -> Result<GetDeploymentInfo, JsonRpcError> {
+        let tip = self
+            .chain
+            .get_best_block()
+            .map_err(|_| JsonRpcError::Chain)?
+            .1;
+        let target_hash = hash.unwrap_or(tip);
+
+        let height = self
+            .chain
+            .get_block_height(&target_hash)
+            .map_err(|_| JsonRpcError::Chain)?
+            .ok_or(JsonRpcError::BlockNotFound)?;
+
+        let mut deployments = BTreeMap::new();
+
+        for &(name, activation_height) in buried_deployments_for(self.network) {
+            deployments.insert(
+                name.to_string(),
+                DeploymentInfo {
+                    deployment_type: "buried".to_string(),
+                    height: Some(activation_height),
+                    active: height >= activation_height,
+                    bip9: None,
+                },
+            );
+        }
+
+        Ok(GetDeploymentInfo {
+            hash: target_hash.to_string(),
+            height,
+            deployments,
+        })
+    }
 
     // getdifficulty
     pub(super) fn get_difficulty(&self) -> Result<f64, JsonRpcError> {

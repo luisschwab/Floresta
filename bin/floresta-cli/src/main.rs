@@ -134,6 +134,9 @@ fn do_request(cmd: &Cli, client: Client) -> anyhow::Result<String> {
         Methods::ListDescriptors => serde_json::to_string_pretty(&client.list_descriptors()?)?,
         Methods::Ping => serde_json::to_string_pretty(&client.ping()?)?,
         Methods::GetNetworkInfo => serde_json::to_string_pretty(&client.get_network_info()?)?,
+        Methods::GetDeploymentInfo { blockhash } => {
+            serde_json::to_string_pretty(&client.get_deployment_info(blockhash)?)?
+        }
     })
 }
 
@@ -285,6 +288,15 @@ pub enum Methods {
         hash: BlockHash,
         verbosity: Option<bool>,
     },
+
+    #[doc = include_str!("../../../doc/rpc/getdeploymentinfo.md")]
+    #[command(
+        name = "getdeploymentinfo",
+        about = "Returns data regarding deployments of consensus changes.",
+        long_about = Some(include_str!("../../../doc/rpc/getdeploymentinfo.md")),
+        disable_help_subcommand = true
+    )]
+    GetDeploymentInfo { blockhash: Option<BlockHash> },
 
     /// Loads a new descriptor to the watch only wallet
     #[doc = include_str!("../../../doc/rpc/loaddescriptor.md")]

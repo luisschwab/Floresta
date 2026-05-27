@@ -267,6 +267,13 @@ async fn handle_json_rpc_request(
                 .map(|h| serde_json::to_value(h).unwrap())
         }
 
+        "getdeploymentinfo" => {
+            let blockhash = get_optional_field(&params, 0, "blockhash", get_hash)?;
+            state
+                .get_deployment_info(blockhash)
+                .map(|info| serde_json::to_value(info).unwrap())
+        }
+
         "getdifficulty" => state
             .get_difficulty()
             .map(|v| serde_json::to_value(v).unwrap()),

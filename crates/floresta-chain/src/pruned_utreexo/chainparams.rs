@@ -439,3 +439,60 @@ pub fn get_chain_dns_seeds(network: Network) -> Vec<DnsSeed> {
 
     seeds
 }
+
+/// Returns the buried deployment list for a network, as `(name, activation_height)` pairs.
+///
+/// Heights are sourced from Bitcoin Core's `chainparams.cpp` at v30.2
+/// (commit `4d7d5f6b79d4c11c47e7a828d81296918fd11d4d`):
+/// <https://github.com/bitcoin/bitcoin/blob/4d7d5f6b79d4c11c47e7a828d81296918fd11d4d/src/kernel/chainparams.cpp>
+//
+// TODO: also emit BIP9 deployments (`taproot`, `testdummy`); requires the versionbits state machine.
+pub fn buried_deployments_for(network: Network) -> &'static [(&'static str, u32)] {
+    const BITCOIN_BURIED: &[(&str, u32)] = &[
+        ("bip34", 227_931),
+        ("bip66", 363_725),
+        ("bip65", 388_381),
+        ("csv", 419_328),
+        ("segwit", 481_824),
+    ];
+
+    const TESTNET_BURIED: &[(&str, u32)] = &[
+        ("bip34", 21_111),
+        ("bip66", 330_776),
+        ("bip65", 581_885),
+        ("csv", 770_112),
+        ("segwit", 834_624),
+    ];
+
+    const TESTNET4_BURIED: &[(&str, u32)] = &[
+        ("bip34", 1),
+        ("bip66", 1),
+        ("bip65", 1),
+        ("csv", 1),
+        ("segwit", 1),
+    ];
+
+    const SIGNET_BURIED: &[(&str, u32)] = &[
+        ("bip34", 1),
+        ("bip66", 1),
+        ("bip65", 1),
+        ("csv", 1),
+        ("segwit", 1),
+    ];
+
+    const REGTEST_BURIED: &[(&str, u32)] = &[
+        ("bip34", 1),
+        ("bip66", 1),
+        ("bip65", 1),
+        ("csv", 1),
+        ("segwit", 0),
+    ];
+
+    match network {
+        Network::Bitcoin => BITCOIN_BURIED,
+        Network::Testnet => TESTNET_BURIED,
+        Network::Testnet4 => TESTNET4_BURIED,
+        Network::Signet => SIGNET_BURIED,
+        Network::Regtest => REGTEST_BURIED,
+    }
+}

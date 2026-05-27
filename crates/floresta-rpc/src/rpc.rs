@@ -6,6 +6,7 @@ use std::vec;
 use bitcoin::BlockHash;
 use bitcoin::Txid;
 use corepc_types::v29::GetTxOut;
+use corepc_types::v30::GetDeploymentInfo;
 use serde_json::Number;
 use serde_json::Value;
 
@@ -48,6 +49,10 @@ pub trait FlorestaRPC {
         hash: BlockHash,
         verbosity: Option<bool>,
     ) -> Result<GetBlockHeaderRes>;
+
+    #[doc = include_str!("../../../doc/rpc/getdeploymentinfo.md")]
+    fn get_deployment_info(&self, blockhash: Option<BlockHash>) -> Result<GetDeploymentInfo>;
+
     /// Gets a transaction from the blockchain
     ///
     /// This method returns a transaction that's cached in our wallet. If the verbosity flag is
@@ -260,6 +265,14 @@ impl<T: JsonRPCClient> FlorestaRPC for T {
 
     fn get_block_count(&self) -> Result<u32> {
         self.call("getblockcount", &[])
+    }
+
+    fn get_deployment_info(&self, blockhash: Option<BlockHash>) -> Result<GetDeploymentInfo> {
+        let params = match blockhash {
+            Some(h) => vec![Value::String(h.to_string())],
+            None => vec![],
+        };
+        self.call("getdeploymentinfo", &params)
     }
 
     fn get_difficulty(&self) -> Result<f64> {
