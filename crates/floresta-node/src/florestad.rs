@@ -25,6 +25,7 @@ use floresta_chain::FlatChainStore as ChainStore;
 use floresta_chain::FlatChainStoreConfig;
 #[cfg(feature = "zmq-server")]
 use floresta_chain::pruned_utreexo::BlockchainInterface;
+use floresta_common::try_and_log;
 #[cfg(feature = "compact-filters")]
 use floresta_compact_filters::flat_filters_store::FlatFiltersStore;
 #[cfg(feature = "compact-filters")]
@@ -301,9 +302,7 @@ impl Florestad {
             std::mem::take(&mut *guard)
         };
         if let Some(chan) = chan {
-            if let Err(e) = chan.await {
-                error!("POSSIBLE BUG: unexpected error while shutting down {e:?}");
-            }
+            try_and_log!(chan.await);
         }
     }
 
