@@ -19,6 +19,7 @@ use floresta_chain::pruned_utreexo::BlockchainInterface;
 use floresta_common::get_hash_from_u8;
 use floresta_common::get_spk_hash;
 use floresta_common::spsc::Channel;
+use floresta_common::try_and_log;
 use floresta_compact_filters::flat_filters_store::FlatFiltersStore;
 use floresta_compact_filters::network_filters::NetworkFilters;
 use floresta_watch_only::AddressCache;
@@ -713,10 +714,7 @@ impl<Blockchain: BlockchainInterface> ElectrumServer<Blockchain> {
 
         if self.chain.get_height().unwrap() == height {
             for client in &mut self.clients.values() {
-                let res = client.write(serde_json::to_string(&result).unwrap().as_bytes());
-                if res.is_err() {
-                    info!("Could not write to client {client:?}");
-                }
+                try_and_log!(client.write(serde_json::to_string(&result).unwrap().as_bytes()));
             }
         }
 
@@ -824,9 +822,8 @@ impl<Blockchain: BlockchainInterface> ElectrumServer<Blockchain> {
                     "method": "blockchain.scripthash.subscribe",
                     "params": [hash, status_hash]
                 });
-                if let Err(err) = client.write(serde_json::to_string(&notify).unwrap().as_bytes()) {
-                    error!("{err}");
-                }
+
+                try_and_log!(client.write(serde_json::to_string(&notify).unwrap().as_bytes()));
             }
         }
     }
