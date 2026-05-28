@@ -406,6 +406,7 @@ pub fn get_chain_dns_seeds(network: Network) -> Vec<DnsSeed> {
     let x9 = ServiceFlags::NETWORK | ServiceFlags::WITNESS;
     let x49 = ServiceFlags::NETWORK | ServiceFlags::WITNESS | ServiceFlags::COMPACT_FILTERS;
     let x1009 = ServiceFlags::NETWORK | ServiceFlags::WITNESS | service_flags::UTREEXO.into();
+    let x1000 = service_flags::UTREEXO.into();
 
     #[rustfmt::skip]
     match network {
@@ -419,13 +420,15 @@ pub fn get_chain_dns_seeds(network: Network) -> Vec<DnsSeed> {
             seeds.push(DnsSeed::new(Network::Bitcoin, "seed.bitcoin.sprovoost.nl", x49));
             seeds.push(DnsSeed::new(Network::Bitcoin, "dnsseed.emzy.de", x49));
             seeds.push(DnsSeed::new(Network::Bitcoin, "seed.bitcoin.wiz.biz", x49));
+            seeds.push(DnsSeed::new(Network::Bitcoin, "bitcoin.seed.dlsouza.lol", x1000));
         }
         Network::Signet => {
-            seeds.push(DnsSeed::new(Network::Signet, "seed.dlsouza.lol", x1009));
+            seeds.push(DnsSeed::new(Network::Signet, "signet.seed.dlsouza.lol", x1000));
             seeds.push(DnsSeed::new(Network::Signet, "seed.signet.bitcoin.sprovoost.nl", x49));
         }
         Network::Testnet => {
             seeds.push(DnsSeed::new(Network::Testnet, "testnet-seed.bitcoin.jonasschnelli.ch", x49));
+            seeds.push(DnsSeed::new(Network::Testnet, "testnet.seed.dlsouza.lol", x1000));
             seeds.push(DnsSeed::new(Network::Testnet, "seed.tbtc.petertodd.org", x49));
             seeds.push(DnsSeed::new(Network::Testnet, "seed.testnet.bitcoin.sprovoost.nl", x49));
             seeds.push(DnsSeed::new(Network::Testnet, "testnet-seed.bluematt.me", none));
