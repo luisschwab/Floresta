@@ -94,9 +94,6 @@ pub struct ChainParams {
 /// Some seeds allow filtering by service flags, so we may use this to find peers that are
 /// likely to be running Utreexo, for example.
 pub struct DnsSeed {
-    /// The network this peer supports (e.g, mainnet, testnet, etc)
-    pub network: Network,
-
     /// The domain name of the seed
     pub seed: &'static str,
 
@@ -107,12 +104,8 @@ pub struct DnsSeed {
 /// This functionality is used to create a new DNS seed with possible filters.
 impl DnsSeed {
     /// Create a new DNS seed
-    pub fn new(network: Network, seed: &'static str, filters: ServiceFlags) -> Self {
-        DnsSeed {
-            network,
-            seed,
-            filters,
-        }
+    pub fn new(seed: &'static str, filters: ServiceFlags) -> Self {
+        DnsSeed { seed, filters }
     }
 }
 
@@ -411,31 +404,31 @@ pub fn get_chain_dns_seeds(network: Network) -> Vec<DnsSeed> {
     #[rustfmt::skip]
     match network {
         Network::Bitcoin => {
-            seeds.push(DnsSeed::new(Network::Bitcoin, "seed.calvinkim.info", x1009));
-            seeds.push(DnsSeed::new(Network::Bitcoin, "seed.bitcoin.luisschwab.com", x1009));
-            seeds.push(DnsSeed::new(Network::Bitcoin, "seed.bitcoin.sipa.be", x9));
-            seeds.push(DnsSeed::new(Network::Bitcoin, "dnsseed.bluematt.me", x49));
-            seeds.push(DnsSeed::new(Network::Bitcoin, "seed.bitcoinstats.com", x49));
-            seeds.push(DnsSeed::new(Network::Bitcoin, "seed.btc.petertodd.org", x49));
-            seeds.push(DnsSeed::new(Network::Bitcoin, "seed.bitcoin.sprovoost.nl", x49));
-            seeds.push(DnsSeed::new(Network::Bitcoin, "dnsseed.emzy.de", x49));
-            seeds.push(DnsSeed::new(Network::Bitcoin, "seed.bitcoin.wiz.biz", x49));
-            seeds.push(DnsSeed::new(Network::Bitcoin, "bitcoin.seed.dlsouza.lol", x1000));
+            seeds.push(DnsSeed::new("seed.calvinkim.info", x1009));
+            seeds.push(DnsSeed::new("seed.bitcoin.luisschwab.com", x1009));
+            seeds.push(DnsSeed::new("seed.bitcoin.sipa.be", x9));
+            seeds.push(DnsSeed::new("dnsseed.bluematt.me", x49));
+            seeds.push(DnsSeed::new("seed.bitcoinstats.com", x49));
+            seeds.push(DnsSeed::new("seed.btc.petertodd.org", x49));
+            seeds.push(DnsSeed::new("seed.bitcoin.sprovoost.nl", x49));
+            seeds.push(DnsSeed::new("dnsseed.emzy.de", x49));
+            seeds.push(DnsSeed::new("seed.bitcoin.wiz.biz", x49));
+            seeds.push(DnsSeed::new("bitcoin.seed.dlsouza.lol", x1000));
         }
         Network::Signet => {
-            seeds.push(DnsSeed::new(Network::Signet, "signet.seed.dlsouza.lol", x1000));
-            seeds.push(DnsSeed::new(Network::Signet, "seed.signet.bitcoin.sprovoost.nl", x49));
+            seeds.push(DnsSeed::new("signet.seed.dlsouza.lol", x1000));
+            seeds.push(DnsSeed::new("seed.signet.bitcoin.sprovoost.nl", x49));
         }
         Network::Testnet => {
-            seeds.push(DnsSeed::new(Network::Testnet, "testnet-seed.bitcoin.jonasschnelli.ch", x49));
-            seeds.push(DnsSeed::new(Network::Testnet, "testnet.seed.dlsouza.lol", x1000));
-            seeds.push(DnsSeed::new(Network::Testnet, "seed.tbtc.petertodd.org", x49));
-            seeds.push(DnsSeed::new(Network::Testnet, "seed.testnet.bitcoin.sprovoost.nl", x49));
-            seeds.push(DnsSeed::new(Network::Testnet, "testnet-seed.bluematt.me", none));
+            seeds.push(DnsSeed::new("testnet-seed.bitcoin.jonasschnelli.ch", x49));
+            seeds.push(DnsSeed::new("testnet.seed.dlsouza.lol", x1000));
+            seeds.push(DnsSeed::new("seed.tbtc.petertodd.org", x49));
+            seeds.push(DnsSeed::new("seed.testnet.bitcoin.sprovoost.nl", x49));
+            seeds.push(DnsSeed::new("testnet-seed.bluematt.me", none));
         }
         Network::Testnet4 => {
-            seeds.push(DnsSeed::new(Network::Testnet4, "seed.testnet4.bitcoin.sprovoost.nl", none));
-            seeds.push(DnsSeed::new(Network::Testnet4, "seed.testnet4.wiz.biz", none));
+            seeds.push(DnsSeed::new("seed.testnet4.bitcoin.sprovoost.nl", none));
+            seeds.push(DnsSeed::new("seed.testnet4.wiz.biz", none));
         }
         Network::Regtest => {}
     };
