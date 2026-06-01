@@ -4,13 +4,17 @@
 
 use core::net::IpAddr;
 use core::net::SocketAddr;
+use std::collections::BTreeMap;
 
 use bitcoin::Network;
+use corepc_types::v26::AddrManInfoNetwork;
+use corepc_types::v30::GetAddrManInfo;
 use corepc_types::v30::GetNetworkInfo;
 use corepc_types::v30::GetNetworkInfoNetwork;
 use floresta_common::PROTOCOL_VERSION;
 use floresta_common::advertised_services;
 use floresta_common::service_flags_strings;
+use floresta_wire::address_man::NetworkStats;
 use floresta_wire::address_man::ReachableNetworks;
 use floresta_wire::node_interface::PeerInfo;
 use serde_json::Value;
@@ -150,6 +154,40 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
             .get_connection_count()
             .await
             .map_err(|_| JsonRpcError::Node("Failed to get connection count".to_string()))
+    }
+
+    pub(crate) async fn get_addrman_info(&self) -> Result<GetAddrManInfo> {
+        let stats = self
+            .node
+            .get_addrman_info()
+            .await
+            .map_err(|e| JsonRpcError::Node(e.to_string()))?;
+
+        let to_info = |ns: NetworkStats| AddrManInfoNetwork {
+            new: ns.new,
+            tried: ns.tried,
+            total: ns.total(),
+        };
+
+        let mut map = BTreeMap::new();
+        map.insert("ipv4".to_string(), to_info(stats.ipv4));
+        map.insert("ipv6".to_string(), to_info(stats.ipv6));
+        map.insert("onion".to_string(), to_info(stats.onion));
+        map.insert("i2p".to_string(), to_info(stats.i2p));
+        map.insert("cjdns".to_string(), to_info(stats.cjdns));
+
+        let all_new: u64 = map.values().map(|n| n.new).sum();
+        let all_tried: u64 = map.values().map(|n| n.tried).sum();
+        map.insert(
+            "all_networks".to_string(),
+            AddrManInfoNetwork {
+                new: all_new,
+                tried: all_tried,
+                total: all_new + all_tried,
+            },
+        );
+
+        Ok(GetAddrManInfo(map))
     }
 
     pub(crate) async fn get_network_info(&self) -> Result<GetNetworkInfo> {

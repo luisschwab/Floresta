@@ -6,6 +6,7 @@ use std::vec;
 use bitcoin::BlockHash;
 use bitcoin::Txid;
 use corepc_types::v29::GetTxOut;
+use corepc_types::v30::GetAddrManInfo;
 use corepc_types::v30::GetDeploymentInfo;
 use serde_json::Number;
 use serde_json::Value;
@@ -152,6 +153,8 @@ pub trait FlorestaRPC {
     fn list_descriptors(&self) -> Result<Vec<String>>;
     #[doc = include_str!("../../../doc/rpc/ping.md")]
     fn ping(&self) -> Result<()>;
+    /// Returns address manager statistics broken down by network.
+    fn get_addrman_info(&self) -> Result<GetAddrManInfo>;
 }
 
 /// Since the workflow for jsonrpc is the same for all methods, we can implement a trait
@@ -371,5 +374,9 @@ impl<T: JsonRPCClient> FlorestaRPC for T {
 
     fn ping(&self) -> Result<()> {
         self.call("ping", &[])
+    }
+
+    fn get_addrman_info(&self) -> Result<GetAddrManInfo> {
+        self.call("getaddrmaninfo", &[])
     }
 }

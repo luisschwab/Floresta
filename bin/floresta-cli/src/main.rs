@@ -137,6 +137,7 @@ fn do_request(cmd: &Cli, client: Client) -> anyhow::Result<String> {
         Methods::GetDeploymentInfo { blockhash } => {
             serde_json::to_string_pretty(&client.get_deployment_info(blockhash)?)?
         }
+        Methods::GetAddrManInfo => serde_json::to_string_pretty(&client.get_addrman_info()?)?,
     })
 }
 
@@ -447,4 +448,12 @@ pub enum Methods {
         disable_help_subcommand = true
     )]
     GetNetworkInfo,
+    #[doc = include_str!("../../../doc/rpc/getaddrmaninfo.md")]
+    #[command(
+        name = "getaddrmaninfo",
+        about = "Returns address manager statistics broken down by network type",
+        long_about = Some(include_str!("../../../doc/rpc/getaddrmaninfo.md")),
+        disable_help_subcommand = true
+    )]
+    GetAddrManInfo,
 }
