@@ -47,6 +47,10 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
             return Ok(genesis_block(self.network));
         }
 
+        // Verify the block header is known before requesting the full block
+        // from the network, otherwise the request will hang indefinitely.
+        self.get_block_header_inner(hash)?;
+
         self.node
             .get_block(hash)
             .await
