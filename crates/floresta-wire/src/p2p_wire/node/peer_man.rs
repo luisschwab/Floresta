@@ -16,6 +16,7 @@ use floresta_common::service_flags;
 use floresta_common::try_and_log;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
+use rand::prelude::IteratorRandom;
 use rand::seq::IndexedRandom;
 use tracing::debug;
 use tracing::error;
@@ -554,6 +555,21 @@ where
 
         self.send_to_peer(peer, NodeRequest::Shutdown)?;
         Ok(())
+    }
+
+    /// Tries to randomly disconnect up to `n` non-protected-feature peers.
+    pub(crate) fn disconnect_random_peers(&self, n: usize, protected_services: &[ServiceFlags]) {
+        let mut rng = rand::rng();
+
+        let peers = self
+            .peers
+            .values()
+            .filter(|peer| peer.is_regular_peer() && !peer.has_any_service(protected_services))
+            .choose_multiple(&mut rng, n);
+
+        for peer in peers {
+            let _ = peer.channel.send(NodeRequest::Shutdown);
+        }
     }
 
     /// Checks whether some of our inflight requests have timed out.
