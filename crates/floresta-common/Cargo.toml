@@ -10,8 +10,9 @@ repository = "https://github.com/getfloresta/Floresta"
 readme.workspace = true # Floresta/README.md
 
 [dependencies]
+# All dependencies MUST be pinned precisely with `X.Y.z`
 bitcoin = { workspace = true }
-hashbrown = { version = "0.16" }
+hashbrown = { version = "=0.16.1" }
 sha2 = { workspace = true }
 spin = { workspace = true }
 tracing = { workspace = true }
