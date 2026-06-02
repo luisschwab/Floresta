@@ -32,6 +32,7 @@ python_functions = ["test_*"]
 addopts = [
     "-v",
     "-n 4",
+    "--dist=loadscope",
     "--strict-markers",
     "--strict-config",
     "--tb=short",
