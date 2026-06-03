@@ -16,6 +16,7 @@ use floresta_common::Ema;
 use floresta_common::service_flags;
 use floresta_common::try_and_log;
 use floresta_mempool::Mempool;
+use rand::Rng;
 use tokio::net::tcp::WriteHalf;
 use tokio::spawn;
 use tokio::sync::Mutex;
@@ -644,6 +645,62 @@ where
         }
 
         Ok(())
+    }
+
+    /// Try disconnecting the slowest non-protected-service peer.
+    ///
+    /// For peers that don't have any of the `protected_services`, we disconnect the
+    /// highest-latency one when any of these hold:
+    /// - Its latency is more than 1.5x the median latency across eligible peers.
+    /// - `always` is true.
+    /// - Or randomly, with 5% probability.
+    pub(crate) fn maybe_disconnect_slowest_peer(
+        &self,
+        protected_services: &[ServiceFlags],
+        always: bool,
+    ) -> Result<(), WireError> {
+        /// Require at least 5 samples to compute the median latency. Fewer samples won't
+        /// output a meaningful median value.
+        const MIN_SAMPLES: usize = 5;
+        /// If the slowest peer has higher latency than 1.5x the median latency, disconnect it.
+        /// This is the same value as the `libbitcoin` default `allowed_deviation`.
+        const ALLOWED_DEVIATION: f64 = 1.5;
+
+        // Use latency samples only from regular, non-protected-service peers.
+        let is_eligible_peer = |peer: &LocalPeerView| {
+            peer.is_regular_peer() && !peer.has_any_service(protected_services)
+        };
+
+        let mut samples: Vec<_> = self
+            .peers
+            .iter()
+            .filter_map(|(&peer_id, peer)| {
+                let latency = peer.message_times.value()?;
+
+                is_eligible_peer(peer).then_some((peer_id, latency))
+            })
+            .collect();
+
+        if samples.len() < MIN_SAMPLES {
+            return Ok(());
+        }
+
+        // Sort by latency, then get the median time and the slowest peer
+        samples.sort_by(|a, b| a.1.total_cmp(&b.1));
+
+        let (_, median_latency) = samples[samples.len() / 2];
+        let (slowest_peer_id, slowest_latency) = samples[samples.len() - 1];
+
+        let should_disconnect = always
+            || slowest_latency > ALLOWED_DEVIATION * median_latency
+            || rand::rng().random_ratio(1, 20);
+
+        if !should_disconnect {
+            return Ok(());
+        }
+
+        info!("Disconnecting slowest non-protected peer: {slowest_peer_id}");
+        self.send_to_peer(slowest_peer_id, NodeRequest::Shutdown)
     }
 
     pub(crate) fn maybe_open_connection_with_added_peers(&mut self) -> Result<(), WireError> {

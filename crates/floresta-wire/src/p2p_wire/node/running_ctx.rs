@@ -129,6 +129,15 @@ where
 
         let sync = sync.run(|_| {}).await;
 
+        // Once we are synced, peer diversity is the priority, as we must be able to discover
+        // newly mined blocks. However, the peer list that we have built during `SyncNode` is
+        // biased towards low-latency peers (often geographically close to our node).
+        //
+        // Here we try disconnecting half of our connected peers to open space for new peers.
+        let peers_to_disconnect = sync.connected_peers() / 2;
+        let protected_services = &[service_flags::UTREEXO.into()];
+        sync.disconnect_random_peers(peers_to_disconnect, protected_services);
+
         Ok(UtreexoNode {
             common: sync.common,
             context: self.context,
