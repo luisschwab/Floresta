@@ -47,6 +47,19 @@ fn parse_mmmmpp(version: &str) -> usize {
 }
 
 impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
+    /// Returns the default P2P port for the current network.
+    // TODO: use `NetworkExt` to append the correct port once
+    // https://github.com/rust-bitcoin/rust-bitcoin/pull/4639 makes it into a release.
+    pub(crate) fn default_network_port(&self) -> u16 {
+        match self.network {
+            Network::Bitcoin => 8333,
+            Network::Signet => 38333,
+            Network::Testnet => 18333,
+            Network::Testnet4 => 48333,
+            Network::Regtest => 18444,
+        }
+    }
+
     pub(crate) async fn ping(&self) -> Result<bool> {
         self.node
             .ping()
@@ -69,17 +82,7 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
                 .parse::<IpAddr>()
                 .map_err(|_| JsonRpcError::InvalidAddress)?;
 
-            // TODO: use `NetworkExt` to append the correct port once
-            // https://github.com/rust-bitcoin/rust-bitcoin/pull/4639 makes it into a release.
-            let default_port = match self.network {
-                Network::Bitcoin => 8333,
-                Network::Signet => 38333,
-                Network::Testnet => 18333,
-                Network::Testnet4 => 48333,
-                Network::Regtest => 18444,
-            };
-
-            (ip, default_port)
+            (ip, self.default_network_port())
         };
 
         let _ = match command.as_str() {
