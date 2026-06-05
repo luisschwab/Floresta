@@ -16,6 +16,7 @@ use floresta_common::advertised_services;
 use floresta_common::service_flags_strings;
 use floresta_wire::address_man::NetworkStats;
 use floresta_wire::address_man::ReachableNetworks;
+use floresta_wire::node_interface::NetworkMethods;
 use floresta_wire::node_interface::PeerInfo;
 use serde_json::Value;
 use serde_json::json;

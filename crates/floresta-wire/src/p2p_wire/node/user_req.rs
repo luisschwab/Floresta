@@ -16,9 +16,9 @@ use super::UtreexoNode;
 use crate::block_proof::Bitmap;
 use crate::node::running_ctx::RunningNode;
 use crate::node_context::NodeContext;
-use crate::node_interface::NodeInterface;
-use crate::node_interface::NodeResponse;
-use crate::node_interface::UserRequest;
+use crate::node_handle::NodeHandle;
+use crate::node_handle::NodeResponse;
+use crate::node_handle::UserRequest;
 use crate::p2p_wire::error::WireError;
 
 impl<T, Chain> UtreexoNode<Chain, T>
@@ -31,8 +31,8 @@ where
     /// node. This struct is thread safe, so we can use it from multiple threads and have
     /// multiple handles. It also doesn't require a mutable reference to the node, or any
     /// synchronization mechanism.
-    pub fn get_handle(&self) -> NodeInterface {
-        NodeInterface::new(self.common.node_tx.clone())
+    pub fn get_handle(&self) -> NodeHandle {
+        NodeHandle::new(self.common.node_tx.clone())
     }
 
     /// Handles getpeerinfo requests, returning a list of all connected peers and some useful
@@ -49,7 +49,7 @@ where
 
     /// Actually perform the user request
     ///
-    /// These are requests made by some consumer of `floresta-wire` using the [`NodeInterface`], and may
+    /// These are requests made by some consumer of `floresta-wire` using the [`NodeHandle`], and may
     /// be a mempool transaction, a block, or a connection request.
     pub(crate) async fn perform_user_request(
         &mut self,

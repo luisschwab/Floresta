@@ -21,6 +21,7 @@ use floresta_wire::UtreexoNodeConfig;
 use floresta_wire::address_man::AddressMan;
 use floresta_wire::address_man::ReachableNetworks;
 use floresta_wire::node::running_ctx::RunningNode;
+use floresta_wire::node_interface::ChainMethods;
 use tokio::sync::Mutex;
 
 /// Where floresta will store all it's data, like the blockchain and wallet

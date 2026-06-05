@@ -34,6 +34,7 @@ pub use p2p_wire::error;
 pub use p2p_wire::node;
 #[cfg(not(target_arch = "wasm32"))]
 pub use p2p_wire::node_context;
+pub use p2p_wire::node_handle;
 #[cfg(not(target_arch = "wasm32"))]
 pub use p2p_wire::node_interface;
 pub use p2p_wire::transport::TransportProtocol;

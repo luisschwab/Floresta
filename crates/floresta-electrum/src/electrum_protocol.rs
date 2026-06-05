@@ -25,7 +25,9 @@ use floresta_compact_filters::network_filters::NetworkFilters;
 use floresta_watch_only::AddressCache;
 use floresta_watch_only::CachedTransaction;
 use floresta_watch_only::kv_database::KvDatabase;
-use floresta_wire::node_interface::NodeInterface;
+use floresta_wire::node_handle::NodeHandle;
+use floresta_wire::node_interface::ChainMethods;
+use floresta_wire::node_interface::MempoolMethods;
 use serde_json::Value;
 use serde_json::json;
 use tokio::io::AsyncBufReadExt;
@@ -201,7 +203,7 @@ pub struct ElectrumServer<Blockchain: BlockchainInterface> {
 
     /// An interface to a running node, used to broadcast transactions and request
     /// blocks.
-    node_interface: NodeInterface,
+    node_interface: NodeHandle,
 
     /// A list of addresses that we've just learned about and need to rescan for
     /// transactions.
@@ -222,7 +224,7 @@ impl<Blockchain: BlockchainInterface> ElectrumServer<Blockchain> {
         address_cache: Arc<AddressCache<KvDatabase>>,
         chain: Arc<Blockchain>,
         block_filters: Option<Arc<NetworkFilters<FlatFiltersStore>>>,
-        node_interface: NodeInterface,
+        node_interface: NodeHandle,
     ) -> Result<ElectrumServer<Blockchain>, Box<dyn error::Error>> {
         let (tx, rx) = unbounded_channel();
 
