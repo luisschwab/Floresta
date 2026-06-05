@@ -27,7 +27,6 @@ use bitcoin::hashes::Hash;
 use bitcoin::hashes::sha256d;
 use bitcoin::hex::DisplayHex;
 use bitcoin::p2p::Magic;
-use bitcoin::p2p::address::AddrV2;
 use bitcoin::p2p::message::MAX_MSG_SIZE;
 use bitcoin::p2p::message::NetworkMessage;
 use bitcoin::p2p::message::RawNetworkMessage;
@@ -125,6 +124,9 @@ pub enum TransportError {
 
     /// Peer sent us a message with invalid magic bits
     BadMagicBits { expected: Magic, provided: Magic },
+
+    /// Received address is invalid/unreachable
+    InvalidAddress,
 }
 
 impl Display for TransportError {
@@ -151,6 +153,9 @@ impl Display for TransportError {
                     f,
                     "Peer sent us a message with invalid magic bits: expected {expected}, got {provided}"
                 )
+            }
+            TransportError::InvalidAddress => {
+                write!(f, "provided address is either invalid or unreachable")
             }
         }
     }
@@ -331,17 +336,7 @@ pub async fn connect_proxy<A: ToSocketAddrs + Clone + Debug>(
     network: Network,
     allow_v1_fallback: bool,
 ) -> TransportResult {
-    let addr = match address.get_addrv2() {
-        AddrV2::Cjdns(addr) => Socks5Addr::Ipv6(addr),
-        AddrV2::I2p(addr) => Socks5Addr::Domain(addr.into()),
-        AddrV2::Ipv4(addr) => Socks5Addr::Ipv4(addr),
-        AddrV2::Ipv6(addr) => Socks5Addr::Ipv6(addr),
-        AddrV2::TorV2(addr) => Socks5Addr::Domain(addr.into()),
-        AddrV2::TorV3(addr) => Socks5Addr::Domain(addr.into()),
-        AddrV2::Unknown(_, _) => {
-            return Err(TransportError::Proxy(Socks5Error::InvalidAddress));
-        }
-    };
+    let addr = Socks5Addr::try_from(&address)?;
 
     match try_proxy_connection(&proxy_addr, &addr, address.get_port(), network, false).await {
         Ok(transport) => Ok(transport),

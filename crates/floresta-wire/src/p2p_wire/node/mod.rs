@@ -13,7 +13,6 @@ pub mod sync_ctx;
 mod user_req;
 
 use core::fmt::Debug;
-use core::net::IpAddr;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ops::Deref;
@@ -57,6 +56,8 @@ use super::node_handle::UserRequest;
 use super::peer::PeerMessages;
 use super::socks::Socks5StreamBuilder;
 use super::transport::TransportProtocol;
+use crate::bitcoin_socket_addr::BitcoinSocketAddr;
+use crate::bitcoin_socket_addr::SystemResolver;
 use crate::node_context::PeerId;
 
 /// As per BIP 155, limit the number of addresses to 1,000
@@ -190,9 +191,6 @@ pub struct LocalPeerView {
     /// The state in which this peer is, e.g., awaiting handshake, ready, banned, etc.
     pub(crate) state: PeerStatus,
 
-    /// An id identifying this peer's address in our address manager
-    pub(crate) address_id: u32,
-
     /// A channel used to send requests to this peer
     pub(crate) channel: UnboundedSender<NodeRequest>,
 
@@ -203,10 +201,7 @@ pub struct LocalPeerView {
     pub(crate) user_agent: String,
 
     /// This peer's IP address
-    pub(crate) address: IpAddr,
-
-    /// The port we used to connect to this peer
-    pub(crate) port: u16,
+    pub(crate) address: LocalAddress,
 
     /// The last time we received a message from this peer
     pub(crate) _last_message: Instant,
@@ -358,9 +353,10 @@ where
         let mut seen = HashSet::new();
         let mut fixed_peers = Vec::with_capacity(config.fixed_peers.len());
         for address in &config.fixed_peers {
-            let resolved = Self::resolve_connect_host(address, Self::get_port(config.network))?;
-            if seen.insert((resolved.get_net_address(), resolved.get_port())) {
-                fixed_peers.push(resolved);
+            let resolved =
+                BitcoinSocketAddr::parse_address(address, Some(config.network), SystemResolver)?;
+            if seen.insert(resolved.clone()) {
+                fixed_peers.push(LocalAddress::from(resolved));
             }
         }
 

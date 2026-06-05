@@ -2,11 +2,8 @@
 
 //! This module holds all RPC server side methods for interacting with our node's network stack.
 
-use core::net::IpAddr;
-use core::net::SocketAddr;
 use std::collections::BTreeMap;
 
-use bitcoin::Network;
 use corepc_types::v26::AddrManInfoNetwork;
 use corepc_types::v30::GetAddrManInfo;
 use corepc_types::v30::GetNetworkInfo;
@@ -16,6 +13,8 @@ use floresta_common::advertised_services;
 use floresta_common::service_flags_strings;
 use floresta_wire::address_man::NetworkStats;
 use floresta_wire::address_man::ReachableNetworks;
+use floresta_wire::bitcoin_socket_addr::BitcoinSocketAddr;
+use floresta_wire::bitcoin_socket_addr::SystemResolver;
 use floresta_wire::node_interface::NetworkMethods;
 use floresta_wire::node_interface::PeerInfo;
 use serde_json::Value;
@@ -48,19 +47,6 @@ fn parse_mmmmpp(version: &str) -> usize {
 }
 
 impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
-    /// Returns the default P2P port for the current network.
-    // TODO: use `NetworkExt` to append the correct port once
-    // https://github.com/rust-bitcoin/rust-bitcoin/pull/4639 makes it into a release.
-    pub(crate) fn default_network_port(&self) -> u16 {
-        match self.network {
-            Network::Bitcoin => 8333,
-            Network::Signet => 38333,
-            Network::Testnet => 18333,
-            Network::Testnet4 => 48333,
-            Network::Regtest => 18444,
-        }
-    }
-
     pub(crate) async fn ping(&self) -> Result<bool> {
         self.node
             .ping()
@@ -70,26 +56,17 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
 
     pub(crate) async fn add_node(
         &self,
-        node_address: String,
+        address: String,
         command: String,
         v2transport: bool,
     ) -> Result<Value> {
-        // Try to parse both IP address and port.
-        let (addr, port) = if let Ok(socket_addr) = node_address.parse::<SocketAddr>() {
-            (socket_addr.ip(), socket_addr.port())
-        // Try to parse the IP address only, and append the default P2P port for the network.
-        } else {
-            let ip = node_address
-                .parse::<IpAddr>()
-                .map_err(|_| JsonRpcError::InvalidAddress)?;
-
-            (ip, self.default_network_port())
-        };
+        let address =
+            BitcoinSocketAddr::parse_address(&address, Some(self.network), SystemResolver)?;
 
         let _ = match command.as_str() {
-            "add" => self.node.add_peer(addr, port, v2transport).await,
-            "remove" => self.node.remove_peer(addr, port).await,
-            "onetry" => self.node.onetry_peer(addr, port, v2transport).await,
+            "add" => self.node.add_peer(address, v2transport).await,
+            "remove" => self.node.remove_peer(address).await,
+            "onetry" => self.node.onetry_peer(address, v2transport).await,
             _ => return Err(JsonRpcError::InvalidAddnodeCommand),
         };
 
@@ -101,17 +78,12 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
         node_address: String,
         node_id: Option<u32>,
     ) -> Result<Value> {
-        let (peer_addr, peer_port) = match (node_address.is_empty(), node_id) {
+        let peer_addr = match (node_address.is_empty(), node_id) {
             // Reference the peer by it's IP address and port.
             (false, None) => {
-                // Try to parse `node_address` into a `SocketAddr`.
-                // This will handle IPv4:port and IPv6:port.
-                let socket_addr = node_address
-                    .parse::<SocketAddr>()
-                    .map_err(|_| JsonRpcError::InvalidAddress)?;
-
-                (socket_addr.ip(), socket_addr.port())
+                BitcoinSocketAddr::parse_address(&node_address, Some(self.network), SystemResolver)?
             }
+
             // Reference the peer by it's ID.
             (true, Some(node_id)) => {
                 let peer_info = self
@@ -121,12 +93,13 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
                     .map_err(|e| JsonRpcError::Node(e.to_string()))?;
 
                 let peer = peer_info
-                    .iter()
+                    .into_iter()
                     .find(|peer| peer.id == node_id)
                     .ok_or(JsonRpcError::PeerNotFound)?;
 
-                (peer.address.ip(), peer.address.port())
+                peer.address
             }
+
             // Both address and ID were provided, or neither was provided.
             _ => {
                 return Err(JsonRpcError::InvalidDisconnectNodeCommand);
@@ -135,7 +108,7 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
 
         let disconnected = self
             .node
-            .disconnect_peer(peer_addr, peer_port)
+            .disconnect_peer(peer_addr)
             .await
             .map_err(|e| JsonRpcError::Node(e.to_string()))?;
 

@@ -17,15 +17,12 @@
 //! testing other modules, and to allow people to reuse other crates without wire: simply
 //! re-implement the relevant parts of node interface and you are fine!
 
-use core::net::IpAddr;
-use core::net::SocketAddr;
-use std::future::Future;
-
 use bitcoin::Block;
 use bitcoin::BlockHash;
 use bitcoin::Transaction;
 use bitcoin::Txid;
 use bitcoin::p2p::ServiceFlags;
+use bitcoin::p2p::address::AddrV2;
 use floresta_mempool::mempool::MempoolError;
 use serde::Serialize;
 
@@ -34,6 +31,7 @@ use super::node::ConnectionKind;
 use super::node::PeerStatus;
 use super::transport::TransportProtocol;
 use crate::address_man::ConnectionStats;
+use crate::bitcoin_socket_addr::BitcoinSocketAddr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// A request to addnode that can be made to the node.
@@ -44,13 +42,13 @@ use crate::address_man::ConnectionStats;
 /// [Bitcoin Core]: (https://bitcoincore.org/en/doc/29.0.0/rpc/network/addnode/)
 pub enum AddNode {
     /// The `Add` variant is used to add a peer to the node's peer list
-    Add((IpAddr, u16)),
+    Add((AddrV2, u16)),
 
     /// The `Remove` variant is used to remove a peer from the node's peer list
-    Remove((IpAddr, u16)),
+    Remove((AddrV2, u16)),
 
     /// The `Onetry` variant is used to try a connection to the peer once, but not add it to the peer list.
-    Onetry((IpAddr, u16)),
+    Onetry((AddrV2, u16)),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -85,22 +83,22 @@ pub enum UserRequest {
     ///
     /// This function will add this peer to a special list of peers such that, if we lose the
     /// connection, we will keep trying to connect to it until we succeed.
-    Add((IpAddr, u16, bool)),
+    Add((BitcoinSocketAddr, bool)),
 
     /// Removes a node from the node's peer list.
     ///
     /// This function will remove a node that was added with [`AddNode::Add`]. This will **not**
     /// disconnect the peer, but if it disconnects, it will not be reconnected again.
-    Remove((IpAddr, u16)),
+    Remove(BitcoinSocketAddr),
 
     /// Attempts to connect to a peer once.
     ///
     /// Different from [`AddNode::Add`], this function will try to connect to the peer once, but
     /// will not add it to the node's added peers list.
-    Onetry((IpAddr, u16, bool)),
+    Onetry((BitcoinSocketAddr, bool)),
 
     /// Attempt to disconnect from a peer.
-    Disconnect((IpAddr, u16)),
+    Disconnect(BitcoinSocketAddr),
 
     /// Ping all connected peers to check if they are alive.
     Ping,
@@ -120,7 +118,8 @@ pub enum UserRequest {
 /// at, its state and the kind of connection it has with the node.
 pub struct PeerInfo {
     pub id: u32,
-    pub address: SocketAddr,
+    #[serde(serialize_with = "serialize_addr")]
+    pub address: BitcoinSocketAddr,
     #[serde(serialize_with = "serialize_service_flags")]
     pub services: ServiceFlags,
     pub user_agent: String,
@@ -177,8 +176,7 @@ pub trait NetworkMethods {
     /// may be called multiple times, and may use hostnames or IP addresses.
     fn add_peer(
         &self,
-        addr: IpAddr,
-        port: u16,
+        addr: BitcoinSocketAddr,
         v2transport: bool,
     ) -> impl Future<Output = Result<bool, Self::Error>>;
 
@@ -187,8 +185,7 @@ pub trait NetworkMethods {
     /// It may be called multiple times, and may use hostnames or IP addresses.
     fn remove_peer(
         &self,
-        addr: IpAddr,
-        port: u16,
+        addr: BitcoinSocketAddr,
     ) -> impl Future<Output = Result<bool, Self::Error>>;
 
     /// Immediately disconnect from a peer.
@@ -196,8 +193,7 @@ pub trait NetworkMethods {
     /// Returns a bool indicating whether the disconnection was successful.
     fn disconnect_peer(
         &self,
-        addr: IpAddr,
-        port: u16,
+        addr: BitcoinSocketAddr,
     ) -> impl Future<Output = Result<bool, Self::Error>> + Send;
 
     /// Attempts to connect to a peer once.
@@ -207,8 +203,7 @@ pub trait NetworkMethods {
     /// It may be called multiple times, and may use hostnames or IP addresses.
     fn onetry_peer(
         &self,
-        addr: IpAddr,
-        port: u16,
+        addr: BitcoinSocketAddr,
         v2transport: bool,
     ) -> impl Future<Output = Result<bool, Self::Error>>;
 
@@ -245,6 +240,13 @@ pub trait NodeMethods:
 impl<T> NodeMethods for T where
     T: ChainMethods + MempoolMethods + NetworkMethods + NodeConfigMethods + Send + 'static
 {
+}
+
+fn serialize_addr<S>(local_addr: &BitcoinSocketAddr, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(&local_addr.to_string())
 }
 
 fn serialize_service_flags<S>(flags: &ServiceFlags, serializer: S) -> Result<S::Ok, S::Error>
