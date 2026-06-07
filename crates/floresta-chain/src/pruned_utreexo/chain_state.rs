@@ -575,11 +575,7 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
         }
     }
 
-    fn new(
-        mut chainstore: PersistedState,
-        network: Network,
-        assume_valid: AssumeValidArg,
-    ) -> ChainState<PersistedState> {
+    fn new(mut chainstore: PersistedState, network: Network, assume_valid: AssumeValidArg) -> Self {
         let parameters = network.into();
         let genesis = genesis_block(&parameters);
 
@@ -593,7 +589,7 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
 
         let assume_valid = ChainParams::get_assume_valid(network, assume_valid);
 
-        ChainState {
+        Self {
             inner: RwLock::new(ChainStateInner {
                 chainstore,
                 acc: Stump::new(),
@@ -746,7 +742,7 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
         mut chainstore: PersistedState,
         network: Network,
         assume_valid: AssumeValidArg,
-    ) -> Result<ChainState<PersistedState>, BlockchainError> {
+    ) -> Result<Self, BlockchainError> {
         let best_block = chainstore
             .load_height()?
             .ok_or(BlockchainError::ChainNotInitialized)?;
@@ -779,7 +775,7 @@ impl<PersistedState: ChainStore> ChainState<PersistedState> {
             inner.best_block.depth,
         );
 
-        let chainstate = ChainState {
+        let chainstate = Self {
             inner: RwLock::new(inner),
         };
 

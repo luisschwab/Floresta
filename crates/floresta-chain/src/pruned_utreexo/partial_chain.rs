@@ -462,7 +462,7 @@ impl BlockchainInterface for PartialChainState {
 // mainly for tests
 impl From<PartialChainStateInner> for PartialChainState {
     fn from(value: PartialChainStateInner) -> Self {
-        PartialChainState(UnsafeCell::new(value))
+        Self(UnsafeCell::new(value))
     }
 }
 

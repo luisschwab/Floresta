@@ -80,7 +80,7 @@ impl NodeContext for RunningNode {
 
 impl Default for RunningNode {
     fn default() -> Self {
-        RunningNode {
+        Self {
             last_address_rearrange: Instant::now(),
             last_invs: HashMap::default(),
             inflight_filters: BTreeMap::new(),
@@ -138,7 +138,7 @@ where
         let protected_services = &[service_flags::UTREEXO.into()];
         sync.disconnect_random_peers(peers_to_disconnect, protected_services);
 
-        Ok(UtreexoNode {
+        Ok(Self {
             common: sync.common,
             context: self.context,
         })
@@ -306,7 +306,7 @@ where
 
         try_and_log!(UtreexoNode::<Chain, ChainSelector>::run(&mut ibd).await);
 
-        self = UtreexoNode {
+        self = Self {
             common: ibd.common,
             context: self.context,
         };

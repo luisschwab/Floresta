@@ -70,7 +70,7 @@ pub struct UtreexoNodeConfig {
 
 impl Default for UtreexoNodeConfig {
     fn default() -> Self {
-        UtreexoNodeConfig {
+        Self {
             disable_dns_seeds: false,
             network: Network::Bitcoin,
             pow_fraud_proofs: false,

@@ -94,7 +94,7 @@ pub struct Consensus {
 
 impl From<Network> for Consensus {
     fn from(network: Network) -> Self {
-        Consensus {
+        Self {
             parameters: network.into(),
         }
     }
@@ -572,7 +572,7 @@ impl Consensus {
     ) -> Result<(SwiftSyncAgg, Amount), BlockchainError> {
         let txids = self.check_block(block, height)?;
 
-        Consensus::verify_block_transactions_swiftsync(height, block, txids, unspent_indexes, salt)
+        Self::verify_block_transactions_swiftsync(height, block, txids, unspent_indexes, salt)
     }
 
     /// Returns the TxOut being spent by the given input.

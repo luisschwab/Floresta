@@ -100,48 +100,48 @@ pub enum WireError {
 impl Display for WireError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            WireError::UnreachableNetwork => {
+            Self::UnreachableNetwork => {
                 write!(f, "The provided network is invalid or unreachable")
             }
-            WireError::Blockchain(err) => write!(f, "Blockchain error: {err:?}"),
-            WireError::ChannelSend(err) => write!(f, "Error while writing into channel: {err:?}"),
-            WireError::PeerError(err) => write!(f, "Peer error: {err:?}"),
-            WireError::CoinbaseNotMatured => write!(f, "Coinbase isn't mature yet"),
-            WireError::PeerNotFound => write!(f, "Peer not found in our current connections list"),
-            WireError::NoPeersAvailable => write!(f, "We don't have peers to send a given request"),
-            WireError::PeerMisbehaving => write!(f, "Our peer is misbehaving"),
-            WireError::AnchorFileNotFound => write!(
+            Self::Blockchain(err) => write!(f, "Blockchain error: {err:?}"),
+            Self::ChannelSend(err) => write!(f, "Error while writing into channel: {err:?}"),
+            Self::PeerError(err) => write!(f, "Peer error: {err:?}"),
+            Self::CoinbaseNotMatured => write!(f, "Coinbase isn't mature yet"),
+            Self::PeerNotFound => write!(f, "Peer not found in our current connections list"),
+            Self::NoPeersAvailable => write!(f, "We don't have peers to send a given request"),
+            Self::PeerMisbehaving => write!(f, "Our peer is misbehaving"),
+            Self::AnchorFileNotFound => write!(
                 f,
                 "Failed to init Utreexo peers: anchors.json does not exist yet"
             ),
-            WireError::PeerAlreadyExists(address) => write!(f, "Peer {address} already exists"),
-            WireError::PeerNotFoundAtAddress(address) => write!(f, "Peer {address} not found"),
-            WireError::Io(err) => write!(f, "Generic IO error: {err:?}"),
-            WireError::Serde(err) => write!(f, "Serde error: {err:?}"),
-            WireError::NoUtreexoPeersAvailable => write!(
+            Self::PeerAlreadyExists(address) => write!(f, "Peer {address} already exists"),
+            Self::PeerNotFoundAtAddress(address) => write!(f, "Peer {address} not found"),
+            Self::Io(err) => write!(f, "Generic IO error: {err:?}"),
+            Self::Serde(err) => write!(f, "Serde error: {err:?}"),
+            Self::NoUtreexoPeersAvailable => write!(
                 f,
                 "Failed to save Utreexo peers: no peers to save to anchors.json"
             ),
-            WireError::NoPeerToSendRequest => {
+            Self::NoPeerToSendRequest => {
                 write!(f, "We couldn't find a peer to send the request")
             }
-            WireError::PeerTimeout => write!(f, "Peer timed out"),
-            WireError::CompactBlockFiltersError(err) => {
+            Self::PeerTimeout => write!(f, "Peer timed out"),
+            Self::CompactBlockFiltersError(err) => {
                 write!(f, "Compact block filters error: {err:?}")
             }
-            WireError::PoisonedLock => write!(f, "Poisoned lock"),
-            WireError::InvalidAddress(err) => {
+            Self::PoisonedLock => write!(f, "Poisoned lock"),
+            Self::InvalidAddress(err) => {
                 write!(f, "We couldn't parse the provided address due to: {err:?}")
             }
-            WireError::Transport(err) => write!(f, "Transport error: {err:?}"),
-            WireError::ResponseSendError => write!(f, "Can't send back response for user request"),
-            WireError::NoAddressesAvailable => write!(f, "No addresses available to connect to"),
-            WireError::BlockNotFound => write!(f, "We tried to work on a block we don't have"),
-            WireError::BlockProofNotFound => write!(
+            Self::Transport(err) => write!(f, "Transport error: {err:?}"),
+            Self::ResponseSendError => write!(f, "Can't send back response for user request"),
+            Self::NoAddressesAvailable => write!(f, "No addresses available to connect to"),
+            Self::BlockNotFound => write!(f, "We tried to work on a block we don't have"),
+            Self::BlockProofNotFound => write!(
                 f,
                 "We tried to work on a block that we don't have a proof for yet"
             ),
-            WireError::LeafDataNotFound => write!(f, "Couldn't find the leaf data for a block"),
+            Self::LeafDataNotFound => write!(f, "Couldn't find the leaf data for a block"),
         }
     }
 }
@@ -160,15 +160,15 @@ impl_error_from!(WireError, io::Error, Io);
 
 impl From<tokio::sync::oneshot::error::RecvError> for WireError {
     fn from(_: tokio::sync::oneshot::error::RecvError) -> Self {
-        WireError::ResponseSendError
+        Self::ResponseSendError
     }
 }
 
 impl From<TransportError> for WireError {
     fn from(e: TransportError) -> Self {
         match e {
-            TransportError::Io(io) => WireError::Io(io),
-            other => WireError::Transport(other),
+            TransportError::Io(io) => Self::Io(io),
+            other => Self::Transport(other),
         }
     }
 }
@@ -185,11 +185,11 @@ pub enum AddrParseError {
 impl Display for AddrParseError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            AddrParseError::InvalidIpv6 => write!(f, "Invalid ipv6"),
-            AddrParseError::InvalidIpv4 => write!(f, "Invalid ipv4"),
-            AddrParseError::InvalidHostname => write!(f, "Invalid hostname"),
-            AddrParseError::InvalidPort => write!(f, "Invalid port"),
-            AddrParseError::Inconclusive => write!(f, "Inconclusive"),
+            Self::InvalidIpv6 => write!(f, "Invalid ipv6"),
+            Self::InvalidIpv4 => write!(f, "Invalid ipv4"),
+            Self::InvalidHostname => write!(f, "Invalid hostname"),
+            Self::InvalidPort => write!(f, "Invalid port"),
+            Self::Inconclusive => write!(f, "Inconclusive"),
         }
     }
 }

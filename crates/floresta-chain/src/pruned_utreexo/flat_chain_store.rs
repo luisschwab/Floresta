@@ -186,7 +186,7 @@ pub struct FlatChainStoreConfig {
 impl FlatChainStoreConfig {
     /// Creates a new configuration with the default values
     pub fn new(path: impl AsRef<Path>) -> Self {
-        FlatChainStoreConfig {
+        Self {
             file_permission: Some(0o666),
             fork_file_size: Some(10_000),
             headers_file_size: Some(10_000_000),
@@ -259,7 +259,7 @@ mod index_impl {
                 return Err(FlatChainstoreError::OversizedIndex);
             }
 
-            Ok(Index(index))
+            Ok(Self(index))
         }
 
         /// Create a new fork entry (MSB is set)
@@ -269,7 +269,7 @@ mod index_impl {
                 return Err(FlatChainstoreError::OversizedIndex);
             }
 
-            Ok(Index(index | Self::FORK_BIT))
+            Ok(Self(index | Self::FORK_BIT))
         }
 
         /// Tells if this is a block in our main chain
@@ -440,7 +440,7 @@ impl_error_from!(FlatChainstoreError, std::io::Error, Io);
 
 impl From<PoisonError<MutexGuard<'_, CacheType>>> for FlatChainstoreError {
     fn from(_: PoisonError<MutexGuard<'_, CacheType>>) -> Self {
-        FlatChainstoreError::PoisonedLock
+        Self::PoisonedLock
     }
 }
 
@@ -1304,7 +1304,7 @@ pub mod migrate_v0_to_v1 {
 
     impl From<MetadataV0> for Metadata {
         fn from(value: MetadataV0) -> Self {
-            Metadata {
+            Self {
                 magic: value.magic,
                 version: FLAT_CHAINSTORE_VERSION, // bump version
                 best_block: value.best_block,

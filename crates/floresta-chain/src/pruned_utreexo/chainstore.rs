@@ -106,13 +106,13 @@ impl DiskBlockHeader {
     /// Gets the block height or returns `None` if the block is orphaned or on an invalid chain.
     pub fn height(&self) -> Option<u32> {
         match self {
-            DiskBlockHeader::InFork(_, height) => Some(*height),
-            DiskBlockHeader::FullyValid(_, height) => Some(*height),
-            DiskBlockHeader::HeadersOnly(_, height) => Some(*height),
-            DiskBlockHeader::AssumedValid(_, height) => Some(*height),
+            Self::InFork(_, height) => Some(*height),
+            Self::FullyValid(_, height) => Some(*height),
+            Self::HeadersOnly(_, height) => Some(*height),
+            Self::AssumedValid(_, height) => Some(*height),
             // These two cases don't store the block height
-            DiskBlockHeader::Orphan(_) => None,
-            DiskBlockHeader::InvalidChain(_) => None,
+            Self::Orphan(_) => None,
+            Self::InvalidChain(_) => None,
         }
     }
 
@@ -128,12 +128,12 @@ impl Deref for DiskBlockHeader {
     type Target = BlockHeader;
     fn deref(&self) -> &Self::Target {
         match self {
-            DiskBlockHeader::FullyValid(header, _) => header,
-            DiskBlockHeader::Orphan(header) => header,
-            DiskBlockHeader::HeadersOnly(header, _) => header,
-            DiskBlockHeader::InFork(header, _) => header,
-            DiskBlockHeader::InvalidChain(header) => header,
-            DiskBlockHeader::AssumedValid(header, _) => header,
+            Self::FullyValid(header, _) => header,
+            Self::Orphan(header) => header,
+            Self::HeadersOnly(header, _) => header,
+            Self::InFork(header, _) => header,
+            Self::InvalidChain(header) => header,
+            Self::AssumedValid(header, _) => header,
         }
     }
 }
@@ -179,33 +179,33 @@ impl Encodable for DiskBlockHeader {
     ) -> bitcoin::io::Result<usize> {
         let mut len = 80 + 1; // Header + tag
         match self {
-            DiskBlockHeader::FullyValid(header, height) => {
+            Self::FullyValid(header, height) => {
                 0x00_u8.consensus_encode(writer)?;
                 header.consensus_encode(writer)?;
                 height.consensus_encode(writer)?;
                 len += 4;
             }
-            DiskBlockHeader::Orphan(header) => {
+            Self::Orphan(header) => {
                 0x01_u8.consensus_encode(writer)?;
                 header.consensus_encode(writer)?;
             }
-            DiskBlockHeader::HeadersOnly(header, height) => {
+            Self::HeadersOnly(header, height) => {
                 0x02_u8.consensus_encode(writer)?;
                 header.consensus_encode(writer)?;
                 height.consensus_encode(writer)?;
                 len += 4;
             }
-            DiskBlockHeader::InFork(header, height) => {
+            Self::InFork(header, height) => {
                 0x03_u8.consensus_encode(writer)?;
                 header.consensus_encode(writer)?;
                 height.consensus_encode(writer)?;
                 len += 4;
             }
-            DiskBlockHeader::InvalidChain(header) => {
+            Self::InvalidChain(header) => {
                 0x04_u8.consensus_encode(writer)?;
                 header.consensus_encode(writer)?;
             }
-            DiskBlockHeader::AssumedValid(header, height) => {
+            Self::AssumedValid(header, height) => {
                 0x05_u8.consensus_encode(writer)?;
                 header.consensus_encode(writer)?;
                 height.consensus_encode(writer)?;

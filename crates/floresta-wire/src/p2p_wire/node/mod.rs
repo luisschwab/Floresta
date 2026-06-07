@@ -171,10 +171,10 @@ impl Serialize for ConnectionKind {
         S: serde::Serializer,
     {
         match self {
-            ConnectionKind::Feeler => serializer.serialize_str("feeler"),
-            ConnectionKind::Regular(_) => serializer.serialize_str("regular"),
-            ConnectionKind::Extra => serializer.serialize_str("extra"),
-            ConnectionKind::Manual => serializer.serialize_str("manual"),
+            Self::Feeler => serializer.serialize_str("feeler"),
+            Self::Regular(_) => serializer.serialize_str("regular"),
+            Self::Extra => serializer.serialize_str("extra"),
+            Self::Manual => serializer.serialize_str("manual"),
         }
     }
 }
@@ -360,7 +360,7 @@ where
             }
         }
 
-        Ok(UtreexoNode {
+        Ok(Self {
             common: NodeCommon {
                 last_dns_seed_call: Instant::now(),
                 startup_time: Instant::now(),

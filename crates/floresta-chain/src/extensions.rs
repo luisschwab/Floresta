@@ -111,9 +111,9 @@ pub enum HeaderExtError {
 impl Display for HeaderExtError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            HeaderExtError::Chain(e) => write!(f, "Chain error: {e}"),
-            HeaderExtError::BlockNotFound => write!(f, "Block not found"),
-            HeaderExtError::ChainWorkOverflow => write!(f, "Chain work overflow"),
+            Self::Chain(e) => write!(f, "Chain error: {e}"),
+            Self::BlockNotFound => write!(f, "Block not found"),
+            Self::ChainWorkOverflow => write!(f, "Chain work overflow"),
         }
     }
 }
@@ -232,7 +232,7 @@ pub trait WorkExt {
 impl WorkExt for Work {
     fn multiply_work_by_u32(self, factor: u32) -> Result<Work, ChainWorkOverflow> {
         if factor == 0 {
-            return Ok(Work::from_be_bytes([0u8; 32]));
+            return Ok(Self::from_be_bytes([0u8; 32]));
         }
 
         if factor == 1 {
@@ -274,7 +274,7 @@ impl WorkExt for Work {
             return Err(ChainWorkOverflow);
         }
 
-        Ok(Work::from_be_bytes(result_bytes))
+        Ok(Self::from_be_bytes(result_bytes))
     }
 
     fn to_string_hex(&self) -> String {

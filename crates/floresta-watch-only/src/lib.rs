@@ -68,19 +68,19 @@ pub enum WatchOnlyError<DatabaseError: Debug> {
 impl<DatabaseError: Debug> Display for WatchOnlyError<DatabaseError> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            WatchOnlyError::WalletNotInitialized => {
+            Self::WalletNotInitialized => {
                 write!(f, "Wallet isn't initialized")
             }
-            WatchOnlyError::TransactionNotFound => {
+            Self::TransactionNotFound => {
                 write!(f, "Transaction not found")
             }
-            WatchOnlyError::DatabaseError(e) => {
+            Self::DatabaseError(e) => {
                 write!(f, "Database error: {e:?}")
             }
-            WatchOnlyError::DuplicateDescriptor(desc) => {
+            Self::DuplicateDescriptor(desc) => {
                 write!(f, "Descriptor is already cached: {desc}")
             }
-            WatchOnlyError::InvalidDescriptor(e) => {
+            Self::InvalidDescriptor(e) => {
                 write!(f, "Invalid descriptor: {e:?}")
             }
         }
@@ -89,7 +89,7 @@ impl<DatabaseError: Debug> Display for WatchOnlyError<DatabaseError> {
 
 impl<DatabaseError: Debug> From<DatabaseError> for WatchOnlyError<DatabaseError> {
     fn from(e: DatabaseError) -> Self {
-        WatchOnlyError::DatabaseError(e)
+        Self::DatabaseError(e)
     }
 }
 
@@ -126,7 +126,7 @@ impl PartialEq for CachedTransaction {
 
 impl Default for CachedTransaction {
     fn default() -> Self {
-        CachedTransaction {
+        Self {
             // A placeholder transaction with no input and no outputs, the bare-minimum to be
             // serializable
             tx: deserialize(&Vec::from_hex("010000000000ffffffff").unwrap()).unwrap(),
@@ -267,7 +267,7 @@ impl<D: AddressCacheDatabase> AddressCacheInner<D> {
         my_transactions
     }
 
-    fn new(database: D) -> AddressCacheInner<D> {
+    fn new(database: D) -> Self {
         let scripts = database.load().expect("Could not load database");
         if database.get_stats().is_err() {
             database
@@ -285,7 +285,7 @@ impl<D: AddressCacheDatabase> AddressCacheInner<D> {
             address_map.insert(address.script_hash, address);
         }
 
-        AddressCacheInner {
+        Self {
             database,
             address_map,
             script_set,
@@ -601,8 +601,8 @@ impl<D: AddressCacheDatabase + Sync + Send + 'static> BlockConsumer for AddressC
 }
 
 impl<D: AddressCacheDatabase> AddressCache<D> {
-    pub fn new(database: D) -> AddressCache<D> {
-        AddressCache {
+    pub fn new(database: D) -> Self {
+        Self {
             inner: RwLock::new(AddressCacheInner::new(database)),
         }
     }

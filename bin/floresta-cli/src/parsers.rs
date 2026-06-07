@@ -21,11 +21,11 @@ pub enum ParseError {
 impl Display for ParseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            ParseError::InvalidArray => write!(
+            Self::InvalidArray => write!(
                 f,
                 "Couldnt parse the inserted as an Array, please refer to the docs"
             ),
-            ParseError::InvalidTarget(target) => {
+            Self::InvalidTarget(target) => {
                 write!(f, "Could parse items to {target}")
             }
         }

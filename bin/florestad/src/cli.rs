@@ -200,7 +200,7 @@ impl Cli {
     pub fn validate(&self) {
         #[cfg(unix)]
         if self.pid_file.is_some() && !self.daemon {
-            Cli::command()
+            Self::command()
                 .error(
                     clap::error::ErrorKind::MissingRequiredArgument,
                     "--pid-file requires that --daemon be set",

@@ -362,7 +362,7 @@ impl Florestad {
         let datadir: &Path = self.config.datadir.as_ref();
 
         // Check that the directory exists and is writable
-        Florestad::validate_data_dir(datadir)?;
+        Self::validate_data_dir(datadir)?;
 
         info!("Loading watch-only wallet");
         let wallet = self.setup_wallet()?;
