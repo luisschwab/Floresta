@@ -88,7 +88,7 @@ impl P2PV1MessageChecksum {
         // The checksum is the first 4 bytes of the digest.
         let mut checksum = [0; 4];
         checksum.copy_from_slice(&hash.as_byte_array()[0..4]);
-        P2PV1MessageChecksum(checksum)
+        Self(checksum)
     }
 }
 
@@ -132,29 +132,29 @@ pub enum TransportError {
 impl Display for TransportError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            TransportError::Io(err) => write!(f, "IO error: {err:?}"),
-            TransportError::Protocol(err) => write!(f, "V2 protocol error: {err:?}"),
-            TransportError::SerdeV2(err) => write!(f, "V2 serde error: {err:?}"),
-            TransportError::SerdeV1(err) => write!(f, "V1 serde error: {err:?}"),
-            TransportError::Proxy(err) => write!(f, "Proxy error: {err:?}"),
-            TransportError::OversizedMessage {
+            Self::Io(err) => write!(f, "IO error: {err:?}"),
+            Self::Protocol(err) => write!(f, "V2 protocol error: {err:?}"),
+            Self::SerdeV2(err) => write!(f, "V2 serde error: {err:?}"),
+            Self::SerdeV1(err) => write!(f, "V1 serde error: {err:?}"),
+            Self::Proxy(err) => write!(f, "Proxy error: {err:?}"),
+            Self::OversizedMessage {
                 max_size,
                 message_size,
             } => write!(
                 f,
                 "Peer sent us an oversized message: size {message_size} is greater than the max of {max_size}"
             ),
-            TransportError::BadChecksum { expected, provided } => write!(
+            Self::BadChecksum { expected, provided } => write!(
                 f,
                 "Peer sent us a corrupted message: expected {expected}, got {provided}"
             ),
-            TransportError::BadMagicBits { expected, provided } => {
+            Self::BadMagicBits { expected, provided } => {
                 write!(
                     f,
                     "Peer sent us a message with invalid magic bits: expected {expected}, got {provided}"
                 )
             }
-            TransportError::InvalidAddress => {
+            Self::InvalidAddress => {
                 write!(f, "provided address is either invalid or unreachable")
             }
         }
@@ -400,7 +400,7 @@ where
     /// Read the next [`NetworkMessage`] from the transport's [`ProtocolReader`] buffer.
     pub async fn read_message(&mut self) -> Result<NetworkMessage, TransportError> {
         match self {
-            ReadTransport::V2(protocol) => {
+            Self::V2(protocol) => {
                 let payload = protocol.read().await?;
                 let contents = payload.contents();
 
@@ -420,7 +420,7 @@ where
                 let msg = deserialize_v2(contents)?;
                 Ok(msg)
             }
-            ReadTransport::V1(reader, network) => {
+            Self::V1(reader, network) => {
                 let mut data: Vec<u8> = vec![0; 24];
                 reader.read_exact(&mut data).await?;
 
@@ -464,7 +464,7 @@ where
     /// Write a [`NetworkMessage`] to the transport's [`ProtocolWriter`] buffer.
     pub async fn write_message(&mut self, message: NetworkMessage) -> Result<(), TransportError> {
         match self {
-            WriteTransport::V2(protocol) => {
+            Self::V2(protocol) => {
                 // TODO: remove this once https://github.com/rust-bitcoin/rust-bitcoin/pull/5671 and
                 // https://github.com/rust-bitcoin/rust-bitcoin/pull/5009 make it into a release
                 if let NetworkMessage::Unknown { command, payload } = message {
@@ -489,7 +489,7 @@ where
                 let data = serialize_v2(message);
                 protocol.write(&Payload::genuine(data)).await?;
             }
-            WriteTransport::V1(writer, network) => {
+            Self::V1(writer, network) => {
                 if let NetworkMessage::Unknown { payload, command } = message {
                     let expected_cmd = CommandString::try_from_static("getuproof").unwrap();
                     assert_eq!(
@@ -528,8 +528,8 @@ where
         match self {
             // The V2 transport does not require an explicit `writer.shutdown()` call,
             // since the buffer is already flushed internally on each `write()` call.
-            WriteTransport::V2(_) => {}
-            WriteTransport::V1(writer, _) => {
+            Self::V2(_) => {}
+            Self::V1(writer, _) => {
                 writer.shutdown().await?;
             }
         }

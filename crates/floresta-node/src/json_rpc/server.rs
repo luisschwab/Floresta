@@ -697,7 +697,7 @@ impl<Blockchain: RpcChain> RpcImpl<Blockchain> {
                     .allow_private_network(true)
                     .allow_methods([Method::POST, Method::HEAD]),
             )
-            .with_state(Arc::new(RpcImpl {
+            .with_state(Arc::new(Self {
                 chain,
                 wallet,
                 node,

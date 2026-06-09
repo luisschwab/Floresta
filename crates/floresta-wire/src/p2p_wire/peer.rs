@@ -190,25 +190,25 @@ pub enum PeerError {
 impl Display for PeerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            PeerError::Send => write!(f, "Error while sending to peer"),
-            PeerError::Read(err) => write!(f, "Error while reading from peer: {err:?}"),
-            PeerError::Parse(err) => write!(f, "Error while parsing message: {err:?}"),
-            PeerError::UnexpectedMessage => {
+            Self::Send => write!(f, "Error while sending to peer"),
+            Self::Read(err) => write!(f, "Error while reading from peer: {err:?}"),
+            Self::Parse(err) => write!(f, "Error while parsing message: {err:?}"),
+            Self::UnexpectedMessage => {
                 write!(f, "Peer sent us a message that we aren't expecting")
             }
-            PeerError::MessageTooBig => write!(f, "Peer sent us a message that is too big"),
-            PeerError::MagicBitsMismatch => {
+            Self::MessageTooBig => write!(f, "Peer sent us a message that is too big"),
+            Self::MagicBitsMismatch => {
                 write!(f, "Peer sent us a message with the wrong magic bits")
             }
-            PeerError::TooManyMessages => {
+            Self::TooManyMessages => {
                 write!(
                     f,
                     "Peer sent us too many messages in a short period of time"
                 )
             }
-            PeerError::PingTimeout => write!(f, "Peer timed out a ping"),
-            PeerError::Channel => write!(f, "Channel error with empty data"),
-            PeerError::Transport(err) => write!(f, "Transport error: {err:?}"),
+            Self::PingTimeout => write!(f, "Peer timed out a ping"),
+            Self::Channel => write!(f, "Channel error with empty data"),
+            Self::Transport(err) => write!(f, "Transport error: {err:?}"),
         }
     }
 }
@@ -219,7 +219,7 @@ impl_error_from!(PeerError, encode::Error, Parse);
 
 impl From<SendError<ReaderMessage>> for PeerError {
     fn from(_: SendError<ReaderMessage>) -> Self {
-        PeerError::Channel
+        Self::Channel
     }
 }
 

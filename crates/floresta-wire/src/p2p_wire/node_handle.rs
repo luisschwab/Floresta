@@ -159,7 +159,7 @@ pub struct NodeHandle {
 
 impl NodeHandle {
     pub fn new(node_sender: UnboundedSender<NodeNotification>) -> Self {
-        NodeHandle { node_sender }
+        Self { node_sender }
     }
 
     /// Sends a request to the node.

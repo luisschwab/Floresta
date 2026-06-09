@@ -40,15 +40,15 @@ impl_error_from!(DescriptorError, ConversionError, DeriveDescriptorError);
 impl Display for DescriptorError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            DescriptorError::XpubParseError(err) => write!(f, "Xpub parse error: {err}"),
-            DescriptorError::XpubNetworkMismatch(key) => {
+            Self::XpubParseError(err) => write!(f, "Xpub parse error: {err}"),
+            Self::XpubNetworkMismatch(key) => {
                 write!(
                     f,
                     "The inserted Xpub does not operate in this network: {key}"
                 )
             }
-            DescriptorError::MiniscriptError(err) => write!(f, "Miniscript error: {err}"),
-            DescriptorError::DeriveDescriptorError(err) => {
+            Self::MiniscriptError(err) => write!(f, "Miniscript error: {err}"),
+            Self::DeriveDescriptorError(err) => {
                 write!(f, "Derive descriptor error: {err}")
             }
         }

@@ -264,14 +264,14 @@ pub enum Error {
 
 impl From<serde_json::Error> for Error {
     fn from(value: serde_json::Error) -> Self {
-        Error::Serde(value)
+        Self::Serde(value)
     }
 }
 
 #[cfg(feature = "with-jsonrpc")]
 impl From<jsonrpc::Error> for Error {
     fn from(value: jsonrpc::Error) -> Self {
-        Error::JsonRpc(value)
+        Self::JsonRpc(value)
     }
 }
 
@@ -279,13 +279,13 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             #[cfg(feature = "with-jsonrpc")]
-            Error::JsonRpc(e) => write!(f, "JsonRpc returned an error {e}"),
-            Error::Api(e) => write!(f, "general jsonrpc error: {e}"),
-            Error::Serde(e) => write!(f, "error while deserializing the response: {e}"),
-            Error::EmptyResponse => write!(f, "got an empty response from server"),
-            Error::InvalidVerbosity => write!(f, "invalid verbosity level"),
-            Error::InvalidRescanVal => write!(f, "Invalid rescan values"),
-            Error::TxOutNotFound => write!(f, "Transaction output was not found"),
+            Self::JsonRpc(e) => write!(f, "JsonRpc returned an error {e}"),
+            Self::Api(e) => write!(f, "general jsonrpc error: {e}"),
+            Self::Serde(e) => write!(f, "error while deserializing the response: {e}"),
+            Self::EmptyResponse => write!(f, "got an empty response from server"),
+            Self::InvalidVerbosity => write!(f, "invalid verbosity level"),
+            Self::InvalidRescanVal => write!(f, "Invalid rescan values"),
+            Self::TxOutNotFound => write!(f, "Transaction output was not found"),
         }
     }
 }
@@ -354,9 +354,9 @@ pub enum AddNodeCommand {
 impl Display for AddNodeCommand {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let cmd = match self {
-            AddNodeCommand::Add => "add",
-            AddNodeCommand::Remove => "remove",
-            AddNodeCommand::Onetry => "onetry",
+            Self::Add => "add",
+            Self::Remove => "remove",
+            Self::Onetry => "onetry",
         };
         write!(f, "{cmd}")
     }

@@ -261,207 +261,207 @@ pub mod jsonrpc_interface {
         pub fn http_code(&self) -> StatusCode {
             match self {
                 // 400 Bad Request - client sent invalid data
-                JsonRpcError::InvalidHex
-                | JsonRpcError::InvalidScript
-                | JsonRpcError::InvalidRequest
-                | JsonRpcError::InvalidDescriptor(_)
-                | JsonRpcError::InvalidJsonRpcVersion
-                | JsonRpcError::InvalidVerbosityLevel
-                | JsonRpcError::Decode(_)
-                | JsonRpcError::MempoolAccept(_)
-                | JsonRpcError::InvalidMemInfoMode
-                | JsonRpcError::InvalidAddnodeCommand
-                | JsonRpcError::InvalidDisconnectNodeCommand
-                | JsonRpcError::InvalidTimestamp
-                | JsonRpcError::InvalidRescanVal
-                | JsonRpcError::NoAddressesToRescan
-                | JsonRpcError::InvalidParameterType(_)
-                | JsonRpcError::InvalidParameterStructure(_)
-                | JsonRpcError::MissingParameter(_)
-                | JsonRpcError::InvalidNetAddress(_)
-                | JsonRpcError::Wallet(_) => StatusCode::BAD_REQUEST,
+                Self::InvalidHex
+                | Self::InvalidScript
+                | Self::InvalidRequest
+                | Self::InvalidDescriptor(_)
+                | Self::InvalidJsonRpcVersion
+                | Self::InvalidVerbosityLevel
+                | Self::Decode(_)
+                | Self::MempoolAccept(_)
+                | Self::InvalidMemInfoMode
+                | Self::InvalidAddnodeCommand
+                | Self::InvalidDisconnectNodeCommand
+                | Self::InvalidTimestamp
+                | Self::InvalidRescanVal
+                | Self::NoAddressesToRescan
+                | Self::InvalidParameterType(_)
+                | Self::InvalidParameterStructure(_)
+                | Self::MissingParameter(_)
+                | Self::InvalidNetAddress(_)
+                | Self::Wallet(_) => StatusCode::BAD_REQUEST,
 
                 // 404 Not Found - resource/method doesn't exist
-                JsonRpcError::MethodNotFound
-                | JsonRpcError::BlockNotFound
-                | JsonRpcError::TxNotFound
-                | JsonRpcError::PeerNotFound => StatusCode::NOT_FOUND,
+                Self::MethodNotFound
+                | Self::BlockNotFound
+                | Self::TxNotFound
+                | Self::PeerNotFound => StatusCode::NOT_FOUND,
 
                 // 500 Internal Server Error - server messed up
-                JsonRpcError::ChainWorkOverflow | JsonRpcError::ConversionOverflow(_) => {
+                Self::ChainWorkOverflow | Self::ConversionOverflow(_) => {
                     StatusCode::INTERNAL_SERVER_ERROR
                 }
 
                 // 503 Service Unavailable - server can't handle right now
-                JsonRpcError::InInitialBlockDownload
-                | JsonRpcError::NoBlockFilters
-                | JsonRpcError::Node(_)
-                | JsonRpcError::Chain
-                | JsonRpcError::Filters(_) => StatusCode::SERVICE_UNAVAILABLE,
+                Self::InInitialBlockDownload
+                | Self::NoBlockFilters
+                | Self::Node(_)
+                | Self::Chain
+                | Self::Filters(_) => StatusCode::SERVICE_UNAVAILABLE,
             }
         }
 
         pub fn rpc_error(&self) -> RpcError {
             match self {
                 // Parse error - invalid JSON received
-                JsonRpcError::Decode(msg) => RpcError {
+                Self::Decode(msg) => RpcError {
                     code: PARSE_ERROR,
                     message: "Parse error".into(),
                     data: Some(Value::String(msg.clone())),
                 },
 
                 // Invalid request - not a valid JSON-RPC request
-                JsonRpcError::InvalidRequest => RpcError {
+                Self::InvalidRequest => RpcError {
                     code: INVALID_REQUEST,
                     message: "Invalid request".into(),
                     data: None,
                 },
 
                 // Method not found
-                JsonRpcError::MethodNotFound => RpcError {
+                Self::MethodNotFound => RpcError {
                     code: METHOD_NOT_FOUND,
                     message: "Method not found".into(),
                     data: None,
                 },
 
                 // Invalid params - invalid method parameters
-                JsonRpcError::InvalidHex => RpcError {
+                Self::InvalidHex => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid hex encoding".into(),
                     data: None,
                 },
-                JsonRpcError::InvalidScript => RpcError {
+                Self::InvalidScript => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid script".into(),
                     data: None,
                 },
-                JsonRpcError::InvalidDescriptor(e) => RpcError {
+                Self::InvalidDescriptor(e) => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid descriptor".into(),
                     data: Some(Value::String(e.to_string())),
                 },
-                JsonRpcError::InvalidVerbosityLevel => RpcError {
+                Self::InvalidVerbosityLevel => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid verbosity level".into(),
                     data: None,
                 },
-                JsonRpcError::InvalidTimestamp => RpcError {
+                Self::InvalidTimestamp => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid timestamp".into(),
                     data: None,
                 },
-                JsonRpcError::InvalidMemInfoMode => RpcError {
+                Self::InvalidMemInfoMode => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid meminfo mode".into(),
                     data: None,
                 },
-                JsonRpcError::InvalidAddnodeCommand => RpcError {
+                Self::InvalidAddnodeCommand => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid addnode command".into(),
                     data: None,
                 },
-                JsonRpcError::InvalidDisconnectNodeCommand => RpcError {
+                Self::InvalidDisconnectNodeCommand => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid disconnectnode command".into(),
                     data: None,
                 },
-                JsonRpcError::InvalidRescanVal => RpcError {
+                Self::InvalidRescanVal => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid rescan values".into(),
                     data: None,
                 },
-                JsonRpcError::InvalidParameterType(param) => RpcError {
+                Self::InvalidParameterType(param) => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid parameter type".into(),
                     data: Some(Value::String(param.clone())),
                 },
-                JsonRpcError::InvalidParameterStructure(param) => RpcError {
+                Self::InvalidParameterStructure(param) => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message:
                         "A parameter is malformated, the parameter MUST be an array or an object"
                             .into(),
                     data: Some(Value::String(param.clone())),
                 },
-                JsonRpcError::InvalidJsonRpcVersion => RpcError {
+                Self::InvalidJsonRpcVersion => RpcError {
                     code: INVALID_REQUEST,
                     message: "The request contains a invalid jsonrpc version".into(),
                     data: None,
                 },
-                JsonRpcError::MissingParameter(param) => RpcError {
+                Self::MissingParameter(param) => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Missing parameter".into(),
                     data: Some(Value::String(param.clone())),
                 },
-                JsonRpcError::InvalidNetAddress(err) => RpcError {
+                Self::InvalidNetAddress(err) => RpcError {
                     code: INVALID_METHOD_PARAMETERS,
                     message: "Invalid network address provided".into(),
                     data: Some(Value::String(err.to_string())),
                 },
 
                 // Internal error
-                JsonRpcError::ChainWorkOverflow => RpcError {
+                Self::ChainWorkOverflow => RpcError {
                     code: INTERNAL_ERROR,
                     message: "Chain work overflow".into(),
                     data: None,
                 },
-                JsonRpcError::ConversionOverflow(msg) => RpcError {
+                Self::ConversionOverflow(msg) => RpcError {
                     code: INTERNAL_ERROR,
                     message: "Numeric conversion overflow".into(),
                     data: Some(Value::String(msg.clone())),
                 },
 
                 // Server errors (implementation-defined: -32099..=-32000)
-                JsonRpcError::TxNotFound => RpcError {
+                Self::TxNotFound => RpcError {
                     code: TX_NOT_FOUND,
                     message: "Transaction not found".into(),
                     data: None,
                 },
-                JsonRpcError::BlockNotFound => RpcError {
+                Self::BlockNotFound => RpcError {
                     code: BLOCK_NOT_FOUND,
                     message: "Block not found".into(),
                     data: None,
                 },
-                JsonRpcError::PeerNotFound => RpcError {
+                Self::PeerNotFound => RpcError {
                     code: PEER_NOT_FOUND,
                     message: "Peer not found".into(),
                     data: None,
                 },
-                JsonRpcError::NoAddressesToRescan => RpcError {
+                Self::NoAddressesToRescan => RpcError {
                     code: NO_ADDRESSES_TO_RESCAN,
                     message: "No addresses to rescan".into(),
                     data: None,
                 },
-                JsonRpcError::Wallet(msg) => RpcError {
+                Self::Wallet(msg) => RpcError {
                     code: WALLET_ERROR,
                     message: "Wallet error".into(),
                     data: Some(Value::String(msg.clone())),
                 },
-                JsonRpcError::MempoolAccept(msg) => RpcError {
+                Self::MempoolAccept(msg) => RpcError {
                     code: MEMPOOL_ERROR,
                     message: "Mempool error".into(),
                     data: Some(Value::String(format!("{msg}"))),
                 },
-                JsonRpcError::InInitialBlockDownload => RpcError {
+                Self::InInitialBlockDownload => RpcError {
                     code: IN_INITIAL_BLOCK_DOWNLOAD,
                     message: "Node is in initial block download".into(),
                     data: None,
                 },
-                JsonRpcError::NoBlockFilters => RpcError {
+                Self::NoBlockFilters => RpcError {
                     code: NO_BLOCK_FILTERS,
                     message: "Block filters not available".into(),
                     data: None,
                 },
-                JsonRpcError::Node(msg) => RpcError {
+                Self::Node(msg) => RpcError {
                     code: NODE_ERROR,
                     message: "Node error".into(),
                     data: Some(Value::String(msg.clone())),
                 },
-                JsonRpcError::Chain => RpcError {
+                Self::Chain => RpcError {
                     code: CHAIN_ERROR,
                     message: "Chain error".into(),
                     data: None,
                 },
-                JsonRpcError::Filters(msg) => RpcError {
+                Self::Filters(msg) => RpcError {
                     code: FILTERS_ERROR,
                     message: "Filters error".into(),
                     data: Some(Value::String(msg.clone())),
@@ -473,37 +473,37 @@ pub mod jsonrpc_interface {
     impl From<HeaderExtError> for JsonRpcError {
         fn from(value: HeaderExtError) -> Self {
             match value {
-                HeaderExtError::Chain(_) => JsonRpcError::Chain,
-                HeaderExtError::BlockNotFound => JsonRpcError::BlockNotFound,
-                HeaderExtError::ChainWorkOverflow => JsonRpcError::ChainWorkOverflow,
+                HeaderExtError::Chain(_) => Self::Chain,
+                HeaderExtError::BlockNotFound => Self::BlockNotFound,
+                HeaderExtError::ChainWorkOverflow => Self::ChainWorkOverflow,
             }
         }
     }
 
     impl From<TryFromIntError> for JsonRpcError {
         fn from(e: TryFromIntError) -> Self {
-            JsonRpcError::ConversionOverflow(e.to_string())
+            Self::ConversionOverflow(e.to_string())
         }
     }
 
     impl From<Infallible> for JsonRpcError {
         fn from(e: Infallible) -> Self {
-            JsonRpcError::ConversionOverflow(e.to_string())
+            Self::ConversionOverflow(e.to_string())
         }
     }
 
     impl_error_from!(JsonRpcError, miniscript::Error, InvalidDescriptor);
     impl<T: fmt::Debug> From<WatchOnlyError<T>> for JsonRpcError {
         fn from(e: WatchOnlyError<T>) -> Self {
-            JsonRpcError::Wallet(e.to_string())
+            Self::Wallet(e.to_string())
         }
     }
 
     impl From<BlockchainError> for JsonRpcError {
         fn from(e: BlockchainError) -> Self {
             match e {
-                BlockchainError::BlockNotPresent => JsonRpcError::BlockNotFound,
-                _ => JsonRpcError::Chain,
+                BlockchainError::BlockNotPresent => Self::BlockNotFound,
+                _ => Self::Chain,
             }
         }
     }

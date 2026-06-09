@@ -75,7 +75,7 @@ impl Decodable for LeafData {
         let prevout = OutPoint::consensus_decode(reader)?;
         let header_code = u32::consensus_decode(reader)?;
         let utxo = TxOut::consensus_decode(reader)?;
-        Ok(LeafData {
+        Ok(Self {
             block_hash,
             prevout,
             header_code,
@@ -136,11 +136,11 @@ impl Decodable for ScriptPubKeyKind {
     ) -> Result<Self, consensus::encode::Error> {
         let ty = u8::consensus_decode(reader)?;
         match ty {
-            0x00 => Ok(ScriptPubKeyKind::Other(Box::consensus_decode(reader)?)),
-            0x01 => Ok(ScriptPubKeyKind::PubKeyHash),
-            0x02 => Ok(ScriptPubKeyKind::WitnessV0PubKeyHash),
-            0x03 => Ok(ScriptPubKeyKind::ScriptHash),
-            0x04 => Ok(ScriptPubKeyKind::WitnessV0ScriptHash),
+            0x00 => Ok(Self::Other(Box::consensus_decode(reader)?)),
+            0x01 => Ok(Self::PubKeyHash),
+            0x02 => Ok(Self::WitnessV0PubKeyHash),
+            0x03 => Ok(Self::ScriptHash),
+            0x04 => Ok(Self::WitnessV0ScriptHash),
             _ => Err(consensus::encode::Error::ParseFailed("Invalid script type")),
         }
     }
@@ -154,20 +154,20 @@ impl Encodable for ScriptPubKeyKind {
         let mut len = 1;
 
         match self {
-            ScriptPubKeyKind::Other(script) => {
+            Self::Other(script) => {
                 00_u8.consensus_encode(writer)?;
                 len += script.consensus_encode(writer)?;
             }
-            ScriptPubKeyKind::PubKeyHash => {
+            Self::PubKeyHash => {
                 0x01_u8.consensus_encode(writer)?;
             }
-            ScriptPubKeyKind::WitnessV0PubKeyHash => {
+            Self::WitnessV0PubKeyHash => {
                 0x02_u8.consensus_encode(writer)?;
             }
-            ScriptPubKeyKind::ScriptHash => {
+            Self::ScriptHash => {
                 0x03_u8.consensus_encode(writer)?;
             }
-            ScriptPubKeyKind::WitnessV0ScriptHash => {
+            Self::WitnessV0ScriptHash => {
                 0x04_u8.consensus_encode(writer)?;
             }
         }
@@ -233,9 +233,9 @@ pub mod proof_util {
     impl Display for LeafErrorKind {
         fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
             match self {
-                LeafErrorKind::EmptyStack => write!(f, "Empty stack"),
-                LeafErrorKind::InvalidInstruction(e) => write!(f, "Invalid instruction: {e}"),
-                LeafErrorKind::NotPushBytes => write!(f, "Not push bytes"),
+                Self::EmptyStack => write!(f, "Empty stack"),
+                Self::InvalidInstruction(e) => write!(f, "Invalid instruction: {e}"),
+                Self::NotPushBytes => write!(f, "Not push bytes"),
             }
         }
     }

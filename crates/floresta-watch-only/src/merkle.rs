@@ -34,7 +34,7 @@ impl Default for MerkleProof {
 impl MerkleProof {
     /// Create a new and empty [`MerkleProof`].
     fn new() -> Self {
-        MerkleProof {
+        Self {
             target: Txid::all_zeros(),
             hashes: Vec::new(),
             pos: 0,

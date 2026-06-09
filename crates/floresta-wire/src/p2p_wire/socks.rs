@@ -68,8 +68,8 @@ impl TryFrom<&LocalAddress> for Socks5Addr {
             .get_net_address()
             .map(|ip| match ip {
                 // Try to parse as an IP address first
-                IpAddr::V4(ipv4) => Socks5Addr::Ipv4(ipv4),
-                IpAddr::V6(ipv6) => Socks5Addr::Ipv6(ipv6),
+                IpAddr::V4(ipv4) => Self::Ipv4(ipv4),
+                IpAddr::V6(ipv6) => Self::Ipv6(ipv6),
             })
             // TODO(davidson): Support Tor, I2P...
             .ok_or(TransportError::InvalidAddress)
@@ -161,18 +161,18 @@ pub enum Socks5Error {
 
 impl From<tokio::io::Error> for Socks5Error {
     fn from(_error: tokio::io::Error) -> Self {
-        Socks5Error::ReadError
+        Self::ReadError
     }
 }
 
 impl Display for Socks5Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Socks5Error::InvalidVersion => write!(f, "Invalid SOCKS version"),
-            Socks5Error::InvalidAuthMethod => write!(f, "Invalid authentication method"),
-            Socks5Error::ConnectionFailed => write!(f, "Connection failed"),
-            Socks5Error::InvalidAddress => write!(f, "Invalid address"),
-            Socks5Error::ReadError => write!(f, "Error reading from socket"),
+            Self::InvalidVersion => write!(f, "Invalid SOCKS version"),
+            Self::InvalidAuthMethod => write!(f, "Invalid authentication method"),
+            Self::ConnectionFailed => write!(f, "Connection failed"),
+            Self::InvalidAddress => write!(f, "Invalid address"),
+            Self::ReadError => write!(f, "Error reading from socket"),
         }
     }
 }

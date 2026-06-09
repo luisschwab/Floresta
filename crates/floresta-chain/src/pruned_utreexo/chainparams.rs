@@ -105,7 +105,7 @@ pub struct DnsSeed {
 impl DnsSeed {
     /// Create a new DNS seed
     pub fn new(seed: &'static str, filters: ServiceFlags) -> Self {
-        DnsSeed { seed, filters }
+        Self { seed, filters }
     }
 }
 
@@ -323,7 +323,7 @@ impl From<Network> for ChainParams {
         let exceptions = get_exceptions();
 
         match network {
-            Network::Bitcoin => ChainParams {
+            Network::Bitcoin => Self {
                 params: Params::new(network),
                 network,
                 genesis,
@@ -335,7 +335,7 @@ impl From<Network> for ChainParams {
                 exceptions,
                 enforce_bip94: false,
             },
-            Network::Testnet => ChainParams {
+            Network::Testnet => Self {
                 params: Params::new(network),
                 network,
                 genesis,
@@ -347,7 +347,7 @@ impl From<Network> for ChainParams {
                 exceptions,
                 enforce_bip94: false,
             },
-            Network::Testnet4 => ChainParams {
+            Network::Testnet4 => Self {
                 params: Params::new(network),
                 network,
                 genesis,
@@ -359,7 +359,7 @@ impl From<Network> for ChainParams {
                 exceptions,
                 enforce_bip94: true,
             },
-            Network::Signet => ChainParams {
+            Network::Signet => Self {
                 params: Params::new(network),
                 network,
                 genesis,
@@ -371,7 +371,7 @@ impl From<Network> for ChainParams {
                 exceptions,
                 enforce_bip94: false,
             },
-            Network::Regtest => ChainParams {
+            Network::Regtest => Self {
                 params: Params::new(network),
                 network,
                 genesis,

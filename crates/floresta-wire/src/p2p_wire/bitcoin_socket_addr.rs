@@ -54,20 +54,20 @@ pub enum InvalidAddressError {
 impl Display for InvalidAddressError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InvalidAddressError::MissingPort => {
+            Self::MissingPort => {
                 write!(f, "No port were provided when one was needed")
             }
-            InvalidAddressError::NoAssociatedAddress => write!(
+            Self::NoAssociatedAddress => write!(
                 f,
                 "No associated address could be found when fetching this name"
             ),
-            InvalidAddressError::InvalidPort => write!(f, "The provided port is invalid"),
-            InvalidAddressError::TrailingColon => write!(
+            Self::InvalidPort => write!(f, "The provided port is invalid"),
+            Self::TrailingColon => write!(
                 f,
                 "The provided address contains a trailing colon where it's not allowed"
             ),
-            InvalidAddressError::InvalidDNSName => write!(f, "An invalid DNS name was provided"),
-            InvalidAddressError::InvalidAddress => write!(f, "The provided address is invalid"),
+            Self::InvalidDNSName => write!(f, "An invalid DNS name was provided"),
+            Self::InvalidAddress => write!(f, "The provided address is invalid"),
         }
     }
 }
@@ -186,7 +186,7 @@ impl BitcoinSocketAddr {
 
         let port = Self::get_default_port(network);
 
-        BitcoinSocketAddr { address, port }
+        Self { address, port }
     }
 
     #[inline]

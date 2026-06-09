@@ -32,7 +32,7 @@ struct FeeRateIndexer {
 
 impl FeeRateIndexer {
     pub fn new() -> Self {
-        FeeRateIndexer {
+        Self {
             min_sats_per_kvb: AtomicU64::new(0),
         }
     }

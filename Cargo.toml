@@ -86,6 +86,7 @@ metrics = { path = "metrics" }
 
 [workspace.lints.clippy]
 unused_async = "deny"
+use_self = "deny"
 
 [profile.release]
 opt-level = 3     # maximum optimization level

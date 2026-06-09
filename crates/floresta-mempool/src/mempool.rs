@@ -117,7 +117,7 @@ impl Error for MempoolError {}
 
 impl Mempool {
     /// Creates a new mempool with a given maximum size
-    pub fn new(max_mempool_size: usize) -> Mempool {
+    pub fn new(max_mempool_size: usize) -> Self {
         let a = rand::random();
         let b = rand::random();
         let c = rand::random();
@@ -125,7 +125,7 @@ impl Mempool {
 
         let hasher = ahash::RandomState::with_seeds(a, b, c, d);
 
-        Mempool {
+        Self {
             transactions: HashMap::new(),
             queue: Vec::new(),
             mempool_size: 0,

@@ -101,11 +101,11 @@ impl ReachableNetworks {
 impl Display for ReachableNetworks {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            ReachableNetworks::IPv4 => write!(f, "ipv4"),
-            ReachableNetworks::IPv6 => write!(f, "ipv6"),
-            ReachableNetworks::TorV3 => write!(f, "onion"),
-            ReachableNetworks::I2P => write!(f, "i2p"),
-            ReachableNetworks::Cjdns => write!(f, "cjdns"),
+            Self::IPv4 => write!(f, "ipv4"),
+            Self::IPv6 => write!(f, "ipv6"),
+            Self::TorV3 => write!(f, "onion"),
+            Self::I2P => write!(f, "i2p"),
+            Self::Cjdns => write!(f, "cjdns"),
         }
     }
 }
@@ -170,7 +170,7 @@ impl Display for LocalAddress {
 
 impl From<BitcoinSocketAddr> for LocalAddress {
     fn from(value: BitcoinSocketAddr) -> Self {
-        LocalAddress {
+        Self {
             address: value,
             last_connected: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -188,7 +188,7 @@ impl From<BitcoinSocketAddr> for LocalAddress {
 impl From<AddrV2Message> for LocalAddress {
     fn from(value: AddrV2Message) -> Self {
         let socket_addr = BitcoinSocketAddr::new(value.addr, value.port);
-        LocalAddress {
+        Self {
             address: socket_addr,
             last_connected: value.time.into(),
             state: AddressState::NeverTried,
@@ -203,7 +203,7 @@ impl FromStr for LocalAddress {
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let address = value.parse::<BitcoinSocketAddr>()?;
 
-        Ok(LocalAddress::new(
+        Ok(Self::new(
             address,
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -226,8 +226,8 @@ impl LocalAddress {
         state: AddressState,
         services: ServiceFlags,
         id: usize,
-    ) -> LocalAddress {
-        LocalAddress {
+    ) -> Self {
+        Self {
             address,
             last_connected,
             state,
@@ -441,7 +441,7 @@ impl AddressMan {
         let reachable_networks: HashSet<ReachableNetworks> =
             reachable_networks.iter().cloned().collect();
 
-        AddressMan {
+        Self {
             addresses: HashMap::new(),
             good_addresses: Vec::new(),
             good_peers_by_service: HashMap::new(),
@@ -1157,7 +1157,7 @@ impl From<LocalAddress> for DiskLocalAddress {
             .unwrap_or_default()
             .as_secs();
 
-        DiskLocalAddress {
+        Self {
             address,
             last_connected: value.last_connected,
             state: if value.state == AddressState::Connected {
@@ -1185,7 +1185,7 @@ impl From<DiskLocalAddress> for LocalAddress {
         let services = ServiceFlags::from(value.services);
         let sock_addr = BitcoinSocketAddr::new(address, value.port);
 
-        LocalAddress {
+        Self {
             address: sock_addr,
             last_connected: value.last_connected,
             state: value.state,
@@ -1221,12 +1221,12 @@ pub enum Address {
 impl From<Address> for AddrV2 {
     fn from(value: Address) -> Self {
         match value {
-            Address::V4(addr) => AddrV2::Ipv4(addr),
-            Address::V6(addr) => AddrV2::Ipv6(addr),
-            Address::I2p(addr) => AddrV2::I2p(addr),
-            Address::Cjdns(addr) => AddrV2::Cjdns(addr),
-            Address::OnionV2(addr) => AddrV2::TorV2(addr),
-            Address::OnionV3(addr) => AddrV2::TorV3(addr),
+            Address::V4(addr) => Self::Ipv4(addr),
+            Address::V6(addr) => Self::Ipv6(addr),
+            Address::I2p(addr) => Self::I2p(addr),
+            Address::Cjdns(addr) => Self::Cjdns(addr),
+            Address::OnionV2(addr) => Self::TorV2(addr),
+            Address::OnionV3(addr) => Self::TorV3(addr),
         }
     }
 }

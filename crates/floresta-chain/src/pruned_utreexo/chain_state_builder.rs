@@ -49,10 +49,10 @@ pub enum BlockchainBuilderError {
 impl Display for BlockchainBuilderError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            BlockchainBuilderError::MissingChainstore => write!(f, "Missing chainstore"),
-            BlockchainBuilderError::MissingChainParams => write!(f, "Missing chain parameters"),
-            BlockchainBuilderError::IncompleteTip => write!(f, "Incomplete tip"),
-            BlockchainBuilderError::Database(e) => write!(f, "Database error: {e}"),
+            Self::MissingChainstore => write!(f, "Missing chainstore"),
+            Self::MissingChainParams => write!(f, "Missing chain parameters"),
+            Self::IncompleteTip => write!(f, "Incomplete tip"),
+            Self::Database(e) => write!(f, "Database error: {e}"),
         }
     }
 }
@@ -88,7 +88,7 @@ pub struct ChainStateBuilder<PersistedState: ChainStore> {
 impl<T: ChainStore> ChainStateBuilder<T> {
     /// Creates a new instance of ChainStateBuilder.
     pub fn new() -> Self {
-        ChainStateBuilder {
+        Self {
             acc: None,
             chainstore: None,
             ibd: true,
