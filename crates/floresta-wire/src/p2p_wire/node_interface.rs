@@ -22,7 +22,6 @@ use bitcoin::BlockHash;
 use bitcoin::Transaction;
 use bitcoin::Txid;
 use bitcoin::p2p::ServiceFlags;
-use bitcoin::p2p::address::AddrV2;
 use floresta_mempool::mempool::MempoolError;
 use serde::Serialize;
 
@@ -32,83 +31,6 @@ use super::node::PeerStatus;
 use super::transport::TransportProtocol;
 use crate::address_man::ConnectionStats;
 use crate::bitcoin_socket_addr::BitcoinSocketAddr;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-/// A request to addnode that can be made to the node.
-///
-/// This enum represents all the possible requests that can be made to the node to add, remove
-/// or just try to connect to a peer, following the same pattern as the `addnode` command in [Bitcoin Core].
-///
-/// [Bitcoin Core]: (https://bitcoincore.org/en/doc/29.0.0/rpc/network/addnode/)
-pub enum AddNode {
-    /// The `Add` variant is used to add a peer to the node's peer list
-    Add((AddrV2, u16)),
-
-    /// The `Remove` variant is used to remove a peer from the node's peer list
-    Remove((AddrV2, u16)),
-
-    /// The `Onetry` variant is used to try a connection to the peer once, but not add it to the peer list.
-    Onetry((AddrV2, u16)),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-/// A request that can be made to the node.
-///
-/// While the node is running, consumers may want to request some useful data, like block data,
-/// mempool transactions or tell the node to connect with some given peers. This struct represents
-/// all the possible requests that can be made to the node as well as the data that needs to be
-/// sent along with the request.
-pub enum UserRequest {
-    /// Request the [`UtreexoNodeConfig`] of the node.
-    Config,
-
-    /// Get a block by its hash.
-    ///
-    /// This will cause network requests to be made to fetch the block data.
-    Block(BlockHash),
-
-    /// Get the Utreexo proof and LeafData for a block by its hash.
-    UtreexoProof(BlockHash),
-
-    /// Get an unconfirmed transaction from the mempool by its ID.
-    MempoolTransaction(Txid),
-
-    /// Return information about all connected peers.
-    GetPeerInfo,
-
-    /// Return the number of connected peers.
-    GetConnectionCount,
-
-    /// Add a peer to the node's peer list.
-    ///
-    /// This function will add this peer to a special list of peers such that, if we lose the
-    /// connection, we will keep trying to connect to it until we succeed.
-    Add((BitcoinSocketAddr, bool)),
-
-    /// Removes a node from the node's peer list.
-    ///
-    /// This function will remove a node that was added with [`AddNode::Add`]. This will **not**
-    /// disconnect the peer, but if it disconnects, it will not be reconnected again.
-    Remove(BitcoinSocketAddr),
-
-    /// Attempts to connect to a peer once.
-    ///
-    /// Different from [`AddNode::Add`], this function will try to connect to the peer once, but
-    /// will not add it to the node's added peers list.
-    Onetry((BitcoinSocketAddr, bool)),
-
-    /// Attempt to disconnect from a peer.
-    Disconnect(BitcoinSocketAddr),
-
-    /// Ping all connected peers to check if they are alive.
-    Ping,
-
-    /// Adds a transaction to mempool and advertises it
-    SendTransaction(Transaction),
-
-    /// Return address manager statistics.
-    GetAddrManInfo,
-}
 
 #[derive(Debug, Clone, Serialize)]
 /// A struct representing a peer connected to the node.
