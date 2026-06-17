@@ -3,46 +3,16 @@
 """Utility helpers used by the test framework (paths, ports, TLS helpers)."""
 
 import os
+import time
+import inspect
 import random
 import socket
 import subprocess
-import time
 
 from test_framework.crypto.pkcs8 import (
     create_pkcs8_private_key,
     create_pkcs8_self_signed_certificate,
 )
-
-
-# pylint: disable=too-many-arguments,too-many-positional-arguments
-def wait_for_chain_sync(
-    florestad,
-    bitcoind,
-    utreexod,
-    target_blocks: int,
-    timeout: float,
-    wait_for_ibd_exit: bool = False,
-):
-    """Poll the three nodes until they all report `target_blocks`.
-
-    When `wait_for_ibd_exit` is set, also wait until florestad reports
-    `initialblockdownload == False`. Polls every 0.5 s; returns silently on
-    success and silently on timeout (caller asserts the post-condition).
-    """
-    end = time.time() + timeout
-    while time.time() < end:
-        blocks_synced = (
-            florestad.rpc.get_block_count()
-            == bitcoind.rpc.get_block_count()
-            == utreexod.rpc.get_block_count()
-            == target_blocks
-        )
-        if blocks_synced and (
-            not wait_for_ibd_exit
-            or not florestad.rpc.get_blockchain_info()["initialblockdownload"]
-        ):
-            return
-        time.sleep(0.5)
 
 
 class Utility:
@@ -119,3 +89,48 @@ class Utility:
         )
 
         return (pk_path, cert_path)
+
+
+def wait_until_helper_internal(
+    predicate, *, timeout=60, lock=None, timeout_factor=1.0, check_interval=0.05
+):
+    """Sleep until the predicate resolves to be True.
+
+    Warning: Note that this method is not recommended to be used in tests as it is
+    not aware of the context of the test framework. Using the `wait_until()` members
+    from `BitcoinTestFramework` or `P2PInterface` class ensures the timeout is
+    properly scaled. Furthermore, `wait_until()` from `P2PInterface` class in
+    `p2p.py` has a preset lock.
+    """
+    timeout = timeout * timeout_factor
+    time_end = time.time() + timeout
+
+    while time.time() < time_end:
+        if lock:
+            with lock:
+                if predicate():
+                    return
+        else:
+            if predicate():
+                return
+        time.sleep(check_interval)
+
+    # Print the cause of the timeout
+    predicate_source = "''''\n" + inspect.getsource(predicate) + "'''"
+    print(f"wait_until() failed. Predicate: {predicate_source}")
+    raise AssertionError(
+        f"Predicate {predicate_source} not true after {timeout} seconds"
+    )
+
+
+def wait_until(predicate, timeout=30, interval=0.5, error_msg="Condition not met"):
+    """
+    Wait until a predicate returns True or timeout is reached.
+    """
+    start = time.time()
+    while time.time() - start < timeout:
+        if predicate():
+            return True
+        time.sleep(interval)
+
+    raise TimeoutError(f"{error_msg} after {timeout} seconds")

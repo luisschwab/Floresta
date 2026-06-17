@@ -14,9 +14,6 @@ response but skipped on the floresta side.
 
 import pytest
 
-from test_framework.util import wait_for_chain_sync
-
-TIMEOUT_SECONDS = 30
 MINE_BLOCKS = 10
 
 # Five buried deployments per Bitcoin Core's deploymentinfo.cpp enum
@@ -28,15 +25,15 @@ BURIED_DEPLOYMENTS = ("bip34", "bip66", "bip65", "csv", "segwit")
 
 # pylint: disable=too-many-locals
 @pytest.mark.rpc
-def test_get_deployment_info(florestad_bitcoind_utreexod_with_chain):
+def test_get_deployment_info(node_manager, florestad_bitcoind_utreexod_with_chain):
     """
     Compare florestad's getdeploymentinfo response against bitcoind's after a
     small chain extension. Each buried deployment must match by type, height
     and active flag. BIP9 entries are validated by absence on the floresta side.
     """
-    florestad, bitcoind, utreexod = florestad_bitcoind_utreexod_with_chain(MINE_BLOCKS)
+    florestad, bitcoind, _ = florestad_bitcoind_utreexod_with_chain(MINE_BLOCKS)
 
-    wait_for_chain_sync(florestad, bitcoind, utreexod, MINE_BLOCKS, TIMEOUT_SECONDS)
+    node_manager.wait_for_sync_nodes()
 
     floresta_info = florestad.rpc.get_deployment_info()
     bitcoind_info = bitcoind.rpc.get_deployment_info()
