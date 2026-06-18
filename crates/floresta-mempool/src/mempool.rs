@@ -392,6 +392,11 @@ mod tests {
             };
 
             let inputs = rng.random_range(1..10);
+
+            // Track outpoints already used in this transaction to avoid
+            // duplicate inputs within a single tx, which is never valid.
+            // Conflicts are only meaningful across separate transactions.
+            let mut used_in_this_tx = HashSet::new();
             for _ in 0..inputs {
                 if outputs.is_empty() {
                     break;
@@ -402,6 +407,11 @@ mod tests {
                     false => outputs.remove(index),
                     true => *outputs.get(index).unwrap(),
                 };
+
+                // Skip if this outpoint is already an input in this tx
+                if !used_in_this_tx.insert(previous_output) {
+                    continue;
+                }
 
                 let input = bitcoin::TxIn {
                     previous_output,
@@ -476,7 +486,7 @@ mod tests {
         for tx in transactions {
             match mempool.accept_to_mempool(tx) {
                 Ok(_) => {}
-                Err(MempoolError::ConflictingTransaction) | Err(MempoolError::DuplicatedInputs) => {
+                Err(MempoolError::ConflictingTransaction) => {
                     did_conflict = true;
                 }
                 Err(e) => {
