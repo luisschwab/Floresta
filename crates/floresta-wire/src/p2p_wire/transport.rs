@@ -13,9 +13,6 @@ use bip324::futures::ProtocolWriter;
 use bip324::io::Payload;
 use bip324::io::ProtocolError;
 use bip324::io::ProtocolFailureSuggestion;
-use bip324::serde::CommandString;
-use bip324::serde::deserialize as deserialize_v2;
-use bip324::serde::serialize as serialize_v2;
 use bitcoin::Network;
 use bitcoin::consensus::Decodable;
 use bitcoin::consensus::Encodable;
@@ -27,6 +24,7 @@ use bitcoin::hashes::Hash;
 use bitcoin::hashes::sha256d;
 use bitcoin::hex::DisplayHex;
 use bitcoin::p2p::Magic;
+use bitcoin::p2p::message::CommandString;
 use bitcoin::p2p::message::MAX_MSG_SIZE;
 use bitcoin::p2p::message::NetworkMessage;
 use bitcoin::p2p::message::RawNetworkMessage;
@@ -45,6 +43,8 @@ use tokio::net::ToSocketAddrs;
 use tracing::debug;
 use tracing::error;
 
+use super::network_message_ext::NetworkMessageExt;
+use super::network_message_ext::V2MessageError;
 use super::socks::Socks5Addr;
 use super::socks::Socks5Error;
 use super::socks::Socks5StreamBuilder;
@@ -101,8 +101,8 @@ pub enum TransportError {
     /// V2 protocol error
     Protocol(ProtocolError),
 
-    /// V2 serde error
-    SerdeV2(bip324::serde::Error),
+    /// V2 message serialization error
+    SerdeV2(V2MessageError),
 
     /// V1 serde error
     SerdeV1(encode::Error),
@@ -163,7 +163,7 @@ impl Display for TransportError {
 
 impl_error_from!(TransportError, io::Error, Io);
 impl_error_from!(TransportError, ProtocolError, Protocol);
-impl_error_from!(TransportError, bip324::serde::Error, SerdeV2);
+impl_error_from!(TransportError, V2MessageError, SerdeV2);
 impl_error_from!(TransportError, encode::Error, SerdeV1);
 impl_error_from!(TransportError, Socks5Error, Proxy);
 
@@ -290,7 +290,9 @@ async fn try_connection<A: ToSocketAddrs>(
                 TransportProtocol::V1,
             ))
         }
-        false => match Protocol::new(network, Role::Initiator, None, None, reader, writer).await {
+        false => match Protocol::new(network.magic(), Role::Initiator, None, None, reader, writer)
+            .await
+        {
             Ok(protocol) => {
                 debug!("Established a P2PV2 connection with peer={peer_addr}");
                 let (reader_protocol, writer_protocol) = protocol.into_split();
@@ -371,7 +373,9 @@ async fn try_proxy_connection<A: ToSocketAddrs + Clone + Debug>(
                 TransportProtocol::V1,
             ))
         }
-        false => match Protocol::new(network, Role::Initiator, None, None, reader, writer).await {
+        false => match Protocol::new(network.magic(), Role::Initiator, None, None, reader, writer)
+            .await
+        {
             Ok(protocol) => {
                 debug!(
                     "Established a P2PV2 connection over SOCKS5 using proxy={proxy_addr:?} with peer={target_addr:?}"
@@ -404,20 +408,7 @@ where
                 let payload = protocol.read().await?;
                 let contents = payload.contents();
 
-                // TODO: remove this once https://github.com/rust-bitcoin/rust-bitcoin/pull/5671
-                // and https://github.com/rust-bitcoin/rust-bitcoin/pull/5009 make it into a release
-                /// P2PV2 BIP-0324 message type for `uproof`.
-                const P2PV2_UPROOF_MSG_TYPE: u8 = 29;
-                if contents.len() > 1 && contents[0] == P2PV2_UPROOF_MSG_TYPE {
-                    let msg = NetworkMessage::Unknown {
-                        command: CommandString::try_from_static("uproof")
-                            .expect("`uproof` is a valid command string"),
-                        payload: contents[1..].to_vec(),
-                    };
-                    return Ok(msg);
-                }
-
-                let msg = deserialize_v2(contents)?;
+                let msg = NetworkMessage::deserialize_v2(contents)?;
                 Ok(msg)
             }
             Self::V1(reader, network) => {
@@ -465,28 +456,7 @@ where
     pub async fn write_message(&mut self, message: NetworkMessage) -> Result<(), TransportError> {
         match self {
             Self::V2(protocol) => {
-                // TODO: remove this once https://github.com/rust-bitcoin/rust-bitcoin/pull/5671 and
-                // https://github.com/rust-bitcoin/rust-bitcoin/pull/5009 make it into a release
-                if let NetworkMessage::Unknown { command, payload } = message {
-                    /// P2PV2 BIP-0324 message type for `getuproof`.
-                    const P2PV2_GETUPROOF_MSG_TYPE: u8 = 30;
-
-                    let expected_cmd = CommandString::try_from_static("getuproof")
-                        .expect("`getuproof` is a valid command string");
-                    assert_eq!(
-                        command, expected_cmd,
-                        "getuproof is supported as unknown message"
-                    );
-
-                    let mut data = vec![];
-                    data.push(P2PV2_GETUPROOF_MSG_TYPE);
-                    data.extend(payload);
-                    protocol.write(&Payload::genuine(data)).await?;
-
-                    return Ok(());
-                }
-
-                let data = serialize_v2(message);
+                let data = message.serialize_v2();
                 protocol.write(&Payload::genuine(data)).await?;
             }
             Self::V1(writer, network) => {
@@ -554,7 +524,7 @@ pub(crate) mod test_transport {
     use std::task::Context;
     use std::task::Poll;
 
-    use bip324::Network;
+    use bitcoin::Network;
     use tokio::io::AsyncRead;
     use tokio::io::AsyncWrite;
     use tokio::io::ReadBuf;
@@ -641,7 +611,7 @@ pub(crate) mod test_transport {
 mod tests {
     use std::io::ErrorKind;
 
-    use bip324::Network;
+    use bitcoin::Network;
     use bitcoin::consensus::serialize;
     use bitcoin::p2p::message::NetworkMessage;
     use bitcoin::p2p::message::RawNetworkMessage;
