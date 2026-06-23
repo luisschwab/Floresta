@@ -200,11 +200,12 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-docker-${{ hashFiles('Dockerfile') }}
+          key: ${{ runner.os }}-docker-${{ hashFiles('contrib/docker/Dockerfile') }}
 
       - name: Build Docker image
         run: |
           docker buildx build \
           --cache-to=type=local,dest=/tmp/.buildx-cache \
           --cache-from=type=local,src=/tmp/.buildx-cache \
+          -f contrib/docker/Dockerfile \
           -t dlsz/floresta:latest .
