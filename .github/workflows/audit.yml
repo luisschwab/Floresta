@@ -17,6 +17,7 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             contents: read
+            checks: write
             issues: write
 
         steps:
@@ -28,7 +29,8 @@ jobs:
             - name: Setup Build Cache
               uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
 
-            - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+            - name: Audit Rust Dependencies
+              uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
 
