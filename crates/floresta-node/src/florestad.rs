@@ -116,7 +116,7 @@ pub struct Config {
     /// Where should we read from a config file
     ///
     /// This is a toml-encoded file with floresta's configs. For a sample of how this file looks
-    /// like, see config.toml.sample inside floresta's codebase.
+    /// like, see `contrib/config.toml.sample` inside floresta's codebase.
     ///
     /// If a setting is modified by the config file and this config struct, the following logic is
     /// used:
