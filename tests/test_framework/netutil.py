@@ -71,13 +71,13 @@ def _convert_ip_port(addr_string):
     return host_out, int(port, 16)
 
 
-def netstat(typ="tcp"):
+def netstat(protocol="tcp"):
     """
     Function to return a list with status of tcp connections at linux systems
     To get pid of all network process running on system, you must run this script
     as superuser
     """
-    with open("/proc/net/" + typ, "r", encoding="utf-8") as f:
+    with open("/proc/net/" + protocol, "r", encoding="utf-8") as f:
         content = f.readlines()
         content.pop(0)
     result = []
