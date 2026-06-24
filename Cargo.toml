@@ -50,25 +50,25 @@ readme = "README.md"
 axum = { version = "=0.8.9", default-features = false, features = ["http1", "json", "tracing", "tokio"] }
 bitcoin = { version = "=0.32.8", default-features = false }
 clap = { version = "=4.6.1", default-features = false, features = ["derive", "std"] }
-corepc-types = "=0.11.0"
+corepc-types = { version = "=0.11.0" }
 console-subscriber = { version = "=0.5.0", default-features = false }
-dns-lookup = "=2.1.1"
-hex = "=0.4.3"
-kv = "=0.24.0"
+dns-lookup = { version = "=2.1.1" }
+hex = { version = "=0.4.3" }
+kv = { version = "=0.24.0" }
 miniscript = { version = "=12.3.6", default-features = false }
-rand = "=0.10.1"
+rand = { version = "=0.10.1" }
 rcgen = { version = "=0.14.7", default-features = false, features = ["aws_lc_rs", "pem"] }
-rustreexo = "=0.5.0"
+rustreexo = { version = "=0.5.0" }
 serde = { version = "=1.0.228", features = ["derive"] }
-serde_json = "=1.0.150"
+serde_json = { version = "=1.0.150" }
 sha2 = { version = "=0.10.9", default-features = false }
 spin = { version = "=0.10.0", default-features = false, features = ["spin_mutex", "rwlock"] }
-tempfile = "=3.27.0"
+tempfile = { version = "=3.27.0" }
 tokio = { version = "=1.52.3", features = ["net", "time", "rt-multi-thread", "signal", "macros"] }
 tokio-rustls = { version = "=0.26.4", default-features = false, features = ["ring", "tls12"] }
 toml = { version = "=0.9.12", default-features = false, features = ["std", "parse", "serde"] }
 tracing = { version = "=0.1.44", default-features = false }
-zstd = "=0.13.3"
+zstd = { version = "=0.13.3" }
 # Pins for MSRV compatibility:
 time = { version = "=0.3.45" } # note: >0.3.45 requires Rust 1.88.0
 tonic = { version = "=0.14.5" } # note: >0.14.5 requires Rust 1.88.0

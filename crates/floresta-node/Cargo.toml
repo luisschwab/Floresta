@@ -38,13 +38,13 @@ floresta-wire = { workspace = true }
 metrics = { workspace = true,  optional = true }
 
 [dev-dependencies]
-pretty_assertions = "=1.4.1"
+pretty_assertions = { version = "=1.4.1" }
 
 [target.'cfg(target_env = "gnu")'.dependencies]
-libc = "=0.2.186"
+libc = { version = "=0.2.186" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-libc = "=0.2.186"
+libc = { version = "=0.2.186" }
 
 [features]
 compact-filters = ["dep:floresta-compact-filters"]
