@@ -298,7 +298,7 @@ mod tests {
     use bitcoin::consensus::Encodable;
     use bitcoin::hashes::Hash;
     use rand;
-    use rand::Rng;
+    use rand::RngExt;
 
     use super::*;
 

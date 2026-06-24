@@ -1543,7 +1543,7 @@ mod test {
     use bitcoin::constants::genesis_block;
     use floresta_common::assert_ok;
     use floresta_common::bhash;
-    use rand::Rng;
+    use rand::RngExt;
     use rustreexo::proof::Proof;
     use rustreexo::stump::Stump;
 

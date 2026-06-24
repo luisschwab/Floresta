@@ -358,7 +358,7 @@ mod tests {
     use bitcoin::transaction::Version;
     use floresta_common::bhash;
     use floresta_domain::mempool::MempoolBase;
-    use rand::Rng;
+    use rand::RngExt;
     use rand::SeedableRng;
 
     use super::Mempool;

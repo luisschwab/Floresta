@@ -24,9 +24,9 @@ use floresta_chain::pruned_utreexo::UpdatableChainstate;
 use floresta_common::Ema;
 use floresta_common::service_flags;
 use floresta_mempool::Mempool;
-use rand::RngCore;
-use rand::TryRngCore;
-use rand::rngs::OsRng;
+use rand::Rng;
+use rand::rand_core::UnwrapErr;
+use rand::rngs::SysRng;
 use serde::Deserialize;
 use serde::Serialize;
 use tokio::sync::Mutex;
@@ -216,7 +216,7 @@ pub fn serialize(root: UtreexoRoots) -> Vec<u8> {
 
 pub fn create_false_acc(tip: usize) -> Vec<u8> {
     let mut bytes = [0u8; 32];
-    let mut rng = OsRng.unwrap_err();
+    let mut rng = UnwrapErr(SysRng);
     rng.fill_bytes(&mut bytes);
     let node_hash = encode::serialize_hex(&bytes);
 

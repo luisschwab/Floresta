@@ -23,7 +23,7 @@ use bitcoin::p2p::address::AddrV2;
 use bitcoin::p2p::address::AddrV2Message;
 use floresta_chain::DnsSeed;
 use floresta_common::service_flags;
-use rand::Rng;
+use rand::RngExt;
 use rand::seq::IteratorRandom;
 use serde::Deserialize;
 use serde::Serialize;
@@ -1344,7 +1344,7 @@ mod test {
     use floresta_chain::get_chain_dns_seeds;
     use floresta_common::assert_ok;
     use floresta_common::service_flags;
-    use rand::Rng;
+    use rand::RngExt;
 
     use super::AddressState;
     use super::LocalAddress;
