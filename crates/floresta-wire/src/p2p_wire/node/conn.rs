@@ -14,7 +14,7 @@ use floresta_common::Ema;
 use floresta_common::service_flags;
 use floresta_common::try_and_log;
 use floresta_domain::mempool::MempoolBase;
-use rand::Rng;
+use rand::RngExt;
 use tokio::net::tcp::WriteHalf;
 use tokio::spawn;
 use tokio::sync::Mutex;

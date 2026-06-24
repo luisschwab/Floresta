@@ -786,7 +786,7 @@ pub(super) mod peer_utils {
     use bitcoin::p2p::message_network::VersionMessage;
     use floresta_common::PROTOCOL_VERSION;
     use floresta_common::advertised_services;
-    use rand::Rng;
+    use rand::RngExt;
     use rand::rng;
 
     use crate::address_man::LocalAddress;

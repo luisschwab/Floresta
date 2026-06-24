@@ -585,7 +585,7 @@ where
             .peers
             .values()
             .filter(|peer| peer.is_regular_peer() && !peer.has_any_service(protected_services))
-            .choose_multiple(&mut rng, n);
+            .sample(&mut rng, n);
 
         for peer in peers {
             let _ = peer.channel.send(NodeRequest::Shutdown);
