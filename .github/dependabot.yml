@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+version: 2
+
+updates:
+    - package-ecosystem: "cargo"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+          time: "00:00"
+      cooldown:
+          default-days: 60
+
+    - package-ecosystem: "github-actions"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+          time: "00:00"
+      cooldown:
+          default-days: 60
+
+    - package-ecosystem: "nix"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+          time: "00:00"
+      cooldown:
+          default-days: 60
+
+    - package-ecosystem: "uv"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+          time: "00:00"
+      cooldown:
+          default-days: 60
