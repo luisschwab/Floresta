@@ -8,7 +8,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
 
-use bip324::serde::CommandString;
 use bitcoin::Block;
 use bitcoin::BlockHash;
 use bitcoin::Transaction;
@@ -21,6 +20,7 @@ use bitcoin::hashes::Hash;
 use bitcoin::p2p::PROTOCOL_VERSION;
 use bitcoin::p2p::ServiceFlags;
 use bitcoin::p2p::address::AddrV2Message;
+use bitcoin::p2p::message::CommandString;
 use bitcoin::p2p::message::NetworkMessage;
 use bitcoin::p2p::message_blockdata::Inventory;
 use bitcoin::p2p::message_filter::CFHeaders;
@@ -907,10 +907,10 @@ mod tests {
     use std::time::Duration;
     use std::time::Instant;
 
-    use bip324::serde::NetworkMessage;
     use bitcoin::Network;
     use bitcoin::p2p::ServiceFlags;
     use bitcoin::p2p::address::AddrV2;
+    use bitcoin::p2p::message::NetworkMessage;
     use floresta_mempool::Mempool;
     use tokio::sync::Mutex;
     use tokio::sync::mpsc::UnboundedReceiver;
