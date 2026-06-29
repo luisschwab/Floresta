@@ -3,6 +3,7 @@
 use core::error;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::mem;
 use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
@@ -614,7 +615,7 @@ impl<Blockchain: BlockchainInterface> ElectrumServer<Blockchain> {
                 });
 
                 info!("Catching up with addresses {:?}", self.addresses_to_scan);
-                let addresses: Vec<_> = self.addresses_to_scan.drain(..).collect();
+                let addresses: Vec<_> = mem::take(&mut self.addresses_to_scan);
                 self.rescan_for_addresses(addresses).await?;
             }
         }
