@@ -49,7 +49,7 @@ zstd = { workspace = true }
 default = []
 bitcoinkernel = ["dep:bitcoinkernel"]
 metrics = ["dep:metrics"]
-test-utils = ["dep:serde"]
+test-utils = ["dep:serde", "bitcoin/serde"]
 flat-chainstore = ["dep:memmap2", "dep:lru", "dep:twox-hash"]
 
 [[bench]]
