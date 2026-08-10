@@ -722,6 +722,7 @@ where
             | BlockValidationErrors::UnspendableUTXO
             | BlockValidationErrors::NonFinalTransaction
             | BlockValidationErrors::CoinbaseNotMatured
+            | BlockValidationErrors::BadRelativeLockTime
             | BlockValidationErrors::DuplicateInput => {
                 self.context.abort_height = Some(height);
                 try_and_log!(self.chain.invalidate_block(block_hash));

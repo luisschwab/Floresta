@@ -215,6 +215,7 @@ pub mod proof_util {
     use crate::CompactLeafData;
     use crate::ScriptPubKeyKind;
     use crate::extensions::Bip30UnspendableExt;
+    use crate::extensions::TransactionExt;
     use crate::prelude::*;
     use crate::pruned_utreexo::consensus::Consensus;
     use crate::pruned_utreexo::consensus::UTREEXO_TAG_V1;
@@ -504,14 +505,17 @@ pub mod proof_util {
     /// invalid inputs that spend an output before its creating transaction.
     ///
     /// Returns the deleted leaf hashes and the proof-provided UTXOs needed to validate `txdata`.
-    pub fn process_proof<F, E>(
+    /// The lookup functions supply block hashes and Median Time Past at the requested heights.
+    pub fn process_proof<F, G, E>(
         leaves: &[CompactLeafData],
         txdata: &[Transaction],
         _height: u32,
         get_block_hash: F,
+        get_mtp: G,
     ) -> Result<ProcessedProof, E>
     where
         F: Fn(u32) -> Result<BlockHash, E>,
+        G: Fn(u32) -> Result<u32, E>,
         E: From<UtreexoLeafError>,
     {
         // Compute transaction IDs once, then use output counts to distinguish same-block spends
@@ -568,6 +572,17 @@ pub mod proof_util {
                         kind: e,
                     })?;
 
+                // creation_time is only read by the BIP68 relative lock-time check, and only
+                // when the spending input's sequence actually encodes a time-based lock, so
+                // avoid the get_mtp call otherwise.
+                let is_time_locked = input.sequence.is_time_locked();
+
+                let creation_time = if tx.is_bip68_enabled() && is_time_locked {
+                    get_mtp(creation_height - 1)?
+                } else {
+                    0
+                };
+
                 // Push the UTXO to remove from the set and its leaf hash (deletion hash)
                 del_hashes.push(leaf._get_leaf_hashes());
                 utxos.insert(
@@ -576,7 +591,7 @@ pub mod proof_util {
                         txout: leaf.utxo,
                         is_coinbase,
                         creation_height,
-                        creation_time: 0, // TODO add MTP(`creation_height` - 1)
+                        creation_time,
                     },
                 );
             }
@@ -693,6 +708,7 @@ mod test {
     use super::proof_util::reconstruct_leaf_data;
     use crate::proof_util::LeafErrorKind;
     use crate::proof_util::reconstruct_script_pubkey;
+    use crate::pruned_utreexo::consensus::LockTimeCutoff;
 
     macro_rules! assert_recover_spk {
         (
@@ -903,13 +919,15 @@ mod test {
             spk_ty: ScriptPubKeyKind::Other(Box::new([0x51])),
         }];
 
-        // The leaf must be rejected before any block-hash lookup happens.
+        // The leaf must be rejected before any block-hash lookup happens (get_mtp is called
+        // unconditionally up front, for the block's own outputs, so it isn't part of this check).
         let get_block_hash = |_height| -> Result<BlockHash, TestErr> {
             panic!("get_block_hash must not be called for a rejected genesis leaf")
         };
+        let get_mtp = |_height| -> Result<u32, TestErr> { Ok(0) };
 
-        let TestErr::Leaf(err) =
-            process_proof(&leaves, &txdata, 100, get_block_hash).expect_err("must be rejected");
+        let TestErr::Leaf(err) = process_proof(&leaves, &txdata, 100, get_block_hash, get_mtp)
+            .expect_err("must be rejected");
 
         assert!(
             matches!(err.kind, LeafErrorKind::GenesisCreationHeight),
@@ -961,14 +979,18 @@ mod test {
             spk_ty: ScriptPubKeyKind::Other(Box::new([])),
         };
 
-        let (_, utxos) = process_proof(&[leaf], &transactions, 2, |_| {
-            Ok::<_, crate::BlockchainError>(BlockHash::all_zeros())
-        })
+        let (_, utxos) = process_proof(
+            &[leaf],
+            &transactions,
+            2,
+            |_| Ok::<_, crate::BlockchainError>(BlockHash::all_zeros()),
+            |_| Ok(0),
+        )
         .expect("proof reconstruction must succeed");
 
         match crate::pruned_utreexo::consensus::Consensus::verify_block_transactions(
             2,
-            0,
+            LockTimeCutoff::Mtp(0),
             utxos,
             &transactions,
             Amount::from_sat(50),
@@ -1031,9 +1053,14 @@ mod test {
         };
         let get_block_hash = |_| Ok::<_, UtreexoLeafError>(BlockHash::all_zeros());
 
-        let (del_hashes, utxos) =
-            process_proof(&[leaf], &[coinbase, parent, child], 100, get_block_hash)
-                .expect("proof data should be reconstructed");
+        let (del_hashes, utxos) = process_proof(
+            &[leaf],
+            &[coinbase, parent, child],
+            100,
+            get_block_hash,
+            |_| panic!("inputs without time locks must not require MTP"),
+        )
+        .expect("proof data should be reconstructed");
 
         assert_eq!(del_hashes.len(), 1);
         assert_eq!(utxos.len(), 1);
