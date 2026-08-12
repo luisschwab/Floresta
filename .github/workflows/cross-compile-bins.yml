@@ -1,0 +1,154 @@
+name: Build florestad Binaries
+
+on:
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: Git tag to build; leave empty to build master
+                required: false
+                default: ''
+                type: string
+
+permissions: {}
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+    build:
+        name: Build ${{ matrix.target }}
+        runs-on: ${{ matrix.runner }}
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - runner: ubuntu-24.04
+                      target: x86_64-unknown-linux-gnu
+                      archive: florestad-linux-amd64.tar.gz
+
+                    - runner: ubuntu-24.04-arm
+                      target: aarch64-unknown-linux-gnu
+                      archive: florestad-linux-arm64.tar.gz
+
+                    - runner: macos-15
+                      target: aarch64-apple-darwin
+                      archive: florestad-darwin-arm64.tar.gz
+
+                    - runner: windows-2022
+                      target: x86_64-pc-windows-msvc
+                      archive: florestad-windows-amd64.zip
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+              with:
+                  ref: ${{ inputs.tag || 'master' }}
+                  fetch-depth: 0
+                  persist-credentials: false
+
+            - name: Install Rust 1.85.0
+              run: |
+                  rustup toolchain install 1.85.0 --profile minimal --no-self-update
+                  rustup default 1.85.0
+                  rustup target add ${{ matrix.target }}
+
+            - name: Install Linux Dependencies
+              if: runner.os == 'Linux'
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y build-essential clang cmake libboost-all-dev libclang-dev pkg-config
+
+            - name: Install macOS Dependencies
+              if: runner.os == 'macOS'
+              run: brew install boost pkg-config
+
+            - name: Install Windows Dependencies
+              if: runner.os == 'Windows'
+              shell: pwsh
+              run: |
+                  git clone https://github.com/microsoft/vcpkg.git
+                  Set-Location vcpkg
+                  .\bootstrap-vcpkg.bat
+                  .\vcpkg install boost-multi-index:x64-windows-static boost-headers:x64-windows-static
+                  "VCPKG_ROOT=$env:GITHUB_WORKSPACE\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
+                  "$env:GITHUB_WORKSPACE\vcpkg\installed\x64-windows-static\lib" | Out-File -FilePath $env:GITHUB_PATH -Append
+                  "BOOST_ROOT=$env:GITHUB_WORKSPACE\vcpkg\installed\x64-windows-static" | Out-File -FilePath $env:GITHUB_ENV -Append
+                  "BOOST_INCLUDEDIR=$env:GITHUB_WORKSPACE\vcpkg\installed\x64-windows-static\include" | Out-File -FilePath $env:GITHUB_ENV -Append
+                  "BOOST_LIBRARYDIR=$env:GITHUB_WORKSPACE\vcpkg\installed\x64-windows-static\lib" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+            - name: Build florestad
+              run: cargo build --release --locked --package florestad --bin florestad --target ${{ matrix.target }}
+
+            - name: Package Unix Binary
+              if: runner.os != 'Windows'
+              shell: bash
+              run: |
+                  mkdir -p dist/stage
+                  cp "target/${{ matrix.target }}/release/florestad" dist/stage/florestad
+                  tar -C dist/stage -czf "dist/${{ matrix.archive }}" florestad
+
+            - name: Package Windows Binary
+              if: runner.os == 'Windows'
+              shell: pwsh
+              run: |
+                  New-Item -ItemType Directory -Force dist\stage
+                  Copy-Item "target\${{ matrix.target }}\release\florestad.exe" dist\stage\florestad.exe
+                  Compress-Archive -Path dist\stage\florestad.exe -DestinationPath "dist\${{ matrix.archive }}"
+
+            - name: Upload Archive
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  path: dist/${{ matrix.archive }}
+                  archive: false
+                  retention-days: 30
+
+    checksums:
+        name: Generate SHA256SUMS
+        needs: build
+        runs-on: ubuntu-24.04
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+              with:
+                  ref: ${{ inputs.tag || 'master' }}
+                  persist-credentials: false
+
+            - name: Download Archives
+              uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  pattern: florestad-*
+                  path: dist
+                  merge-multiple: true
+                  skip-decompress: true
+
+            - name: Determine florestad Version
+              id: version
+              shell: bash
+              run: |
+                  version="$(
+                      cargo metadata --no-deps --format-version 1 |
+                          jq -r '.packages[] | select(.name == "florestad") | .version'
+                  )"
+
+                  if [[ -z "$version" || "$version" == "null" ]]; then
+                      echo "Could not determine florestad version" >&2
+                      exit 1
+                  fi
+
+                  echo "version=$version" >> "$GITHUB_OUTPUT"
+
+            - name: Generate Checksum Manifest
+              shell: bash
+              env:
+                  VERSION: ${{ steps.version.outputs.version }}
+              run: |
+                  cd dist
+                  sha256sum florestad-*.tar.gz florestad-*.zip |
+                      LC_ALL=C sort -k2 > "../florestad-${VERSION}-SHA256SUMS"
+
+            - name: Upload Checksum Manifest
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  path: florestad-${{ steps.version.outputs.version }}-SHA256SUMS
+                  archive: false
+                  retention-days: 30
