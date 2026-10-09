@@ -5,6 +5,7 @@ use std::time::Instant;
 
 use bitcoin::Block;
 use bitcoin::BlockHash;
+use bitcoin::OutPoint;
 use bitcoin::p2p::ServiceFlags;
 use floresta_chain::BlockValidationErrors;
 use floresta_chain::BlockchainError;
@@ -386,6 +387,23 @@ where
         }
     }
 
+    /// Returns whether a UTXO was created in the same block as it got spent, by looking for a txid
+    /// inside that block. The goal of this function is to differentiate between two cases where a
+    /// UTXO can't be found:
+    ///  - The UTXO was created inside the same block, but spent before being created.
+    ///  - We got a bad proof.
+    ///
+    /// The former is a consensus violation, and should invalidate a block, the latter isn't.
+    fn is_same_block_spend(block: &Block, outpoint: OutPoint) -> bool {
+        for tx in block.txdata.iter() {
+            if tx.compute_txid() == outpoint.txid {
+                return true;
+            }
+        }
+
+        false
+    }
+
     /// Handles the different block validation errors that can happen when connecting a block.
     ///
     /// Returns the peer id that caused this error, since it could be block or utreexo-related.
@@ -408,7 +426,11 @@ where
             }
 
             // The utreexo peer sent us incomplete leaf data. Block is not yet processed.
-            BlockValidationErrors::UtxoNotFound(_) => {
+            //
+            // If this is a same-block spent, then the block is actually invalid.
+            BlockValidationErrors::UtxoNotFound(outpoint)
+                if !Self::is_same_block_spend(&block, *outpoint) =>
+            {
                 self.blocks
                     .insert(hash, InflightBlock::new(block, block_peer));
 
@@ -436,11 +458,12 @@ where
             | BlockValidationErrors::BIP94TimeWarp
             | BlockValidationErrors::UnspendableUTXO
             | BlockValidationErrors::NonFinalTransaction
-            | BlockValidationErrors::CoinbaseNotMatured => {
+            | BlockValidationErrors::CoinbaseNotMatured
+            | BlockValidationErrors::UtxoNotFound(_) => {
                 try_and_log!(self.chain.invalidate_block(hash));
 
-                warn!("Block {hash} is invalid, banning peer {block_peer}");
-                Some(block_peer)
+                warn!("Block {hash} is invalid");
+                None
             }
 
             // This block's txdata doesn't match the txid or wtxid merkle root. This can be a
