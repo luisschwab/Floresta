@@ -578,18 +578,22 @@ impl<Blockchain: BlockchainInterface> ElectrumServer<Blockchain> {
         }
     }
 
-    pub async fn main_loop(mut self) -> Result<(), crate::error::Error> {
+    pub async fn main_loop(self) -> Result<(), crate::error::Error> {
         let blocks = Channel::new();
         let blocks = Arc::new(blocks);
 
         self.chain.subscribe(blocks.clone());
 
+        self.run(&blocks).await
+    }
+
+    /// Serves client requests and new blocks from `blocks`.
+    async fn run(
+        mut self,
+        blocks: &Channel<(bitcoin::Block, u32)>,
+    ) -> Result<(), crate::error::Error> {
         loop {
-            for (block, height) in blocks.recv() {
-                if let Err(e) = self.handle_block(block, height) {
-                    error!("Error in processing block: {e}")
-                }
-            }
+            self.handle_blocks(blocks);
 
             // handles client requests
             while let Ok(request) = tokio::time::timeout(
@@ -598,6 +602,10 @@ impl<Blockchain: BlockchainInterface> ElectrumServer<Blockchain> {
             )
             .await
             {
+                // Take in new blocks before each request. Otherwise, clients
+                // that send a request at least once a second hold them back.
+                self.handle_blocks(blocks);
+
                 if let Some(message) = request {
                     self.handle_message(message).await?;
                 }
@@ -721,6 +729,15 @@ impl<Blockchain: BlockchainInterface> ElectrumServer<Blockchain> {
             res.push(entry);
         }
         res
+    }
+
+    /// Handles the blocks waiting in `blocks`, in the order they arrived.
+    fn handle_blocks(&self, blocks: &Channel<(bitcoin::Block, u32)>) {
+        for (block, height) in blocks.recv() {
+            if let Err(e) = self.handle_block(block, height) {
+                error!("Error processing block at height {height}: {e}")
+            }
+        }
     }
 
     fn handle_block(&self, block: bitcoin::Block, height: u32) -> Result<(), super::error::Error> {
@@ -973,6 +990,9 @@ mod test {
     use core::str::FromStr;
     use std::io;
     use std::sync::Arc;
+    use std::sync::atomic::AtomicU32;
+    use std::sync::atomic::AtomicUsize;
+    use std::sync::atomic::Ordering;
     use std::time::Duration;
 
     use bitcoin::Address;
@@ -982,15 +1002,18 @@ mod test {
     use bitcoin::block::Header as BlockHeader;
     use bitcoin::consensus::Decodable;
     use bitcoin::consensus::deserialize;
+    use bitcoin::constants::genesis_block;
     use bitcoin::hashes::hex::FromHex;
     use bitcoin::hashes::sha256;
     use floresta_chain::AssumeValidArg;
+    use floresta_chain::BlockchainInterface;
     use floresta_chain::ChainState;
     use floresta_chain::FlatChainStore;
     use floresta_chain::FlatChainStoreConfig;
     use floresta_chain::pruned_utreexo::merkle::ConsensusMerkle;
     use floresta_common::assert_ok;
     use floresta_common::get_spk_hash;
+    use floresta_common::spsc::Channel;
     use floresta_mempool::Mempool;
     use floresta_watch_only::AddressCache;
     use floresta_watch_only::kv_database::KvDatabase;
@@ -1111,6 +1134,14 @@ mod test {
 
     // Returns the port assigned by the OS
     async fn start_electrum() -> u16 {
+        let (electrum_server, port) = setup_electrum().await;
+        task::spawn(electrum_server.main_loop());
+        port
+    }
+
+    // Returns a server whose main loop is not started yet, and the port
+    // assigned by the OS
+    async fn setup_electrum() -> (ElectrumServer<ChainState<FlatChainStore>>, u16) {
         let e_addr = "0.0.0.0:0";
         let ssl_e_addr = "0.0.0.0:0";
         let wallet = get_test_cache();
@@ -1178,9 +1209,7 @@ mod test {
             ));
         }
 
-        // Electrum main loop
-        task::spawn(electrum_server.main_loop());
-        assigned_port
+        (electrum_server, assigned_port)
     }
 
     /// Create a tls config thats valid for localhost with a random
@@ -1303,6 +1332,86 @@ mod test {
         let re = send_request(batch_req, port).await.unwrap();
         let answers = re.as_array().unwrap();
         assert_eq!(answers.len(), 3);
+    }
+
+    /// A new block must be taken in while a client sends requests faster than
+    /// the 1 s request timeout of the main loop. The cache takes its height,
+    /// and the polling client gets the `blockchain.headers.subscribe`
+    /// notification for it.
+    #[tokio::test]
+    async fn test_block_while_polling() {
+        let (electrum_server, port) = setup_electrum().await;
+        let cache = electrum_server.address_cache.clone();
+        let tip = electrum_server.chain.get_height().unwrap();
+        let blocks = Arc::new(Channel::new());
+        let channel = blocks.clone();
+        task::spawn(async move { electrum_server.run(&channel).await });
+
+        // Ping every 100 ms on one connection. Count the answers, and keep
+        // the height of the last header notification (u32::MAX for none)
+        let pings = Arc::new(AtomicUsize::new(0));
+        let answered = pings.clone();
+        let notified = Arc::new(AtomicU32::new(u32::MAX));
+        let notification = notified.clone();
+        let poller = task::spawn(async move {
+            let stream = TcpStream::connect(format!("localhost:{port}"))
+                .await
+                .unwrap();
+            let (reader, mut writer) = stream.into_split();
+            let mut answers = BufReader::new(reader).lines();
+            loop {
+                let method = Value::String("server.ping".to_string());
+                let mut request = generate_request(&mut vec![method]).to_string();
+                request.push('\n');
+                writer.write_all(request.as_bytes()).await.unwrap();
+                // A notification may come before the answer
+                loop {
+                    let line = answers.next_line().await.unwrap().unwrap();
+                    let line: Value = serde_json::from_str(&line).unwrap();
+                    if line["method"] == "blockchain.headers.subscribe" {
+                        let height = line["params"][0]["height"].as_u64().unwrap();
+                        notification.store(height as u32, Ordering::SeqCst);
+                    } else {
+                        break;
+                    }
+                }
+                answered.fetch_add(1, Ordering::SeqCst);
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+        });
+        let polling = timeout(Duration::from_secs(10), async {
+            while pings.load(Ordering::SeqCst) < 5 {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await;
+        assert!(polling.is_ok(), "the client did not get 5 answers in 10 s");
+
+        // The test chain is in IBD, where `handle_block` bumps the cache height
+        // only at multiples of 1000
+        let height = (cache.get_cache_height().unwrap() / 1000 + 1) * 1000;
+        blocks.send((genesis_block(Network::Signet), height));
+
+        // The server notifies clients of a block at the height of the chain
+        let block = genesis_block(Network::Signet);
+        blocks.send((block, tip));
+
+        let taken_in = timeout(Duration::from_secs(3), async {
+            while cache.get_cache_height().unwrap() != height
+                || notified.load(Ordering::SeqCst) != tip
+            {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await;
+        assert!(!poller.is_finished(), "the client stopped polling");
+        poller.abort();
+        assert!(
+            taken_in.is_ok(),
+            "the block waited while the client polled: cache height {}, notified {}, expected {height} and {tip}",
+            cache.get_cache_height().unwrap(),
+            notified.load(Ordering::SeqCst),
+        );
     }
 
     #[tokio::test]
