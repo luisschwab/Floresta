@@ -1456,8 +1456,8 @@ impl<PersistedState: ChainStore> UpdatableChainstate for ChainState<PersistedSta
             .any(|subscriber| subscriber.wants_spent_utxos())
             .then(|| inputs.clone());
 
-        self.validate_block_no_acc(block, height, inputs)?;
         let acc = Consensus::update_acc(&self.acc(), block, height, proof, del_hashes)?;
+        self.validate_block_no_acc(block, height, inputs)?;
 
         self.update_view(height, &block.header, acc)?;
 
