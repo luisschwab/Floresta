@@ -1657,10 +1657,13 @@ mod test {
     use crate::AssumeValidArg;
     use crate::BlockchainError;
     use crate::ChainStore;
+    use crate::CompactLeafData;
     use crate::FlatChainStore;
     use crate::FlatChainStoreConfig;
+    use crate::ScriptPubKeyKind;
     use crate::extensions::WorkExt;
     use crate::prelude::HashMap;
+    use crate::proof_util::process_proof;
     use crate::pruned_utreexo::consensus::Consensus;
     use crate::pruned_utreexo::error::BlockValidationErrors;
     use crate::pruned_utreexo::utxo_data::UtxoData;
@@ -1902,6 +1905,122 @@ mod test {
         }
 
         prev_hash
+    }
+
+    fn assert_malleated_leaf_rejects_proof(malleate_script: bool) {
+        let chain = setup_test_chain(Network::Regtest, AssumeValidArg::Disabled, None);
+        let mut parent = genesis_block(Network::Regtest).block_hash();
+        let mut funding_outpoint = OutPoint::null();
+
+        // Only height 1 adds a spendable output, so its proof has target 0 and no siblings.
+        for height in 1..=100 {
+            let mut coinbase = test_coinbase(height, Sequence::MAX, LockTime::ZERO);
+            if height == 1 {
+                coinbase.output = vec![txout!(1, anyone_can_spend_script())];
+                funding_outpoint = OutPoint::new(coinbase.compute_txid(), 0);
+            }
+            let mut block = block_with_coinbase(height, coinbase);
+            block.header.prev_blockhash = parent;
+            while block.header.validate_pow(block.header.target()).is_err() {
+                block.header.nonce += 1;
+            }
+            chain.accept_header(block.header).unwrap();
+            chain
+                .connect_block(&block, Proof::default(), HashMap::new(), Vec::new())
+                .unwrap();
+            parent = block.block_hash();
+        }
+
+        let spend = Transaction {
+            version: TransactionVersion::TWO,
+            lock_time: LockTime::ZERO,
+            input: vec![txin!(funding_outpoint, ScriptBuf::new(), Sequence::MAX)],
+            output: vec![txout!(1, ScriptBuf::new_op_return([0]))],
+        };
+        let mut block = block_with_transactions(
+            101,
+            vec![test_coinbase(101, Sequence::MAX, LockTime::ZERO), spend],
+        );
+        block.header.prev_blockhash = parent;
+        while block.header.validate_pow(block.header.target()).is_err() {
+            block.header.nonce += 1;
+        }
+        chain.accept_header(block.header).unwrap();
+
+        let honest_leaf = CompactLeafData {
+            header_code: (1 << 1) | 1,
+            amount: 1,
+            spk_ty: ScriptPubKeyKind::Other(anyone_can_spend_script().into_bytes().into()),
+        };
+        let mut malicious_leaf = honest_leaf.clone();
+        if malleate_script {
+            malicious_leaf.spk_ty =
+                ScriptPubKeyKind::Other(ScriptBuf::new_op_return([42]).into_bytes().into());
+        } else {
+            // Claim the otherwise mature coinbase was created in the previous block.
+            malicious_leaf.header_code = (100 << 1) | 1;
+        }
+        let proof = Proof {
+            targets: vec![0],
+            hashes: Vec::new(),
+        };
+        let (bad_hashes, bad_inputs) =
+            process_proof(&[malicious_leaf], &block.txdata, 101, |height| {
+                chain.get_block_hash(height)
+            })
+            .unwrap();
+
+        // These unauthenticated inputs would fail consensus checks if checked first.
+        let validation_error = chain
+            .validate_block_no_acc(&block, 101, bad_inputs.clone())
+            .unwrap_err();
+        assert!(
+            matches!(validation_error, BlockchainError::TransactionError(_)),
+            "expected a transaction failure from malleated leaf data: {validation_error:?}"
+        );
+
+        let acc = chain.acc();
+        let error = chain
+            .connect_block(&block, proof.clone(), bad_inputs, bad_hashes)
+            .unwrap_err();
+        // The wire layer retries and bans the proof peer for AccumulatorError, whereas
+        // TransactionError would invalidate this perfectly valid block.
+        assert!(
+            matches!(error, BlockchainError::AccumulatorError(_)),
+            "must reject the proof, not the block: {error:?}"
+        );
+        assert_eq!(chain.acc(), acc);
+        assert_eq!(chain.get_validation_index().unwrap(), 100);
+        assert!(matches!(
+            chain.get_disk_block_header(&block.block_hash()).unwrap(),
+            DiskBlockHeader::HeadersOnly(_, 101)
+        ));
+
+        // An honest peer can supply the original leaf and connect the exact same block.
+        let (hashes, inputs) = process_proof(&[honest_leaf], &block.txdata, 101, |height| {
+            chain.get_block_hash(height)
+        })
+        .unwrap();
+        assert_eq!(
+            chain.connect_block(&block, proof, inputs, hashes).unwrap(),
+            101
+        );
+        assert_eq!(chain.get_validation_index().unwrap(), 101);
+        assert!(matches!(
+            chain.get_disk_block_header(&block.block_hash()).unwrap(),
+            DiskBlockHeader::FullyValid(_, 101)
+        ));
+    }
+
+    #[test]
+    fn malleated_creation_height_rejects_proof_not_block() {
+        assert_malleated_leaf_rejects_proof(false);
+    }
+
+    #[test]
+    #[cfg(feature = "bitcoinkernel")]
+    fn malleated_other_script_rejects_proof_not_block() {
+        assert_malleated_leaf_rejects_proof(true);
     }
 
     #[test]
