@@ -449,6 +449,7 @@ where
             | BlockValidationErrors::BlockTooBig
             | BlockValidationErrors::TooManySigops
             | BlockValidationErrors::NotEnoughPow
+            | BlockValidationErrors::BadDiffBits
             | BlockValidationErrors::TooManyCoins
             | BlockValidationErrors::NotEnoughMoney
             | BlockValidationErrors::FirstTxIsNotCoinbase
