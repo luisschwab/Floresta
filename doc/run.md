@@ -21,6 +21,18 @@ floresta-cli getblockchaininfo
 
 For more information on how to use the `floresta-cli` tool, you can check the [API documentation](https://github.com/getfloresta/Floresta/blob/master/bin/floresta-cli/README.md).
 
+### Swift Sync
+
+Floresta implements an IBD speedup technique called [Swift Sync](https://gist.github.com/RubenSomsen/a61a37d14182ccd78760e477c78133cd). This will reduce the mount of data downloaded  considerably, and allow
+better usage of the available bandwidth. However, a small file called hintsfile is need to make Swift Sync possible. This file should exist inside the datadir, named `bitcoin.hints` [^1]. On a UNIX system,
+you can:
+
+```bash
+mkdir ~/.floresta
+curl -fL https://hints.lab.vinteum.org/bitcoin -o ~/.floresta/bitcoin.hints
+florestad --no-assume-utreexo
+```
+
 ## TLS
 
 By default, `florestad` will run an Electrum server without encryption, but you can add TLS encryption to Electrum communication:
@@ -146,3 +158,5 @@ This is the resource tab, it shows all resources that `tokio` is managing (locks
 ![Screenshot_2025-06-23_20-35-44](https://github.com/user-attachments/assets/e05bf099-87a7-422b-ae3e-d1326941a688)
 
 This shows some info about one specific task, like a histogram of CPU usage (you can toggle this by pressing ENTER while on the main screen)
+
+[^1] If you are using a network other than mainnet, use <network_name>.hints instead e.g., `signet.hints`.
