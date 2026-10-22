@@ -1998,11 +1998,14 @@ mod test {
             targets: vec![0],
             hashes: Vec::new(),
         };
-        let (bad_hashes, bad_inputs) =
-            process_proof(&[malicious_leaf], &block.txdata, 101, |height| {
-                chain.get_block_hash(height)
-            })
-            .unwrap();
+        let (bad_hashes, bad_inputs) = process_proof(
+            &[malicious_leaf],
+            &block.txdata,
+            101,
+            |height| chain.get_block_hash(height),
+            |height| chain.get_mtp_by_height(height),
+        )
+        .unwrap();
 
         // These unauthenticated inputs would fail consensus checks if checked first.
         let validation_error = chain
@@ -2031,9 +2034,13 @@ mod test {
         ));
 
         // An honest peer can supply the original leaf and connect the exact same block.
-        let (hashes, inputs) = process_proof(&[honest_leaf], &block.txdata, 101, |height| {
-            chain.get_block_hash(height)
-        })
+        let (hashes, inputs) = process_proof(
+            &[honest_leaf],
+            &block.txdata,
+            101,
+            |height| chain.get_block_hash(height),
+            |height| chain.get_mtp_by_height(height),
+        )
         .unwrap();
         assert_eq!(
             chain.connect_block(&block, proof, inputs, hashes).unwrap(),
